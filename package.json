@@ -13,6 +13,7 @@
   "dependencies": {
     "chalk": "^5.5.0",
     "dotenv": "^17.2.1",
+    "exceljs": "^4.4.0",
     "fs": "^0.0.1-security",
     "jalaali-js": "^1.2.8",
     "puppeteer-core": "^24.16.0"
