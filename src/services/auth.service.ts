@@ -1,7 +1,6 @@
+import { GITHUB_TOKEN } from "../config/env";
 
-import { GITHUB_TOKEN } from '../config/env.js';
-
-export async function verifyToken() {
+export async function verifyToken(): Promise<boolean> {
   try {
     const response = await fetch("https://api.github.com/user", {
       headers: {
@@ -10,8 +9,8 @@ export async function verifyToken() {
       },
     });
     return response.ok;
-  } catch (error) {
-    console.error("❌ Error verifying token:", error.message);
+  } catch (error: unknown) {
+    console.error("❌ Error verifying token:", (error as Error).message);
     return false;
   }
 }
