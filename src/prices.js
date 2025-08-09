@@ -1,4 +1,3 @@
-import { checkArbitrageOpportunity } from "./utils.js";
 
 export async function getPrice(exchange, symbol) {
   try {
@@ -20,12 +19,12 @@ export async function printBidAskPairs(symbols, exchanges) {
   const lbankPrice = await getPrice(exchanges.lbank, symbols.lbank);
 
   await logPositiveProfit(
-    "Bid from MEXC & Ask from LBank",
+    "BUY=> MEXC & SELL=> LBank",
     mexcPrice.bid,
     lbankPrice.ask
   );
   await logPositiveProfit(
-    "Bid from LBank & Ask from MEXC",
+    `BUY=> LBank & SELL=> MEXC`,
     lbankPrice.bid,
     mexcPrice.ask
   );
@@ -40,10 +39,12 @@ export async function logPositiveProfit(label, bidPrice, askPrice) {
 
   if (diffPercent > 0) {
     console.log(
-      `${label}: Bid = ${bidPrice}, Ask = ${askPrice}, Profit opportunity! Difference: ${diffPercent.toFixed(
+      `${label}: Bid= ${bidPrice}, Ask= ${askPrice}, Profit opportunity! Difference: ${diffPercent.toFixed(
         2
       )}%`
     );
   }
   // اگر diffPercent صفر یا منفی بود، چیزی چاپ نمی‌شود
 }
+
+
