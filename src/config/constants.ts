@@ -27,6 +27,6 @@ export const EXCHANGES: Exchanges = {
 
 export const CONFIG: Config = {
   CHROME_PATH: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  ARBITRAGE_THRESHOLD: 0.005,
+  ARBITRAGE_THRESHOLD: 0.5,
   CHECK_INTERVAL: 100, // 0.1 second
 };

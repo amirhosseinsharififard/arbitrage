@@ -1,9 +1,6 @@
 import chalk from "chalk";
 import { CONFIG } from "../config/constants";
-
-interface Config {
-  ARBITRAGE_THRESHOLD: number;
-}
+import { appendFileSync } from "fs";
 
 interface SpreadResult {
   spread: number;
@@ -30,51 +27,42 @@ export function calculateSpread(price1: number, price2: number): SpreadResult {
   };
 }
 
-export function printResults(
-  mexcPrice: number,
-  lbankPrice: number,
-  spread: number,
-  percentDiff: number
-): void {
-  const { higherExchange, lowerExchange }: SpreadResult = calculateSpread(
-    mexcPrice,
-    lbankPrice
-  );
+function logToFile(mexcPrice: number, lbankPrice: number, spread: number, percentDiff: number): void {
+  const logEntry = `${new Date().toISOString()},${mexcPrice},${lbankPrice},${spread},${percentDiff}\n`;
+  appendFileSync("arbitrage_log.csv", logEntry);
+}
 
-  // Header
+function printHeader(): void {
   console.log(chalk.blue.bold("\n🔍 Arbitrage Analysis:"));
   console.log(chalk.gray("-".repeat(80)));
+}
 
-  // Price comparison visualization
+function printPriceComparison(mexcPrice: number, lbankPrice: number, higherExchange: string, lowerExchange: string): void {
   const maxPrice: number = Math.max(mexcPrice, lbankPrice);
   const minPrice: number = Math.min(mexcPrice, lbankPrice);
   const ratio: number = Math.min(50, Math.floor(50 * (minPrice / maxPrice)));
 
   console.log(
-    `  ${
-      higherExchange === "MEXC" ? chalk.red("✖ SELL") : chalk.green("✔ BUY")
-    } MEXC: ${chalk.cyan(mexcPrice.toFixed(8))} ${"".repeat(50)}`
+    `  ${higherExchange === "MEXC" ? chalk.red("✖ SELL") : chalk.green("✔ BUY")} MEXC: ${chalk.cyan(mexcPrice.toFixed(8))} ${"".repeat(50)}`
   );
   console.log(
-    `  ${
-      lowerExchange === "LBank" ? chalk.green("✔ BUY") : chalk.red("✖ SELL")
-    } LBank: ${chalk.cyan(lbankPrice.toFixed(8))} ${"".repeat(
-      ratio
-    )}${"".repeat(50 - ratio)}`
+    `  ${lowerExchange === "LBank" ? chalk.green("✔ BUY") : chalk.red("✖ SELL")} LBank: ${chalk.cyan(lbankPrice.toFixed(8))} ${"".repeat(ratio)}${"".repeat(50 - ratio)}`
   );
+}
 
-  // Spread info
+function printSpreadInfo(spread: number, percentDiff: number): void {
   console.log(chalk.gray("-".repeat(80)));
   console.log(
     `  Spread: ${chalk.yellow(spread.toFixed(8))} | ` +
-      `Difference: ${
-        percentDiff >= CONFIG.ARBITRAGE_THRESHOLD
-          ? chalk.greenBright(`${percentDiff}%`)
-          : chalk.gray(`${percentDiff}%`)
-      }`
+    `Difference: ${
+      percentDiff >= CONFIG.ARBITRAGE_THRESHOLD
+        ? chalk.greenBright(`${percentDiff}%`)
+        : chalk.gray(`${percentDiff}%`)
+    }`
   );
+}
 
-  // Arbitrage opportunity
+function printOpportunity(percentDiff: number): void {
   console.log(chalk.gray("-".repeat(80)));
   if (percentDiff >= CONFIG.ARBITRAGE_THRESHOLD) {
     console.log(chalk.greenBright.bold("  ✅ ARBITRAGE OPPORTUNITY DETECTED!"));
@@ -88,4 +76,13 @@ export function printResults(
     );
   }
   console.log(chalk.gray("-".repeat(80) + "\n"));
+}
+
+export function printResults(mexcPrice: number, lbankPrice: number, spread: number, percentDiff: number): void {
+  const { higherExchange, lowerExchange }: SpreadResult = calculateSpread(mexcPrice, lbankPrice);
+  logToFile(mexcPrice, lbankPrice, spread, percentDiff);
+  printHeader();
+  printPriceComparison(mexcPrice, lbankPrice, higherExchange, lowerExchange);
+  printSpreadInfo(spread, percentDiff);
+  printOpportunity(percentDiff);
 }
