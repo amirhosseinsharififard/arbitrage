@@ -1,3 +1,5 @@
+import { checkArbitrageOpportunity } from "./utils.js";
+
 export async function getPrice(exchange, symbol) {
   try {
     const ticker = await exchange.fetchTicker(symbol);
@@ -13,17 +15,35 @@ export async function getPrice(exchange, symbol) {
   }
 }
 
-import { checkArbitrageOpportunity } from "./utils.js";
-
-export async function printArbitrageStatus(label, bidPrice, askPrice) {
-  const status = checkArbitrageOpportunity(bidPrice, askPrice);
-  console.log(`${label}: Bid = ${bidPrice}, Ask = ${askPrice} -> ${status}`);
-}
-
 export async function printBidAskPairs(symbols, exchanges) {
   const mexcPrice = await getPrice(exchanges.mexc, symbols.mexc);
   const lbankPrice = await getPrice(exchanges.lbank, symbols.lbank);
 
-  await printArbitrageStatus("Bid from MEXC & Ask from LBank", mexcPrice.bid, lbankPrice.ask);
-  await printArbitrageStatus("Bid from LBank & Ask from MEXC", lbankPrice.bid, mexcPrice.ask);
+  await logPositiveProfit(
+    "Bid from MEXC & Ask from LBank",
+    mexcPrice.bid,
+    lbankPrice.ask
+  );
+  await logPositiveProfit(
+    "Bid from LBank & Ask from MEXC",
+    lbankPrice.bid,
+    mexcPrice.ask
+  );
+}
+
+export async function logPositiveProfit(label, bidPrice, askPrice) {
+  if (bidPrice == null || askPrice == null) {
+    return; // قیمت‌ها معتبر نیستند، چیزی چاپ نمی‌شود
+  }
+
+  const diffPercent = ((bidPrice - askPrice) / askPrice) * 100;
+
+  if (diffPercent > 0) {
+    console.log(
+      `${label}: Bid = ${bidPrice}, Ask = ${askPrice}, Profit opportunity! Difference: ${diffPercent.toFixed(
+        2
+      )}%`
+    );
+  }
+  // اگر diffPercent صفر یا منفی بود، چیزی چاپ نمی‌شود
 }

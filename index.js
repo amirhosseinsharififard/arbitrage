@@ -1,15 +1,25 @@
-import { createExchanges } from "./src/exchanges.js";
+import ccxt from "ccxt";
 import { printBidAskPairs } from "./src/prices.js";
 
-async function main() {
-  const exchanges = await createExchanges();
+const symbols = {
+  mexc: "DEBT/USDT:USDT",
+  lbank: "DEBT/USDT:USDT",
+};
 
-  const symbols = {
-    mexc: "DEBT/USDT:USDT",
-    lbank: "DEBT/USDT:USDT",
-  };
+const exchanges = {
+  mexc: new ccxt.mexc({ options: { defaultType: "future" } }),
+  lbank: new ccxt.lbank({ options: { defaultType: "future" } }),
+};
 
-  await printBidAskPairs(symbols, exchanges);
+async function startLoop(intervalMs = 50) {
+  await exchanges.mexc.loadMarkets();
+  await exchanges.lbank.loadMarkets();
+
+  while (true) {
+    console.log("Fetching prices at", new Date().toLocaleTimeString());
+    await printBidAskPairs(symbols, exchanges);
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
 }
 
-main();
+startLoop();
