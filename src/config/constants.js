@@ -13,5 +13,5 @@ export const EXCHANGES = {
 export const CONFIG = {
   CHROME_PATH: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   ARBITRAGE_THRESHOLD: 0.5,
-  CHECK_INTERVAL: 1000 // 1 second
+  CHECK_INTERVAL: 100 // 0.1 second
 };

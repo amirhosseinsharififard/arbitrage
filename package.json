@@ -11,11 +11,16 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "axios": "^1.11.0",
+    "bottleneck": "^2.19.5",
+    "ccxt": "^4.4.99",
     "chalk": "^5.5.0",
+    "decimal.js": "^10.6.0",
     "dotenv": "^17.2.1",
     "exceljs": "^4.4.0",
     "fs": "^0.0.1-security",
     "jalaali-js": "^1.2.8",
-    "puppeteer-core": "^24.16.0"
+    "puppeteer-core": "^24.16.0",
+    "ws": "^8.18.3"
   }
 }
