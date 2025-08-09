@@ -35,5 +35,3 @@ export const CONFIG: Config = {
   CHECK_INTERVAL: 100, // 0.1 second
 };
 
-// GITHUB_TOKEN =
-//   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;
