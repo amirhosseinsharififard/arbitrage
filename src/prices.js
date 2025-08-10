@@ -86,9 +86,11 @@ export async function printBidAskPairs(symbols, exchanges) {
     const lbankToMexcDiff = CalculationUtils.calculatePriceDifference(lbankPrice.bid, mexcPrice.ask);
 
     // Log current price differences
-    console.log(`[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} Ask=${FormattingUtils.formatPrice(mexcPrice.ask)}`);
-    console.log(`[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} Ask=${FormattingUtils.formatPrice(lbankPrice.ask)}`);
-    console.log(`[DIFF] MEXC→LBANK: ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK→MEXC: ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+
+    console.log(`[PRICES]  MEXC-Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} LBANK-Ask=${FormattingUtils.formatPrice(lbankPrice.ask)} => ${FormattingUtils.formatPercentage(mexcToLbankDiff)}`);
+    console.log(`[PRICES]  LBAK-Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} MEXC-Ask=${FormattingUtils.formatPrice(mexcPrice.ask)} => ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+    
+    // console.log(`[DIFF] MEXC→LBANK: ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK→MEXC: ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
 
     // Check arbitrage opportunities and try to open positions
     if (!status.isAnyPositionOpen) {
