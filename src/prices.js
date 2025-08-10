@@ -1,3 +1,4 @@
+import { tryClosePosition, tryOpenPosition } from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
 import { retryWrapper } from "./error/errorBoundory.js";
 
@@ -121,28 +122,59 @@ export async function printBidAskPairs(symbols, exchanges) {
   const mexcPrice = await getPrice(exchanges.mexc, symbols.mexc);
   const lbankPrice = await getPrice(exchanges.lbank, symbols.lbank);
 
-  console.log(symbols);
+  // لاگ معمولی سود و قیمت‌ها
+  await logPositiveProfit(
+    "BUY=> MEXC & SELL=> LBank",
+    mexcPrice.bid,
+    lbankPrice.ask,
+    config.feesPercent.mexc,
+    config.feesPercent.lbank,
+    config.profitThresholdPercent
+  );
 
- await logPositiveProfit(
-  "BUY=> MEXC & SELL=> LBank",
-  mexcPrice.bid,
-  lbankPrice.ask,
-  config.feesPercent.mexc,
-  config.feesPercent.lbank,
-  config.profitThresholdPercent
-);
+  await logPositiveProfit(
+    "BUY=> LBank & SELL=> MEXC",
+    lbankPrice.bid,
+    mexcPrice.ask,
+    config.feesPercent.lbank,
+    config.feesPercent.mexc,
+    config.profitThresholdPercent
+  );
 
-await logPositiveProfit(
-  "BUY=> LBank & SELL=> MEXC",
-  lbankPrice.bid,
-  mexcPrice.ask,
-  config.feesPercent.lbank,
-  config.feesPercent.mexc,
-  config.profitThresholdPercent
-);
+  // تلاش برای باز کردن معاملات فرضی
+  await tryOpenPosition(
+    symbols.mexc,
+    "mexc",
+    "lbank",
+    mexcPrice.bid,
+    lbankPrice.ask
+  );
+
+  await tryOpenPosition(
+    symbols.lbank,
+    "lbank",
+    "mexc",
+    lbankPrice.bid,
+    mexcPrice.ask
+  );
+
+  // تلاش برای بستن معاملات فرضی
+  await tryClosePosition(
+    symbols.mexc,
+    mexcPrice.bid,
+    lbankPrice.ask
+  );
+
+  await tryClosePosition(
+    symbols.lbank,
+    lbankPrice.bid,
+    mexcPrice.ask
+  );
 
   console.log("--------------------------------------------------");
 }
+
+
 
 function calculateNetProfitPercent(bidPrice, askPrice, feeBuyPercent, feeSellPercent) {
   const grossProfitPercent = ((bidPrice - askPrice) / askPrice) * 100;

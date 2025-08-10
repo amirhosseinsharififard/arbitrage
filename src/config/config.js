@@ -4,10 +4,12 @@ const config = {
     lbank: "DEBT/USDT:USDT",
   },
   intervalMs: 500,
-  profitThresholdPercent: 0.5,
+  profitThresholdPercent: 2,  // درصد برای باز کردن معامله
+  closeThresholdPercent: 1,   // درصد برای بستن معامله
+  tradeVolumeUSD: 100,           // حجم دلاری برای هر معامله
   feesPercent: {
-    mexc: 0.04, // مثلا 0.04 درصد کارمزد
-    lbank: 0.05, // مثلا 0.05 درصد کارمزد
+    mexc: 0.04,
+    lbank: 0.05,
   },
 };
 export default config;
