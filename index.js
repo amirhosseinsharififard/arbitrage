@@ -1,5 +1,6 @@
 import ccxt from "ccxt";
 import { printBidAskPairs } from "./src/prices.js";
+import config from "./src/config/config.js";
 
 const symbols = {
   mexc: "DEBT/USDT:USDT",
@@ -11,7 +12,10 @@ const exchanges = {
   lbank: new ccxt.lbank({ options: { defaultType: "future" } }),
 };
 
-async function startLoop(intervalMs = 100) {
+async function startLoop(
+  symbols = config.symbols,
+  intervalMs = config.intervalMs
+) {
   await exchanges.mexc.loadMarkets();
   await exchanges.lbank.loadMarkets();
 

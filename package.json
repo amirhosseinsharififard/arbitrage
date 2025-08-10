@@ -3,7 +3,14 @@
   "module": "index.js",
   "type": "module",
   "private": true,
+  "scripts": {
+    "build": "babel src --out-dir dis"
+  },
+  "bin": "index.js",
   "devDependencies": {
+    "@babel/cli": "^7.28.0",
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
     "@types/bun": "latest",
     "@types/jest": "^30.0.0",
     "@types/ws": "^8.18.1",
