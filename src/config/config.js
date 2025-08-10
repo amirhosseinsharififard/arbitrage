@@ -5,6 +5,9 @@ const config = {
   },
   intervalMs: 500,
   profitThresholdPercent: 0.5,
+  feesPercent: {
+    mexc: 0.04, // مثلا 0.04 درصد کارمزد
+    lbank: 0.05, // مثلا 0.05 درصد کارمزد
+  },
 };
-
 export default config;

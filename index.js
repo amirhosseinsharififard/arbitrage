@@ -1,27 +1,32 @@
 import ccxt from "ccxt";
 import { printBidAskPairs } from "./src/prices.js";
 import config from "./src/config/config.js";
+import { retryWrapper } from "./src/error/errorBoundory.js";
 
-const symbols = {
-  mexc: "DEBT/USDT:USDT",
-  lbank: "DEBT/USDT:USDT",
-};
+async function createExchange(id, options) {
+  const exchange = new ccxt[id](options);
 
-const exchanges = {
-  mexc: new ccxt.mexc({ options: { defaultType: "future" } }),
-  lbank: new ccxt.lbank({ options: { defaultType: "future" } }),
-};
+  await retryWrapper(exchange.loadMarkets.bind(exchange), [], 3, 1000);
+
+  return exchange;
+}
 
 async function startLoop(
   symbols = config.symbols,
   intervalMs = config.intervalMs
 ) {
-  await exchanges.mexc.loadMarkets();
-  await exchanges.lbank.loadMarkets();
+  const mexc = await createExchange("mexc", {
+    options: { defaultType: "future" },
+  });
+  const lbank = await createExchange("lbank", {
+    options: { defaultType: "future" },
+  });
+
+  const exchanges = { mexc, lbank };
 
   while (true) {
     await printBidAskPairs(symbols, exchanges);
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
 }
 
