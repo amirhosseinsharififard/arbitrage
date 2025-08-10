@@ -3,11 +3,17 @@ import { printBidAskPairs } from "./src/prices.js";
 import config from "./src/config/config.js";
 import { retryWrapper } from "./src/error/errorBoundory.js";
 
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 async function createExchange(id, options) {
   const exchange = new ccxt[id](options);
-
   await retryWrapper(exchange.loadMarkets.bind(exchange), [], 3, 1000);
-
   return exchange;
 }
 
@@ -25,7 +31,14 @@ async function startLoop(
   const exchanges = { mexc, lbank };
 
   while (true) {
-    await printBidAskPairs(symbols, exchanges);
+    try {
+      await printBidAskPairs(symbols, exchanges);
+    } catch (error) {
+      console.error(`Error in main loop: ${error.message || error}`);
+      console.log(`Waiting 5 seconds before retrying...`);
+      await new Promise((r) => setTimeout(r, 5000));
+      continue;
+    }
     await new Promise((r) => setTimeout(r, intervalMs));
   }
 }

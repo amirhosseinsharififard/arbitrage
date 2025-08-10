@@ -1,8 +1,8 @@
 import config from "./config/config.js";
 import { retryWrapper } from "./error/errorBoundory.js";
 
-// نگهداری آخرین قیمت‌ها برای مقایسه
 const lastProfits = new Map();
+
 async function logPositiveProfit(
   label,
   bidPrice,
@@ -29,8 +29,6 @@ async function logPositiveProfit(
     `Net Profit After Fees: ${netProfitPercent.toFixed(2)}%`
   );
 }
-
-
 
 async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
   const key = `${buy}->${sell}`;
