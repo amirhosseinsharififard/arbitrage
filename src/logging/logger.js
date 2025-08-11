@@ -5,9 +5,10 @@ import config from "../config/config.js";
  * Centralized Logger for the arbitrage system
  */
 class Logger {
-    constructor(clearOnStartup = true) {
+    constructor(clearOnStartup = config.logSettings.clearOnStartup) {
         this.logFile = config.logSettings.logFile;
         this.summaryFile = config.logSettings.summaryFile;
+        this.requestLogFile = config.logSettings.requestLogFile;
 
         // Clear files on startup if requested
         if (clearOnStartup) {
@@ -20,11 +21,16 @@ class Logger {
      */
     async clearLogFiles() {
         try {
-            // Clear trades.log
-            await fs.writeFile(this.logFile, '', 'utf-8');
-
-            // Clear session_summary.txt
-            await fs.writeFile(this.summaryFile, '', 'utf-8');
+            if (!config.logSettings.preserveLogs) {
+                await fs.writeFile(this.logFile, '', 'utf-8');
+            }
+            if (!config.logSettings.preserveSummary) {
+                await fs.writeFile(this.summaryFile, '', 'utf-8');
+            }
+            // Always keep a separate request log file
+            if (this.requestLogFile) {
+                try { await fs.access(this.requestLogFile); } catch { await fs.writeFile(this.requestLogFile, '', 'utf-8'); }
+            }
 
             if (config.logSettings.enableDetailedLogging) {
                 console.log(`🧹 Log files cleared on startup`);
@@ -57,6 +63,22 @@ class Logger {
             }
         } catch (error) {
             console.error(`❌ Failed to log trade: ${error.message}`);
+        }
+    }
+
+    /**
+     * Log a detailed backtest entry (never deletes or rotates)
+     * @param {object} data - Detailed backtest data
+     */
+    async logBacktest(data) {
+        try {
+            const entry = { action: 'BACKTEST', timestamp: new Date().toISOString(), ...data };
+            const line = JSON.stringify(entry) + '\n';
+            await fs.appendFile(this.logFile, line);
+        } catch (error) {
+            if (config.logSettings.enableDetailedLogging) {
+                console.error(`❌ Failed to log backtest: ${error.message}`);
+            }
         }
     }
 
@@ -109,7 +131,15 @@ class Logger {
     async writeSummaryToFile(summary) {
         try {
             const formattedSummary = this.formatSummary(summary);
-            await fs.writeFile(this.summaryFile, formattedSummary, 'utf-8');
+            // Always keep session summary persistent: append separator + latest summary, don't delete previous
+            let prefix = '';
+            try {
+                await fs.access(this.summaryFile);
+                prefix = '';
+            } catch {
+                prefix = '';
+            }
+            await fs.appendFile(this.summaryFile, formattedSummary, 'utf-8');
 
             if (config.logSettings.enableDetailedLogging) {
                 console.log(`💾 Summary written to ${this.summaryFile}`);
@@ -137,6 +167,37 @@ class Logger {
     }
 
     /**
+     * Append a simple footer with last exit timestamp to the summary file
+     * @param {string} isoTimestamp
+     */
+    async appendLastExitFooter(isoTimestamp) {
+        try {
+            const footer = `\nLast Exit: ${new Date(isoTimestamp).toLocaleString()}\n`;
+            await fs.appendFile(this.summaryFile, footer, 'utf-8');
+        } catch (error) {
+            if (config.logSettings.enableDetailedLogging) {
+                console.error(`❌ Failed to append last exit footer: ${error.message}`);
+            }
+        }
+    }
+
+    /**
+     * Append a captured network request/response entry
+     * @param {object} entry - Request/response data
+     */
+    async logRequest(entry) {
+        try {
+            if (!this.requestLogFile) return;
+            const line = JSON.stringify({ type: 'REQUEST', timestamp: new Date().toISOString(), ...entry }) + '\n';
+            await fs.appendFile(this.requestLogFile, line);
+        } catch (error) {
+            if (config.logSettings.enableDetailedLogging) {
+                console.error(`❌ Failed to log request: ${error.message}`);
+            }
+        }
+    }
+
+    /**
      * Format summary for human-readable output
      * @param {object} summary - Summary object
      * @returns {string} Formatted summary string
@@ -144,7 +205,7 @@ class Logger {
     formatSummary(summary) {
         const stats = summary.sessionStats;
 
-        return `📊 ARBITRAGE SESSION SUMMARY
+        return `\n\n📊 ARBITRAGE SESSION SUMMARY
 ${'='.repeat(60)}
 🕐 Session End: ${new Date(summary.timestamp).toLocaleString()}
 
@@ -166,9 +227,9 @@ ${'='.repeat(60)}
    • Total Volume: ${stats.totalVolume}
    • Total Fees Paid: $${stats.totalFeesUSD}
 
-${'='.repeat(60)}
-🎯 Session completed successfully!
-`;
+ ${'='.repeat(60)}
+ 🎯 Session completed successfully!
+ `;
     }
 
     /**
@@ -180,9 +241,9 @@ ${'='.repeat(60)}
             const stats = await fs.stat(this.logFile);
             const ageInDays = (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
 
-            if (ageInDays > maxAgeDays) {
-                await fs.writeFile(this.logFile, '');
-                console.log(`🧹 Cleared old log file (${ageInDays.toFixed(1)} days old)`);
+            // Never auto-delete logs; only log a notice if very old, preserving backtests
+            if (ageInDays > maxAgeDays && config.logSettings.enableDetailedLogging) {
+                console.log(`ℹ️ Log file is ${ageInDays.toFixed(1)} days old (preserved by config).`);
             }
         } catch (error) {
             // Ignore cleanup errors

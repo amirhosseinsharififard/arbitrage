@@ -2,6 +2,7 @@ import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } fr
 import config from "./config/config.js";
 import { priceService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
+import exchangeManager from "./exchanges/exchangeManager.js";
 
 // Cache for storing last profit calculations to avoid duplicate logging
 const lastProfits = new Map();
@@ -72,67 +73,88 @@ async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
  * @param {Map} exchanges - Map containing exchange instances
  */
 export async function printBidAskPairs(symbols, exchanges) {
-    // Fetch current prices from both exchanges
+    // Fetch current prices from both exchanges (now derived from latest order book)
     const prices = await priceService.getPricesFromExchanges(exchanges, symbols);
     const mexcPrice = prices.mexc;
     const lbankPrice = prices.lbank;
+
+    // Also fetch raw order books for more accurate depth-aware decisions
+    let mexcOb, lbankOb;
+    try {
+        const mexcEx = exchanges.get("mexc");
+        const lbankEx = exchanges.get("lbank");
+        [mexcOb, lbankOb] = await Promise.all([
+            mexcEx.fetchOrderBook(symbols.mexc),
+            lbankEx.fetchOrderBook(symbols.lbank)
+        ]);
+    } catch {}
 
     // Display current system status
     const status = getTradingStatus();
     console.log(`[STATUS] Open position: ${status.isAnyPositionOpen ? 'Yes' : 'No'} | Total P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)}`);
 
-    // Calculate current price differences for both directions
-    const mexcToLbankDiff = CalculationUtils.calculatePriceDifference(mexcPrice.bid, lbankPrice.ask);
-    const lbankToMexcDiff = CalculationUtils.calculatePriceDifference(lbankPrice.bid, mexcPrice.ask);
+    // Calculate current price differences for both directions using correct sides (buy at ASK, sell at BID)
+    const mexcToLbankDiff = CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid);
+    const lbankToMexcDiff = CalculationUtils.calculatePriceDifference(lbankPrice.ask, mexcPrice.bid);
 
-    // Log current price differences
-    console.log(`[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} Ask=${FormattingUtils.formatPrice(mexcPrice.ask)}`);
-    console.log(`[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} Ask=${FormattingUtils.formatPrice(lbankPrice.ask)}`);
-    console.log(`[DIFF] MEXC→LBANK: ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK→MEXC: ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+    // For logging: show both scenarios lines for clarity (values identical; labels differ)
+    console.log(`[Scenario-Amir] MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+    console.log(`[Scenario-Alireza] MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+
+    // Log current price differences in paired form for clarity, with absolute differences
+    const mexcBidVsLbankAskAbs = (mexcPrice.bid != null && lbankPrice.ask != null) ? (mexcPrice.bid - lbankPrice.ask) : null;
+    const lbankBidVsMexcAskAbs = (lbankPrice.bid != null && mexcPrice.ask != null) ? (lbankPrice.bid - mexcPrice.ask) : null;
+    const mexcBidVsLbankAskPct = CalculationUtils.calculatePriceDifference(mexcPrice.bid, lbankPrice.ask);
+    const lbankBidVsMexcAskPct = CalculationUtils.calculatePriceDifference(lbankPrice.bid, mexcPrice.ask);
+    console.log(`[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} | LBANK: Ask=${FormattingUtils.formatPrice(lbankPrice.ask)} | Δ=${mexcBidVsLbankAskAbs != null ? mexcBidVsLbankAskAbs.toFixed(6) : 'n/a'} (${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)})`);
+    console.log(`[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} | MEXC: Ask=${FormattingUtils.formatPrice(mexcPrice.ask)} | Δ=${lbankBidVsMexcAskAbs != null ? lbankBidVsMexcAskAbs.toFixed(6) : 'n/a'} (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)})`);
+    if (mexcOb && lbankOb) {
+        const mexcBestBid = mexcOb.bids && mexcOb.bids[0] ? { price: mexcOb.bids[0][0], amount: mexcOb.bids[0][1] } : null;
+        const mexcBestAsk = mexcOb.asks && mexcOb.asks[0] ? { price: mexcOb.asks[0][0], amount: mexcOb.asks[0][1] } : null;
+        const lbankBestBid = lbankOb.bids && lbankOb.bids[0] ? { price: lbankOb.bids[0][0], amount: lbankOb.bids[0][1] } : null;
+        const lbankBestAsk = lbankOb.asks && lbankOb.asks[0] ? { price: lbankOb.asks[0][0], amount: lbankOb.asks[0][1] } : null;
+        console.log(`[DEPTH] MEXC: bestBid=${mexcBestBid ? `${FormattingUtils.formatPrice(mexcBestBid.price)} x ${mexcBestBid.amount}` : 'n/a'} bestAsk=${mexcBestAsk ? `${FormattingUtils.formatPrice(mexcBestAsk.price)} x ${mexcBestAsk.amount}` : 'n/a'} | ` +
+                    `LBANK: bestBid=${lbankBestBid ? `${FormattingUtils.formatPrice(lbankBestBid.price)} x ${lbankBestBid.amount}` : 'n/a'} bestAsk=${lbankBestAsk ? `${FormattingUtils.formatPrice(lbankBestAsk.price)} x ${lbankBestAsk.amount}` : 'n/a'}`);
+    }
+    // Removed [DIFF] line per request
 
     // Check arbitrage opportunities and try to open positions
     if (!status.isAnyPositionOpen) {
-        // Check MEXC -> LBANK arbitrage opportunity
-        if (mexcToLbankDiff >= config.profitThresholdPercent) {
-            console.log(`🎯 ARBITRAGE OPPORTUNITY: MEXC→LBANK (${FormattingUtils.formatPercentage(mexcToLbankDiff)} >= ${FormattingUtils.formatPercentage(config.profitThresholdPercent)})`);
-            await tryOpenPosition(
-                symbols.mexc,
-                "mexc", // Buy from MEXC
-                "lbank", // Sell to LBANK
-                mexcPrice.bid, // Buying price in MEXC
-                lbankPrice.ask // Selling price in LBANK
-            );
-        }
-        // Check LBANK -> MEXC arbitrage opportunity
-        else if (lbankToMexcDiff >= config.profitThresholdPercent) {
-            console.log(`🎯 ARBITRAGE OPPORTUNITY: LBANK→MEXC (${FormattingUtils.formatPercentage(lbankToMexcDiff)} >= ${FormattingUtils.formatPercentage(config.profitThresholdPercent)})`);
-            await tryOpenPosition(
-                symbols.lbank,
-                "lbank", // Buy from LBANK
-                "mexc", // Sell to MEXC
-                lbankPrice.bid, // Buying price in LBANK
-                mexcPrice.ask // Selling price in MEXC
-            );
+        if (config.activeScenario === 'alireza') {
+            // Scenario Alireza: Only open if MEXC(ask)->LBANK(bid) spread is higher than LBANK(ask)->MEXC(bid)
+            if (mexcToLbankDiff > lbankToMexcDiff && mexcToLbankDiff >= config.profitThresholdPercent) {
+                console.log(`🎯 [Alireza] Open MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentage(mexcToLbankDiff)} > ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+                await tryOpenPosition(symbols.mexc, "mexc", "lbank", mexcPrice.ask, lbankPrice.bid);
+            }
+        } else {
+            // Scenario Amir: Keep current bid/ask arbitrage open logic (both directions allowed)
+            if (mexcToLbankDiff >= config.profitThresholdPercent) {
+                console.log(`🎯 [Amir] ARBITRAGE: MEXC→LBANK (${FormattingUtils.formatPercentage(mexcToLbankDiff)})`);
+                await tryOpenPosition(symbols.mexc, "mexc", "lbank", mexcPrice.ask, lbankPrice.bid);
+            } else if (lbankToMexcDiff >= config.profitThresholdPercent) {
+                console.log(`🎯 [Amir] ARBITRAGE: LBANK→MEXC (${FormattingUtils.formatPercentage(lbankToMexcDiff)})`);
+                await tryOpenPosition(symbols.lbank, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
+            }
         }
     }
 
     // Try to close open positions based on current market conditions
     if (status.isAnyPositionOpen) {
-        // For MEXC -> LBANK position
-        if (openPositions.has("mexc-lbank")) {
-            await tryClosePosition(
-                symbols.mexc,
-                mexcPrice.bid, // Current buying price in MEXC
-                lbankPrice.ask // Current selling price in LBANK
-            );
-        }
-        // For LBANK -> MEXC position
-        else if (openPositions.has("lbank-mexc")) {
-            await tryClosePosition(
-                symbols.lbank,
-                lbankPrice.bid, // Current buying price in LBANK
-                mexcPrice.ask // Current selling price in MEXC
-            );
+        if (config.activeScenario === 'alireza') {
+            // Close when LBANK(ask)->MEXC(bid) spread reaches 1%
+            if (openPositions.has("mexc-lbank") && lbankToMexcDiff >= 1) {
+                await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
+            }
+            if (openPositions.has("lbank-mexc") && lbankToMexcDiff >= 1) {
+                await tryClosePosition(symbols.lbank, lbankPrice.ask, mexcPrice.bid);
+            }
+        } else {
+            // Scenario Amir: normal close logic uses the existing open/close thresholds
+            if (openPositions.has("mexc-lbank")) {
+                await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
+            } else if (openPositions.has("lbank-mexc")) {
+                await tryClosePosition(symbols.lbank, lbankPrice.ask, mexcPrice.bid);
+            }
         }
     }
 

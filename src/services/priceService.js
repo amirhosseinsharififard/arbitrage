@@ -1,6 +1,7 @@
 import { retryWrapper } from "../error/errorBoundory.js";
 import config from "../config/config.js";
 import { ValidationUtils } from "../utils/validation.js";
+import logger from "../logging/logger.js";
 
 /**
  * Service for fetching and managing price data from exchanges
@@ -19,32 +20,28 @@ export class PriceService {
      */
     async getPrice(exchange, symbol) {
         try {
-            // First try to get price from ticker
-            const ticker = await retryWrapper(
-                exchange.fetchTicker.bind(exchange), [symbol],
-                config.errorHandling.maxRetries,
-                config.errorHandling.defaultRetryDelay
-            );
-
-            if (ticker.bid != null && ticker.ask != null) {
-                return { bid: ticker.bid, ask: ticker.ask };
-            }
-
-            // Fallback to orderbook if ticker doesn't have bid/ask
+            // Always use order book to reflect last microstructure (top-of-book)
             const orderbook = await retryWrapper(
                 exchange.fetchOrderBook.bind(exchange), [symbol],
                 config.errorHandling.maxRetries,
                 config.errorHandling.defaultRetryDelay
             );
 
-            const bestAsk = orderbook.asks.length ? orderbook.asks[0][0] : null;
-            const bestBid = orderbook.bids.length ? orderbook.bids[0][0] : null;
-
+            const bestAsk = orderbook.asks && orderbook.asks[0] ? orderbook.asks[0][0] : null;
+            const bestBid = orderbook.bids && orderbook.bids[0] ? orderbook.bids[0][0] : null;
+            await logger.logTrade("PRICE_ORDERBOOK", "DEBT/USDT:USDT", {
+                exchangeId: exchange.id,
+                bestBid,
+                bestAsk,
+                bidAmount: orderbook.bids && orderbook.bids[0] ? orderbook.bids[0][1] : null,
+                askAmount: orderbook.asks && orderbook.asks[0] ? orderbook.asks[0][1] : null
+            });
             return { bid: bestBid, ask: bestAsk };
         } catch (error) {
             console.error(
                 `[${exchange.id}] Failed to fetch price for ${symbol} after retries: ${error.message || error}`
             );
+            await logger.logTrade("PRICE_ERROR", symbol, { exchangeId: exchange.id, error: error.message || String(error) });
             return { bid: null, ask: null };
         }
     }
@@ -57,15 +54,15 @@ export class PriceService {
      */
     async getPricesFromExchanges(exchanges, symbols) {
         const exchangesObj = Object.fromEntries(exchanges);
-        const prices = {};
+        const entries = Object.entries(symbols)
+            .filter(([exchangeId]) => Boolean(exchangesObj[exchangeId]));
 
-        for (const [exchangeId, symbol] of Object.entries(symbols)) {
-            if (exchangesObj[exchangeId]) {
-                prices[exchangeId] = await this.getPrice(exchangesObj[exchangeId], symbol);
-            }
-        }
+        const results = await Promise.all(entries.map(async([exchangeId, symbol]) => {
+            const price = await this.getPrice(exchangesObj[exchangeId], symbol);
+            return [exchangeId, price];
+        }));
 
-        return prices;
+        return Object.fromEntries(results);
     }
 
     /**

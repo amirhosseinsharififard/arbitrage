@@ -1,5 +1,6 @@
 import statistics from "../monitoring/statistics.js";
 import logger from "../logging/logger.js";
+import config from "../config/config.js";
 import { FormattingUtils } from "../utils/index.js";
 
 /**
@@ -82,14 +83,24 @@ class ExitHandler {
             const summary = await statistics.generateProfitLossSummary();
 
             if (summary) {
-                // Display summary in console
-                await statistics.displaySessionSummary();
+                // Display summary in console (configurable)
+                if (config.logSettings.printSummaryToConsole) {
+                    await statistics.displaySessionSummary();
+                }
 
-                // Save to separate file
+                // Save to separate file (do not delete previous content)
+                // Always preserve session summary file and only overwrite contents if explicitly allowed by config
                 await logger.writeSummaryToFile(summary);
 
                 // Append to trades.log
                 await logger.appendSummaryToTradesLog(summary);
+
+                // Append a minimal last-exit line to summary file footer style
+                try {
+                    const ts = new Date().toISOString();
+                    await logger.appendLastExitFooter(ts);
+                    await logger.logRequest({ type: 'SESSION_EXIT', info: { lastExitAt: ts } });
+                } catch {}
 
                 console.log("✅ Session summary completed successfully!");
             } else {

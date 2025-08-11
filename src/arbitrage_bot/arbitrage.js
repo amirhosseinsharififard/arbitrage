@@ -2,6 +2,8 @@ import config from "../config/config.js";
 import logger from "../logging/logger.js";
 import statistics from "../monitoring/statistics.js";
 import { CalculationUtils, FormattingUtils } from "../utils/index.js";
+import { priceService } from "../services/index.js";
+import exchangeManager from "../exchanges/exchangeManager.js";
 
 // Map to store open arbitrage positions
 export const openPositions = new Map();
@@ -54,25 +56,53 @@ export async function tryOpenPosition(
         return;
     }
 
-    // Check if maximum number of trades has been reached
-    if (config.maxTrades > 0 && tradingState.totalTrades >= config.maxTrades) {
-        console.log(`[STOP] Maximum number of trades (${config.maxTrades}) reached. System stopped.`);
-        return;
-    }
+    // No trade limit (maxTrades=0 means unlimited)
 
     // Calculate price difference percentage between two exchanges
     const diffPercent = CalculationUtils.calculatePriceDifference(buyPrice, sellPrice);
 
     // Only open position if profit threshold is met
     if (diffPercent >= config.profitThresholdPercent) {
-        // Calculate volume for each exchange (100 USD each)
-        const buyVolume = config.tradeVolumeUSD / buyPrice; // Convert USD to coin volume
-        const sellVolume = config.tradeVolumeUSD / sellPrice; // Convert USD to coin volume
-
-        // Use the smaller volume to ensure we can execute both trades
-        const volume = Math.min(buyVolume, sellVolume);
+        // Optionally compute volume based on current order book depth top-of-book
+        let volume = config.tradeVolumeUSD / Math.max(buyPrice, sellPrice);
+        let orderbookSnapshot = null;
+        if (config.arbitrage.useOrderBookVolume && exchangeManager.isInitialized()) {
+            try {
+                const buyEx = exchangeManager.getExchange(buyExchangeId);
+                const sellEx = exchangeManager.getExchange(sellExchangeId);
+                const [buyOb, sellOb] = await Promise.all([
+                    buyEx.fetchOrderBook(symbol),
+                    sellEx.fetchOrderBook(symbol)
+                ]);
+                // For opening: we BUY at buy exchange best ASK, and SELL at sell exchange best BID
+                const buyBestAsk = buyOb.asks && buyOb.asks[0] ? { price: buyOb.asks[0][0], amount: buyOb.asks[0][1] } : null;
+                const sellBestBid = sellOb.bids && sellOb.bids[0] ? { price: sellOb.bids[0][0], amount: sellOb.bids[0][1] } : null;
+                // Use minimum available amount across sides
+                if (buyBestAsk && sellBestBid) {
+                    const desiredBaseQty = config.tradeVolumeUSD / Math.max(buyBestAsk.price, sellBestBid.price);
+                    volume = Math.min(desiredBaseQty, buyBestAsk.amount, sellBestBid.amount);
+                }
+                const sellBestAsk = sellOb.asks && sellOb.asks[0] ? { price: sellOb.asks[0][0], amount: sellOb.asks[0][1] } : null;
+                const buyBestBid = buyOb.bids && buyOb.bids[0] ? { price: buyOb.bids[0][0], amount: buyOb.bids[0][1] } : null;
+                orderbookSnapshot = {
+                    buyExchange: buyExchangeId,
+                    sellExchange: sellExchangeId,
+                    buyBestAsk,
+                    buyBestBid,
+                    sellBestBid,
+                    sellBestAsk
+                };
+            } catch {}
+        }
         const totalInvestmentUSD = CalculationUtils.calculateTotalInvestment(volume, buyPrice, sellPrice);
         const expectedProfitUSD = CalculationUtils.calculateExpectedProfit(diffPercent, config.tradeVolumeUSD);
+        const feesPercentTotal = (config.feesPercent[buyExchangeId] || 0) + (config.feesPercent[sellExchangeId] || 0);
+        const openDirectionDiffPercent = (orderbookSnapshot && orderbookSnapshot.buyBestAsk && orderbookSnapshot.sellBestBid) ?
+            CalculationUtils.calculatePriceDifference(orderbookSnapshot.buyBestAsk.price, orderbookSnapshot.sellBestBid.price) :
+            diffPercent;
+        const oppositeDirectionDiffPercent = (orderbookSnapshot && orderbookSnapshot.sellBestAsk && orderbookSnapshot.buyBestBid) ?
+            CalculationUtils.calculatePriceDifference(orderbookSnapshot.sellBestAsk.price, orderbookSnapshot.buyBestBid.price) :
+            null;
 
         const position = {
             arbitrageId,
@@ -104,7 +134,20 @@ export async function tryOpenPosition(
             volume,
             diffPercent: FormattingUtils.formatPercentage(diffPercent),
             totalInvestmentUSD: FormattingUtils.formatCurrency(totalInvestmentUSD),
-            expectedProfitUSD: FormattingUtils.formatCurrency(expectedProfitUSD)
+            expectedProfitUSD: FormattingUtils.formatCurrency(expectedProfitUSD),
+            details: {
+                openTime: new Date().toISOString(),
+                orderbookAtOpen: orderbookSnapshot,
+                profitBreakdown: {
+                    grossDiffPercent: FormattingUtils.formatPercentage(diffPercent),
+                    feesPercentTotal: FormattingUtils.formatPercentage(feesPercentTotal),
+                    netExpectedDiffPercent: FormattingUtils.formatPercentage(diffPercent - feesPercentTotal)
+                },
+                spreads: {
+                    openDirection: FormattingUtils.formatPercentage(openDirectionDiffPercent),
+                    oppositeDirection: oppositeDirectionDiffPercent != null ? FormattingUtils.formatPercentage(oppositeDirectionDiffPercent) : null
+                }
+            }
         });
 
         // Record trade opening in statistics
@@ -147,12 +190,8 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
         // Calculate net profit after fees
         const netProfitPercent = currentProfitPercent - totalFees;
 
-        // Position closing conditions:
-        // 1. Current price difference is <= close threshold (profit taken)
-        // 2. Or loss is too high (to prevent further losses)
-        const shouldClose =
-            currentDiffPercent <= config.closeThresholdPercent ||
-            netProfitPercent <= config.maxLossPercent;
+        // Position closing conditions for default scenario (Amir)
+        const shouldClose = currentDiffPercent <= config.closeThresholdPercent;
 
         if (shouldClose) {
             const closeTime = new Date().toISOString();
@@ -163,6 +202,27 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
             tradingState.lastTradeProfit = actualProfitUSD;
             tradingState.totalTrades++;
             tradingState.totalInvestment -= position.totalInvestmentUSD;
+
+            // Fetch latest order books to capture closing snapshot
+            let orderbookSnapshotAtClose = null;
+            if (exchangeManager.isInitialized()) {
+                try {
+                    const buyEx = exchangeManager.getExchange(position.buyExchangeId);
+                    const sellEx = exchangeManager.getExchange(position.sellExchangeId);
+                    const [buyOb, sellOb] = await Promise.all([
+                        buyEx.fetchOrderBook(symbol),
+                        sellEx.fetchOrderBook(symbol)
+                    ]);
+                    const buyBestAskNow = buyOb.asks && buyOb.asks[0] ? { price: buyOb.asks[0][0], amount: buyOb.asks[0][1] } : null;
+                    const sellBestBidNow = sellOb.bids && sellOb.bids[0] ? { price: sellOb.bids[0][0], amount: sellOb.bids[0][1] } : null;
+                    orderbookSnapshotAtClose = {
+                        buyExchange: position.buyExchangeId,
+                        sellExchange: position.sellExchangeId,
+                        buyBestAskNow,
+                        sellBestBidNow
+                    };
+                } catch {}
+            }
 
             // Log the arbitrage position closing
             await logger.logTrade("ARBITRAGE_CLOSE", symbol, {
@@ -180,7 +240,11 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
                 actualProfitUSD: FormattingUtils.formatCurrency(actualProfitUSD),
                 totalFees: FormattingUtils.formatPercentage(totalFees),
                 closeReason: currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered',
-                tradeNumber: tradingState.totalTrades
+                tradeNumber: tradingState.totalTrades,
+                details: {
+                    closeTime,
+                    orderbookAtClose: orderbookSnapshotAtClose
+                }
             });
 
             // Record trade closing in statistics

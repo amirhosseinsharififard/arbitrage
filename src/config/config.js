@@ -14,8 +14,8 @@ const config = {
     profitThresholdPercent: 2, // Percentage threshold for opening a trade
     closeThresholdPercent: 1, // Percentage threshold for closing a trade
     tradeVolumeUSD: 100, // Dollar volume for each trade
-    maxTrades: 10, // Maximum number of trades (0 = unlimited)
-    maxLossPercent: -5, // Maximum allowed loss percentage
+    maxTrades: 0, // Maximum number of trades (0 = unlimited)
+    maxLossPercent: -1000, // Stop-loss disabled (effectively never triggers)
 
     // Exchange fees
     feesPercent: {
@@ -45,7 +45,14 @@ const config = {
         summaryUpdateInterval: 10, // How often to update summary
         enableDetailedLogging: true,
         logFile: "trades.log",
-        summaryFile: "session_summary.txt"
+        summaryFile: "session_summary.txt",
+        // New flags for persistence and console behavior
+        clearOnStartup: false,
+        preserveLogs: true,
+        preserveSummary: true,
+        printSummaryToConsole: false,
+        printStatusToConsole: false,
+        requestLogFile: "requests.log"
     },
 
     // Arbitrage validation
@@ -54,7 +61,9 @@ const config = {
         enableVolumeValidation: true,
         enableFeeCalculation: true,
         enableThresholdFiltering: false, // Enable profit threshold filtering
-        defaultThresholdPercent: 0.5 // Default threshold for profit logging
+        defaultThresholdPercent: 0.5, // Default threshold for profit logging
+        // Use order book top-of-book volumes to cap trade volume
+        useOrderBookVolume: true
     },
 
     // Error handling and retry settings
@@ -83,6 +92,21 @@ const config = {
         enableEmojis: true,
         enableColor: true,
         separatorLength: 60
+    },
+
+    // Scenario control
+    activeScenario: 'amir', // 'amir' or 'alireza'
+    scenarios: {
+        amir: {
+            // Open if either direction meets threshold (uses profitThresholdPercent)
+            enabled: true
+        },
+        alireza: {
+            // Open only if MEXC(ask)->LBANK(bid) is greater than the opposite
+            openThresholdPercent: 0.5,
+            // Close when LBANK(ask)->MEXC(bid) reaches this percent
+            closeAtPercent: 1
+        }
     },
 
     // File paths

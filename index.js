@@ -6,6 +6,7 @@ import exitHandler from "./src/system/exitHandler.js";
 import { getTradingStatus } from "./src/arbitrage_bot/arbitrage.js";
 import statistics from "./src/monitoring/statistics.js";
 import logger from "./src/logging/logger.js";
+import { FormattingUtils } from "./src/utils/index.js";
 
 /**
  * Initialize the system on startup
@@ -14,7 +15,7 @@ async function initializeSystem() {
     try {
         console.log("🚀 Initializing arbitrage system...");
 
-        // Clear log files on startup
+        // Respect persistence flags: do not clear logs/summaries if preserve flags are true (default true)
         await logger.clearLogFiles();
 
         // Reset session statistics
@@ -32,7 +33,12 @@ async function initializeSystem() {
  */
 function displayTradingStatus() {
     const status = getTradingStatus();
-    statistics.displayFullStatus(status);
+    const amirPnL = 0; // placeholder aggregate until we track per-scenario P&L
+    const alirezaPnL = 0;
+    console.log(`P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)} | amir:${FormattingUtils.formatCurrency(amirPnL)} | alireza:${FormattingUtils.formatCurrency(alirezaPnL)} |`);
+    if (config.logSettings.printStatusToConsole) {
+        statistics.displayFullStatus(status);
+    }
 }
 
 /**
