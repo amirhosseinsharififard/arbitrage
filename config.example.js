@@ -21,26 +21,25 @@ const config = {
     // Trading thresholds and risk management
     profitThresholdPercent: 2, // Minimum profit percentage to open a new position
     closeThresholdPercent: 1, // Profit percentage threshold to close an open position
-    
+
     // ============================================================================
     // TRADING MODE CONFIGURATION
     // ============================================================================
-    
+
     // Choose your trading mode:
     // "USD" = Dollar amount-based trading (traditional)
     // "TOKEN" = Token quantity-based trading (new feature)
     tradingMode: "USD", // Change this to "TOKEN" for token-based trading
-    
+
     // USD-Based Trading Configuration (when tradingMode = "USD")
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
-    
+
     // Token Quantity-Based Trading Configuration (when tradingMode = "TOKEN")
     targetTokenQuantity: 1000, // Target number of tokens to trade (e.g., 1000 DEBT tokens)
-    maxTokenQuantity: 10000,   // Maximum token quantity allowed for safety
-    minTokenQuantity: 100,     // Minimum token quantity for validation
-    
+    maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
+    minTokenQuantity: 100, // Minimum token quantity for validation
+
     maxTrades: 0, // Maximum number of trades (0 = unlimited)
-    maxLossPercent: -10000, // Stop-loss threshold (disabled with large negative value)
 
     // Exchange fee configuration (percentage of trade value)
     // Set to 0 for testing, adjust based on actual exchange fees

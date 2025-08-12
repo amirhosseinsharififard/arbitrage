@@ -211,7 +211,6 @@ src/
 
 ### **Position Limits**
 - **Single Position**: Only one arbitrage position open at a time
-- **Maximum Loss**: Configurable stop-loss thresholds
 - **Volume Limits**: Respects exchange liquidity and account balance
 
 ### **Validation Checks**

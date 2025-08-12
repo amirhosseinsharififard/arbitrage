@@ -160,7 +160,7 @@ export async function printBidAskPairs(symbols, exchanges) {
     const lbankBidVsMexcAskPct = CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid);
 
     // Display current system status and basic information
-    console.log(`[STATUS] Open position: ${status.isAnyPositionOpen ? 'Yes' : 'No'} | Total P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)}`);
+    console.log(`[STATUS] Open positions: ${status.openPositionsCount} | Total P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)} | Total tokens: ${FormattingUtils.formatVolume(status.totalOpenTokens ?? 0)}`);
     console.log(`[Arbitrage] LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcProfit)} | MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentage(mexcToLbankProfit)}`);
 
     // Log current price differences in paired form for clarity
@@ -187,48 +187,37 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     // Position monitoring and closing logic
     // Only show detailed logs when there's an open position or when opening/closing
-    if (status.isAnyPositionOpen) {
+    if (status.openPositionsCount > 0) {
         console.log(`[CLOSE_CHECK] mexcBidVsLbankAskPct: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} | Close Threshold: ${config.scenarios.alireza.closeAtPercent}%`);
     }
 
     // Check arbitrage opportunities and try to open new positions
-    if (!status.isAnyPositionOpen) {
-        // Check if LBANK->MEXC direction meets profit threshold
-        if (lbankToMexcProfit >= config.profitThresholdPercent) {
-            console.log(`🎯 Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Profitable!)`);
-            await tryOpenPosition(symbols.lbank, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
-        } else {
-            // Show why no trade is opened
-            console.log(`⏳ No profitable LBANK->MEXC opportunity: ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Threshold: ${config.profitThresholdPercent}%)`);
-            console.log(`ℹ️  MEXC->LBANK direction: ${FormattingUtils.formatPercentage(mexcToLbankProfit)} (Not used for opening)`);
-        }
+    // Opening logic: allow multiple positions; rely on internal caps and validations
+    if (lbankToMexcProfit >= config.profitThresholdPercent) {
+        console.log(`🎯 Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Profitable!)`);
+        await tryOpenPosition(symbols.lbank, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
+    } else {
+        console.log(`⏳ No profitable LBANK->MEXC opportunity: ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Threshold: ${config.profitThresholdPercent}%)`);
+        console.log(`ℹ️  MEXC->LBANK direction: ${FormattingUtils.formatPercentage(mexcToLbankProfit)} (Not used for opening)`);
     }
 
     // Position closing logic
     // Try to close open positions based on current market conditions
-    if (status.isAnyPositionOpen) {
-        // Check if we have a LBANK->MEXC position to close
-        if (openPositions.has("lbank-mexc")) {
-            // Close when current profit reaches the close threshold
-            if (mexcBidVsLbankAskPct <= config.scenarios.alireza.closeAtPercent) {
-                console.log(`🎯 Closing LBANK->MEXC position: mexcBidVsLbankAskPct (${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
-                await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
-            } else {
-                // Show current position status
-                console.log(`📊 LBANK->MEXC position open: Current P&L: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
-            }
+    if (status.openPositionsCount > 0) {
+        if (mexcBidVsLbankAskPct <= config.scenarios.alireza.closeAtPercent) {
+            console.log(`🎯 Closing eligible positions: mexcBidVsLbankAskPct (${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
+            await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
         } else {
-            // No position found to close
-            console.log(`⚠️  No LBANK->MEXC position found to close`);
+            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
         }
     }
 
     // Display current status and monitoring information
     if (config.logSettings.printStatusToConsole) {
-        console.log(`📊 [${new Date().toLocaleTimeString()}] Status: ${status.isAnyPositionOpen ? 'Position Open' : 'No Position'} | P&L: ${FormattingUtils.formatCurrency(status.totalProfit)}`);
+        console.log(`📊 [${new Date().toLocaleTimeString()}] Status: ${status.openPositionsCount > 0 ? `${status.openPositionsCount} Positions Open` : 'No Position'} | P&L: ${FormattingUtils.formatCurrency(status.totalProfit)}`);
         
         // Show separator when there's an open position for better visual organization
-        if (status.isAnyPositionOpen) {
+        if (status.openPositionsCount > 0) {
             console.log(FormattingUtils.createSeparator());
         }
     }
