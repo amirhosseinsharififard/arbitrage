@@ -1,112 +1,284 @@
-# Arbitrage Trading Bot
+# Arbitrage Trading System
 
-This project performs cross-exchange arbitrage using `ccxt` with detailed trade logging and a single, consistent trading strategy: buy at `LBANK` ask and sell at `MEXC` bid for symbol `DEBT/USDT:USDT`.
+A sophisticated cryptocurrency arbitrage trading system that automatically identifies and executes profitable trading opportunities between different exchanges. The system supports both USD-based and token quantity-based trading modes with comprehensive logging and risk management.
 
-## Run
+## 🚀 Key Features
 
-```bash
-node index.js
-```
+### **Dual Trading Modes**
+- **USD-Based Trading**: Traditional dollar amount-based trading (e.g., $200 total investment)
+- **Token Quantity-Based Trading**: Trade based on specific token quantities (e.g., 1000 DEBT tokens)
 
-## Core Behavior
+### **Accurate Profit Calculations**
+- **Corrected `actualProfitUSD`**: Now uses the accurate formula: `TotalInvestmentUSD × (netProfitPercent / 100)`
+- **Accurate `volume`**: Represents actual token count, not scaled values: `TotalInvestmentUSD / buyPrice`
+- **Transparent Scaling**: All calculations are explicit and documented in the code
 
-- One open position at a time
-- Opens only when LBANK(ask)->MEXC(bid) profit ≥ `profitThresholdPercent`
-- Closes when MEXC(bid) vs LBANK(ask) profit ≤ `scenarios.alireza.closeAtPercent`
-- Considers configured fees in P&L calculations
-- Writes precise, structured logs for every open/close
+### **Advanced Trading Logic**
+- **Sequential Trading**: Only one position open at a time for risk management
+- **Token Quantity Continuation**: Automatically continues buying/selling if target quantity isn't met
+- **Liquidity Validation**: Uses order book data to ensure trade execution feasibility
+- **Dynamic Volume Calculation**: Adjusts trade size based on available liquidity and account balance
 
-## Configuration
+### **Comprehensive Logging**
+- **Detailed Trade Logs**: Complete JSON logs for all open/close events
+- **Performance Metrics**: Real-time profit/loss tracking and statistics
+- **Order Book Snapshots**: Market condition capture at trade open/close
+- **Continuation Tracking**: Detailed logs for token quantity continuation trades
 
-Edit `src/config/config.js`:
+## 📊 Trading Strategy
 
+### **Core Arbitrage Logic**
+1. **Buy at LBANK ask price** (lower price)
+2. **Sell at MEXC bid price** (higher price)
+3. **Profit from price difference** between exchanges
+4. **Maintain single position** for risk management
+
+### **Profit Calculation**
 ```javascript
-symbols: { mexc: "DEBT/USDT:USDT", lbank: "DEBT/USDT:USDT" }
-intervalMs: 100
-profitThresholdPercent: 2
-closeThresholdPercent: 1
-tradeVolumeUSD: 200
-feesPercent: { mexc: 0, lbank: 0 }
-logSettings.loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"]
-scenarios.alireza: { openThresholdPercent: 0.5, closeAtPercent: 1.5 }
+// Corrected formula for actual profit calculation
+actualProfitUSD = TotalInvestmentUSD × (netProfitPercent / 100)
+
+// Where:
+// - TotalInvestmentUSD = actual amount invested in the position
+// - netProfitPercent = gross profit % minus total fees %
 ```
 
-## Detailed Trade Log Format
+### **Volume Calculation**
+```javascript
+// For USD-based trading:
+volume = (tradeVolumeUSD / 2) / buyPrice
 
-All entries are newline-delimited JSON in `trades.log`.
+// For token quantity-based trading:
+volume = targetTokenQuantity
 
-### ARBITRAGE_OPEN
+// Both represent actual token count, not scaled values
+```
+
+## ⚙️ Configuration
+
+### **Trading Mode Selection**
+```javascript
+// In config.js
+tradingMode: "USD", // "USD" or "TOKEN"
+```
+
+### **USD-Based Trading**
+```javascript
+tradeVolumeUSD: 200, // Total investment across both exchanges
+// Results in $100 per side (buy and sell)
+```
+
+### **Token Quantity-Based Trading**
+```javascript
+tradingMode: "TOKEN",
+targetTokenQuantity: 1000, // Target number of tokens to trade
+maxTokenQuantity: 10000,   // Maximum allowed for safety
+minTokenQuantity: 100      // Minimum for validation
+```
+
+### **Profit Thresholds**
+```javascript
+profitThresholdPercent: 2,    // Minimum % to open position
+closeThresholdPercent: 1,     // % threshold to close position
+```
+
+## 🔄 Token Quantity Continuation
+
+### **How It Works**
+1. **Initial Trade**: Opens position for target token quantity
+2. **Quantity Check**: Monitors if target quantity was achieved
+3. **Continuation Logic**: If shortfall exists and conditions are met:
+   - Calculate remaining quantity needed
+   - Check available account balance
+   - Validate profit conditions still exist
+   - Open continuation position
+   - Respect liquidity constraints
+
+### **Continuation Example**
+```javascript
+// Target: 1000 DEBT tokens
+// Initial trade: 800 DEBT tokens (limited by liquidity)
+// Continuation: 200 DEBT tokens (remaining needed)
+// Result: Total 1000 DEBT tokens achieved
+```
+
+### **Safety Features**
+- **Balance Validation**: Ensures sufficient funds before continuation
+- **Profit Threshold Check**: Only continues if profitable conditions persist
+- **Liquidity Respect**: Limits continuation volume to available market depth
+- **Maximum Limits**: Configurable upper bounds for safety
+
+## 📈 Logging and Monitoring
+
+### **Trade Log Structure**
 ```json
 {
   "action": "ARBITRAGE_OPEN",
   "symbol": "DEBT/USDT:USDT",
-  "timestamp": "2025-01-01T12:00:00.000Z",
-  "arbitrageId": "lbank-mexc",
-  "buyExchangeId": "lbank",
-  "sellExchangeId": "mexc",
-  "buyPrice": 1.000100,
-  "sellPrice": 1.020200,
-  "volume": 100.000000,
-  "buyAmount": 100.000000,
-  "sellAmount": 100.000000,
-  "buyCostUSD": "$100.01",
-  "sellProceedsUSD": "$102.02",
-  "diffPercent": "2.020%",
-  "totalInvestmentUSD": "$202.03",
-  "expectedProfitUSD": "$4.08",
-  "details": {
-    "openTime": "2025-01-01T12:00:00.000Z",
-    "orderbookAtOpen": { "buyExchange": "lbank", "sellExchange": "mexc" },
-    "profitBreakdown": {
-      "grossDiffPercent": "2.020%",
-      "feesPercentTotal": "0.000%",
-      "netExpectedDiffPercent": "2.020%",
-      "estimatedFeesUSD": "$0.00"
-    },
-    "spreads": { "openDirection": "2.020%", "oppositeDirection": null }
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "data": {
+    "arbitrageId": "lbank-mexc",
+    "tradingMode": "TOKEN",
+    "targetTokenQuantity": 1000,
+    "volume": 1000,
+    "buyPrice": 0.001,
+    "sellPrice": 0.00102,
+    "totalInvestmentUSD": 2.04,
+    "expectedProfitUSD": 0.0408,
+    "details": {
+      "profitBreakdown": {
+        "grossDiffPercent": "2.0%",
+        "feesPercentTotal": "0.0%",
+        "netExpectedDiffPercent": "2.0%"
+      }
+    }
   }
 }
 ```
 
-### ARBITRAGE_CLOSE
+### **Close Log Structure**
 ```json
 {
   "action": "ARBITRAGE_CLOSE",
   "symbol": "DEBT/USDT:USDT",
-  "timestamp": "2025-01-01T12:05:00.000Z",
-  "arbitrageId": "lbank-mexc",
-  "buyExchangeId": "lbank",
-  "sellExchangeId": "mexc",
-  "originalBuyPrice": 1.000100,
-  "originalSellPrice": 1.020200,
-  "currentBuyPrice": 1.010000,
-  "currentSellPrice": 1.030000,
-  "volume": 100.000000,
-  "buyAmount": 100.000000,
-  "sellAmount": 100.000000,
-  "originalDiffPercent": "2.020%",
-  "currentDiffPercent": "1.980%",
-  "netProfitPercent": "0.040%",
-  "actualProfitUSD": "$0.08",
-  "totalFees": "0.000%",
-  "durationMs": 300000,
-  "closeReason": "Target profit reached",
-  "tradeNumber": 1,
-  "details": { "closeTime": "2025-01-01T12:05:00.000Z" }
+  "timestamp": "2024-01-01T12:05:00.000Z",
+  "data": {
+    "arbitrageId": "lbank-mexc",
+    "volume": 1000,
+    "actualProfitUSD": 0.0408,
+    "totalInvestmentUSD": 2.04,
+    "netProfitPercent": "2.0%",
+    "profitCalculation": {
+      "formula": "actualProfitUSD = TotalInvestmentUSD × (netProfitPercent / 100)",
+      "totalInvestmentUSD": 2.04,
+      "netProfitPercent": 2.0,
+      "calculatedProfit": 0.0408
+    }
+  }
 }
 ```
 
-## Files
+## 🛠️ Installation and Setup
 
-- `index.js`: main loop and lifecycle
-- `src/prices.js`: price fetch and open/close checks
-- `src/arbitrage_bot/arbitrage.js`: open/close logic and state
-- `src/logging/logger.js`: structured logging
-- `src/monitoring/statistics.js`: session stats and display
-- `src/exchanges/exchangeManager.js`: ccxt exchange init/helpers
+### **Prerequisites**
+- Node.js 16+ 
+- CCXT library for exchange integration
+- API keys for MEXC and LBank exchanges
 
-## Notes
+### **Installation**
+```bash
+npm install
+```
 
-- Strategy is single-direction; opposite direction is shown for info only.
-- Logs are precise and ready for analytics ingestion.
-- Only ARBITRAGE_OPEN/ARBITRAGE_CLOSE actions are persisted in `trades.log`.
+### **Configuration**
+1. Copy `config.example.js` to `config.js`
+2. Set your API keys and trading parameters
+3. Choose trading mode (USD or TOKEN)
+4. Set profit thresholds and volume limits
+
+### **Running the System**
+```bash
+npm start
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── arbitrage_bot/
+│   └── arbitrage.js          # Core arbitrage logic and position management
+├── config/
+│   └── config.js             # Centralized configuration
+├── exchanges/
+│   └── exchangeManager.js    # Exchange connection management
+├── logging/
+│   └── logger.js             # Comprehensive logging system
+├── monitoring/
+│   └── statistics.js         # Performance tracking and statistics
+├── services/
+│   ├── priceService.js       # Real-time price data management
+│   ├── requestRecorder.js    # Network request monitoring
+│   └── requestCapture.js     # Request/response capture
+├── utils/
+│   ├── calculations.js       # Mathematical utilities
+│   ├── formatting.js         # Data formatting functions
+│   ├── validation.js         # Input validation
+│   └── orderbook.js          # Order book analysis
+└── prices.js                 # Main price monitoring and arbitrage detection
+```
+
+## 🔒 Risk Management
+
+### **Position Limits**
+- **Single Position**: Only one arbitrage position open at a time
+- **Maximum Loss**: Configurable stop-loss thresholds
+- **Volume Limits**: Respects exchange liquidity and account balance
+
+### **Validation Checks**
+- **Profit Thresholds**: Minimum profit requirements before trading
+- **Liquidity Validation**: Order book depth verification
+- **Balance Checks**: Account balance validation before trades
+- **Fee Calculation**: Accurate profit calculation including all fees
+
+## 📊 Performance Monitoring
+
+### **Real-Time Statistics**
+- **Session Tracking**: Profit/loss across trading sessions
+- **Trade History**: Detailed log of all completed trades
+- **Performance Metrics**: Win rate, average profit, drawdown analysis
+- **Request Monitoring**: Network performance and error tracking
+
+### **Console Output**
+- **Status Updates**: Real-time trading status and position information
+- **Trade Details**: Comprehensive trade execution information
+- **Performance Summary**: Session statistics and profit/loss summary
+- **Error Reporting**: Detailed error messages and recovery information
+
+## 🚨 Error Handling
+
+### **Network Resilience**
+- **Automatic Retries**: Configurable retry attempts for failed operations
+- **Connection Recovery**: Automatic reconnection to exchanges
+- **Graceful Degradation**: Continue operation with reduced functionality
+
+### **Data Validation**
+- **Price Validation**: Verify price data integrity
+- **Volume Validation**: Ensure sufficient liquidity exists
+- **Balance Validation**: Confirm sufficient funds before trading
+
+## 🔧 Customization
+
+### **Adding New Exchanges**
+1. Add exchange configuration to `config.js`
+2. Implement exchange-specific logic in `exchangeManager.js`
+3. Update arbitrage logic for new exchange pairs
+
+### **Modifying Trading Strategy**
+1. Adjust profit thresholds in `config.js`
+2. Modify position opening/closing logic in `arbitrage.js`
+3. Update risk management parameters
+
+### **Extending Logging**
+1. Add new log actions to `config.js`
+2. Implement logging logic in `logger.js`
+3. Update monitoring and statistics tracking
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add comprehensive tests
+5. Submit a pull request
+
+## ⚠️ Disclaimer
+
+This software is for educational and research purposes. Cryptocurrency trading involves significant risk. Use at your own risk and never invest more than you can afford to lose.
+
+## 📞 Support
+
+For questions and support, please open an issue in the GitHub repository.

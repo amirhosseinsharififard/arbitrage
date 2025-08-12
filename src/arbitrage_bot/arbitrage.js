@@ -55,6 +55,7 @@ function generateArbitrageId(buyExchangeId, sellExchangeId) {
  * - Sell at MEXC bid price (higher price)
  * - Only open if profit threshold is met
  * - Calculate optimal volume based on available liquidity
+ * - Support both USD-based and token quantity-based trading modes
  * 
  * @param {string} symbol - Trading symbol (e.g., "DEBT/USDT:USDT")
  * @param {string} buyExchangeId - Exchange to buy from (e.g., "lbank")
@@ -84,10 +85,20 @@ export async function tryOpenPosition(
 
     // Only proceed if profit threshold is met
     if (diffPercent >= config.profitThresholdPercent) {
-        // Calculate trade volume based on configured investment amount
-        // We invest $100 on each side (buy and sell) for a total of $200
-        const investmentPerSide = config.tradeVolumeUSD / 2;
-        let volume = investmentPerSide / buyPrice; // Volume based on buy price
+        let volume, investmentPerSide, totalInvestmentUSD;
+
+        // Determine trading mode and calculate volume accordingly
+        if (config.tradingMode === "TOKEN") {
+            // Token quantity-based trading
+            volume = config.targetTokenQuantity; // Use specified token quantity
+            investmentPerSide = volume * buyPrice; // Calculate USD needed for this token quantity
+            totalInvestmentUSD = investmentPerSide * 2; // Total across both sides
+        } else {
+            // USD-based trading (default)
+            investmentPerSide = config.tradeVolumeUSD / 2; // We invest $100 on each side
+            volume = investmentPerSide / buyPrice; // Volume based on buy price
+            totalInvestmentUSD = config.tradeVolumeUSD; // Total investment amount
+        }
 
         // Fetch order book data to validate liquidity and calculate optimal volume
         let orderbookSnapshot = null;
@@ -116,12 +127,21 @@ export async function tryOpenPosition(
 
                 // Calculate optimal volume based on available liquidity and desired investment
                 if (buyBestAsk && sellBestBid) {
-                    // Calculate volume based on $100 investment on buy side
-                    const buyVolume = investmentPerSide / buyBestAsk.price;
-                    // Calculate volume based on $100 investment on sell side  
-                    const sellVolume = investmentPerSide / sellBestBid.price;
-                    // Use the smaller volume to ensure both sides can be executed
-                    volume = Math.min(buyVolume, sellVolume, buyBestAsk.amount, sellBestBid.amount);
+                    if (config.tradingMode === "TOKEN") {
+                        // For token-based trading, ensure we don't exceed available liquidity
+                        const maxVolumeFromLiquidity = Math.min(buyBestAsk.amount, sellBestBid.amount);
+                        volume = Math.min(volume, maxVolumeFromLiquidity);
+                        // Recalculate investment based on actual volume
+                        investmentPerSide = volume * buyPrice;
+                        totalInvestmentUSD = investmentPerSide * 2;
+                    } else {
+                        // USD-based trading: calculate volume based on $100 investment on buy side
+                        const buyVolume = investmentPerSide / buyBestAsk.price;
+                        // Calculate volume based on $100 investment on sell side  
+                        const sellVolume = investmentPerSide / sellBestBid.price;
+                        // Use the smaller volume to ensure both sides can be executed
+                        volume = Math.min(buyVolume, sellVolume, buyBestAsk.amount, sellBestBid.amount);
+                    }
                 }
 
                 // Store order book snapshot for logging and analysis
@@ -151,7 +171,6 @@ export async function tryOpenPosition(
         // Calculate financial metrics for the position
         const buyCostUSD = volume * buyPrice; // Total cost to buy the asset
         const sellProceedsUSD = volume * sellPrice; // Total proceeds from selling
-        const totalInvestmentUSD = buyCostUSD + sellProceedsUSD; // Total notional value
         const expectedProfitUSD = (diffPercent / 100) * totalInvestmentUSD; // Expected profit
 
         // Calculate total fees for both exchanges
@@ -174,13 +193,15 @@ export async function tryOpenPosition(
             sellExchangeId, // Exchange to sell to
             buyPrice, // Price at which we buy
             sellPrice, // Price at which we sell
-            volume, // Trade volume in asset units
+            volume, // Trade volume in asset units (actual token count)
             openTime: new Date().toISOString(), // Timestamp when position was opened
             totalInvestmentUSD, // Total notional value of the position
             expectedProfitUSD, // Expected profit based on price difference
             buyOrderId: null, // Will be filled when buy order is placed
             sellOrderId: null, // Will be filled when sell order is placed
-            status: 'OPENING' // Current position status
+            status: 'OPENING', // Current position status
+            tradingMode: config.tradingMode, // USD or TOKEN based trading
+            targetTokenQuantity: config.tradingMode === "TOKEN" ? config.targetTokenQuantity : null // Target tokens if applicable
         };
 
         // Store the position and update global state
@@ -195,7 +216,7 @@ export async function tryOpenPosition(
             sellExchangeId,
             buyPrice,
             sellPrice,
-            volume,
+            volume, // Actual token count (not scaled)
             buyAmount: volume, // Amount to buy
             sellAmount: volume, // Amount to sell
             buyCostUSD: FormattingUtils.formatCurrency(buyCostUSD), // Cost to buy
@@ -203,6 +224,8 @@ export async function tryOpenPosition(
             diffPercent: FormattingUtils.formatPercentage(diffPercent),
             totalInvestmentUSD: FormattingUtils.formatCurrency(totalInvestmentUSD),
             expectedProfitUSD: FormattingUtils.formatCurrency(expectedProfitUSD),
+            tradingMode: config.tradingMode, // Log the trading mode used
+            targetTokenQuantity: config.tradingMode === "TOKEN" ? config.targetTokenQuantity : null,
             details: {
                 openTime: new Date().toISOString(),
                 orderbookAtOpen: orderbookSnapshot, // Order book snapshot at opening
@@ -226,20 +249,23 @@ export async function tryOpenPosition(
         });
 
         // Display trade opening information in console
+        const modeIndicator = config.tradingMode === "TOKEN" ? `[TOKEN:${config.targetTokenQuantity}]` : `[USD:${config.tradeVolumeUSD}]`;
         console.log(
-            `🎯 [ARBITRAGE_OPEN] ${symbol} | Buy@${FormattingUtils.formatPrice(buyPrice)} from ${buyExchangeId} | Sell@${FormattingUtils.formatPrice(sellPrice)} to ${sellExchangeId} | ` +
+            `🎯 [ARBITRAGE_OPEN] ${symbol} ${modeIndicator} | Buy@${FormattingUtils.formatPrice(buyPrice)} from ${buyExchangeId} | Sell@${FormattingUtils.formatPrice(sellPrice)} to ${sellExchangeId} | ` +
             `Vol:${FormattingUtils.formatVolume(volume)} | Diff:${FormattingUtils.formatPercentage(diffPercent)} | Investment:${FormattingUtils.formatCurrency(totalInvestmentUSD)} | ` +
             `Expected Profit:${FormattingUtils.formatCurrency(expectedProfitUSD)}`
         );
 
         // Display detailed position information for monitoring
         console.log(`📊 [POSITION_DETAILS] Arbitrage ID: ${arbitrageId}`);
+        console.log(`   - Trading Mode: ${config.tradingMode}${config.tradingMode === "TOKEN" ? ` (Target: ${config.targetTokenQuantity} tokens)` : ''}`);
         console.log(`   - Buy Exchange: ${buyExchangeId} @ ${FormattingUtils.formatPrice(buyPrice)}`);
         console.log(`   - Sell Exchange: ${sellExchangeId} @ ${FormattingUtils.formatPrice(sellPrice)}`);
-        console.log(`   - Volume: ${FormattingUtils.formatVolume(volume)} (buyAmount=${FormattingUtils.formatVolume(volume)}, sellAmount=${FormattingUtils.formatVolume(volume)})`);
+        console.log(`   - Volume: ${FormattingUtils.formatVolume(volume)} tokens (actual count, not scaled)`);
+        console.log(`   - Buy Amount: ${FormattingUtils.formatVolume(volume)} | Sell Amount: ${FormattingUtils.formatVolume(volume)}`);
         console.log(`   - Price Difference: ${FormattingUtils.formatPercentage(diffPercent)}`);
         console.log(`   - Buy Cost: ${FormattingUtils.formatCurrency(buyCostUSD)} | Sell Proceeds: ${FormattingUtils.formatCurrency(sellProceedsUSD)}`);
-        console.log(`   - Total Notional: ${FormattingUtils.formatCurrency(totalInvestmentUSD)} | Est. Fees: ${FormattingUtils.formatCurrency(estimatedFeesUSD)}`);
+        console.log(`   - Total Investment: ${FormattingUtils.formatCurrency(totalInvestmentUSD)} | Est. Fees: ${FormattingUtils.formatCurrency(estimatedFeesUSD)}`);
         console.log(`   - Expected Profit: ${FormattingUtils.formatCurrency(expectedProfitUSD)}`);
         console.log(`   - Fees Total: ${FormattingUtils.formatPercentage(feesPercentTotal)}`);
         console.log(`   - Net Expected Profit: ${FormattingUtils.formatPercentage(diffPercent - feesPercentTotal)}`);
@@ -293,8 +319,12 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
         if (shouldClose) {
             const closeTime = new Date().toISOString();
 
-            // Calculate actual profit/loss in USD
-            const actualProfitUSD = (netProfitPercent / 100) * config.tradeVolumeUSD * 2; // Both sides
+            // Calculate actual profit/loss in USD using the CORRECT formula
+            // Formula: actualProfitUSD = TotalInvestmentUSD * (netProfitPercent / 100)
+            // This ensures accurate profit calculation based on actual investment amount
+            const actualProfitUSD = (netProfitPercent / 100) * position.totalInvestmentUSD;
+            
+            // Update trading state with actual profit/loss
             tradingState.totalProfit += actualProfitUSD;
             tradingState.lastTradeProfit = actualProfitUSD;
             tradingState.totalTrades++;
@@ -342,51 +372,63 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
                 originalSellPrice: position.sellPrice, // Price when position was opened
                 currentBuyPrice: buyPriceNow, // Current market price
                 currentSellPrice: sellPriceNow, // Current market price
-                volume: position.volume,
+                volume: position.volume, // Actual token count (not scaled)
                 buyAmount: position.volume, // Amount that was bought
                 sellAmount: position.volume, // Amount that was sold
                 originalDiffPercent: FormattingUtils.formatPercentage(originalDiffPercent),
                 currentDiffPercent: FormattingUtils.formatPercentage(currentDiffPercent),
                 netProfitPercent: FormattingUtils.formatPercentage(netProfitPercent),
-                actualProfitUSD: FormattingUtils.formatCurrency(actualProfitUSD),
+                actualProfitUSD: FormattingUtils.formatCurrency(actualProfitUSD), // Correctly calculated profit
+                totalInvestmentUSD: FormattingUtils.formatCurrency(position.totalInvestmentUSD), // Log actual investment
                 totalFees: FormattingUtils.formatPercentage(totalFees),
                 durationMs: new Date(closeTime).getTime() - new Date(position.openTime).getTime(), // Position duration
                 closeReason: currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered',
                 tradeNumber: tradingState.totalTrades,
+                tradingMode: position.tradingMode, // Log the trading mode used
+                targetTokenQuantity: position.targetTokenQuantity, // Log target tokens if applicable
                 details: {
                     closeTime,
-                    orderbookAtClose: orderbookSnapshotAtClose // Order book snapshot at closing
+                    orderbookAtClose: orderbookSnapshotAtClose, // Order book snapshot at closing
+                    profitCalculation: {
+                        formula: "actualProfitUSD = TotalInvestmentUSD * (netProfitPercent / 100)",
+                        totalInvestmentUSD: position.totalInvestmentUSD,
+                        netProfitPercent: netProfitPercent,
+                        calculatedProfit: actualProfitUSD
+                    }
                 }
             });
 
             // Record trade closing in statistics for monitoring
             statistics.recordTradeClose({
                 actualProfitUSD: actualProfitUSD,
-                volume: position.volume,
+                volume: position.volume, // Actual token count
                 buyPriceOpen: position.buyPrice,
                 feesPercent: totalFees
             });
 
             // Display trade closing information in console
+            const modeIndicator = position.tradingMode === "TOKEN" ? `[TOKEN:${position.targetTokenQuantity}]` : `[USD:${config.tradeVolumeUSD}]`;
             console.log(
-                `📉 [ARBITRAGE_CLOSE] ${symbol} | Original Diff:${FormattingUtils.formatPercentage(originalDiffPercent)} | Current Diff:${FormattingUtils.formatPercentage(currentDiffPercent)} | ` +
+                `📉 [ARBITRAGE_CLOSE] ${symbol} ${modeIndicator} | Original Diff:${FormattingUtils.formatPercentage(originalDiffPercent)} | Current Diff:${FormattingUtils.formatPercentage(currentDiffPercent)} | ` +
                 `Net Profit:${FormattingUtils.formatPercentage(netProfitPercent)} | P&L:${FormattingUtils.formatCurrency(actualProfitUSD)} | ` +
                 `Reason: ${currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered'}`
             );
 
             // Display detailed closing information for monitoring
             console.log(`📊 [CLOSE_DETAILS] Arbitrage ID: ${arbitrageId}`);
+            console.log(`   - Trading Mode: ${position.tradingMode}${position.tradingMode === "TOKEN" ? ` (Target: ${position.targetTokenQuantity} tokens)` : ''}`);
             console.log(`   - Original Buy Price: ${FormattingUtils.formatPrice(position.buyPrice)} from ${position.buyExchangeId}`);
             console.log(`   - Original Sell Price: ${FormattingUtils.formatPrice(position.sellPrice)} to ${position.sellExchangeId}`);
             console.log(`   - Current Buy Price: ${FormattingUtils.formatPrice(buyPriceNow)}`);
             console.log(`   - Current Sell Price: ${FormattingUtils.formatPrice(sellPriceNow)}`);
-            console.log(`   - Volume: ${FormattingUtils.formatVolume(position.volume)}`);
+            console.log(`   - Volume: ${FormattingUtils.formatVolume(position.volume)} tokens (actual count, not scaled)`);
             console.log(`   - Original Price Difference: ${FormattingUtils.formatPercentage(originalDiffPercent)}`);
             console.log(`   - Current Price Difference: ${FormattingUtils.formatPercentage(currentDiffPercent)}`);
             console.log(`   - Gross Profit Percent: ${FormattingUtils.formatPercentage(currentProfitPercent)}`);
             console.log(`   - Total Fees: ${FormattingUtils.formatPercentage(totalFees)}`);
             console.log(`   - Net Profit Percent: ${FormattingUtils.formatPercentage(netProfitPercent)}`);
-            console.log(`   - Actual Profit USD: ${FormattingUtils.formatCurrency(actualProfitUSD)}`);
+            console.log(`   - Total Investment: ${FormattingUtils.formatCurrency(position.totalInvestmentUSD)}`);
+            console.log(`   - Actual Profit USD: ${FormattingUtils.formatCurrency(actualProfitUSD)} (calculated correctly)`);
             console.log(`   - Close Reason: ${currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered'}`);
             console.log(`   - Close Time: ${closeTime}`);
 
@@ -394,7 +436,7 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
             if (orderbookSnapshotAtClose) {
                 console.log(`   - Orderbook at Close:`);
                 console.log(`     * ${position.buyExchangeId} Best Ask: ${FormattingUtils.formatPrice(orderbookSnapshotAtClose.buyBestAskNow.price)} x ${FormattingUtils.formatVolume(orderbookSnapshotAtClose.buyBestAskNow.amount)}`);
-                console.log(`     * ${position.sellExchangeId} Best Bid: ${FormattingUtils.formatPrice(orderbookSnapshotAtClose.sellBestBidNow.price)} x ${FormattingUtils.formatVolume(orderbookSnapshotAtClose.sellBestBidNow.amount)}`);
+                console.log(`     * ${position.sellExchangeId} Best Bid: ${FormattingUtils.formatPrice(orderbookSnapshotAtClose.sellBestBidNow.price)} x ${FormattingUtils.formatVolume(orderbookSnapshotAtClose.sellBestBidNow.price)}`);
             }
 
             // Remove the closed position and update global state
@@ -403,7 +445,7 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
 
             // Display trade summary for monitoring
             console.log(`📈 [SUMMARY] Arbitrage Trade #${tradingState.totalTrades} closed:`);
-            console.log(`   - This trade P&L: ${FormattingUtils.formatCurrency(actualProfitUSD)}`);
+            console.log(`   - This trade P&L: ${FormattingUtils.formatCurrency(actualProfitUSD)} (calculated correctly)`);
             console.log(`   - Total P&L so far: ${FormattingUtils.formatCurrency(tradingState.totalProfit)}`);
             console.log(`   - Total trades: ${tradingState.totalTrades}`);
             console.log(`   - Close reason: ${currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered'}`);
@@ -434,4 +476,171 @@ export function getTradingStatus() {
         totalInvestment: tradingState.totalInvestment,
         openPositionsCount: openPositions.size
     };
+}
+
+/**
+ * Handles token quantity-based trading continuation
+ * 
+ * This function allows the system to continue buying/selling if the total quantity
+ * doesn't match the target quantity, based on available account balance and
+ * existing trading conditions and percentages.
+ * 
+ * @param {string} symbol - Trading symbol to check for continuation opportunities
+ * @param {string} buyExchangeId - Exchange to buy from
+ * @param {string} sellExchangeId - Exchange to sell to
+ * @param {number} buyPrice - Current buy price
+ * @param {number} sellPrice - Current sell price
+ * @param {number} currentQuantity - Current quantity already acquired
+ * @param {number} targetQuantity - Target quantity to achieve
+ * @param {number} availableBalance - Available balance in the account
+ */
+export async function tryContinueTokenQuantityTrading(
+    symbol,
+    buyExchangeId,
+    sellExchangeId,
+    buyPrice,
+    sellPrice,
+    currentQuantity,
+    targetQuantity,
+    availableBalance
+) {
+    // Only proceed if we're in token quantity mode and have a shortfall
+    if (config.tradingMode !== "TOKEN" || currentQuantity >= targetQuantity) {
+        return;
+    }
+
+    // Calculate remaining quantity needed
+    const remainingQuantity = targetQuantity - currentQuantity;
+    
+    // Calculate required investment for remaining quantity
+    const requiredInvestment = remainingQuantity * buyPrice;
+    
+    // Check if we have sufficient balance
+    if (requiredInvestment > availableBalance) {
+        console.log(`⚠️ [TOKEN_CONTINUATION] Insufficient balance for remaining ${remainingQuantity} tokens. Required: ${FormattingUtils.formatCurrency(requiredInvestment)}, Available: ${FormattingUtils.formatCurrency(availableBalance)}`);
+        return;
+    }
+
+    // Check if profit conditions are still met
+    const diffPercent = CalculationUtils.calculatePriceDifference(buyPrice, sellPrice);
+    if (diffPercent < config.profitThresholdPercent) {
+        console.log(`⚠️ [TOKEN_CONTINUATION] Profit threshold not met for continuation. Current diff: ${FormattingUtils.formatPercentage(diffPercent)}, Required: ${FormattingUtils.formatPercentage(config.profitThresholdPercent)}`);
+        return;
+    }
+
+    // Calculate optimal volume for continuation (respect liquidity constraints)
+    let continuationVolume = remainingQuantity;
+    
+    // Fetch order book to validate liquidity
+    if (exchangeManager.isInitialized()) {
+        try {
+            const buyEx = exchangeManager.getExchange(buyExchangeId);
+            const sellEx = exchangeManager.getExchange(sellExchangeId);
+            
+            const [buyOb, sellOb] = await Promise.all([
+                buyEx.fetchOrderBook(symbol),
+                sellEx.fetchOrderBook(symbol)
+            ]);
+
+            const buyBestAsk = buyOb.asks && buyOb.asks[0] ? buyOb.asks[0] : null;
+            const sellBestBid = sellOb.bids && sellOb.bids[0] ? sellOb.bids[0] : null;
+
+            if (buyBestAsk && sellBestBid) {
+                // Limit continuation volume by available liquidity
+                const maxVolumeFromLiquidity = Math.min(buyBestAsk[1], sellBestBid[1]);
+                continuationVolume = Math.min(remainingQuantity, maxVolumeFromLiquidity);
+                
+                if (continuationVolume < remainingQuantity) {
+                    console.log(`⚠️ [TOKEN_CONTINUATION] Limited by liquidity. Requested: ${remainingQuantity}, Available: ${continuationVolume}`);
+                }
+            }
+        } catch (error) {
+            console.log(`⚠️ [TOKEN_CONTINUATION] Failed to fetch order book, using requested volume`);
+        }
+    }
+
+    // Calculate continuation investment
+    const continuationInvestment = continuationVolume * buyPrice;
+    
+    // Log continuation attempt
+    console.log(`🔄 [TOKEN_CONTINUATION] Continuing token quantity trading:`);
+    console.log(`   - Symbol: ${symbol}`);
+    console.log(`   - Current Quantity: ${FormattingUtils.formatVolume(currentQuantity)}`);
+    console.log(`   - Target Quantity: ${FormattingUtils.formatVolume(targetQuantity)}`);
+    console.log(`   - Remaining Needed: ${FormattingUtils.formatVolume(remainingQuantity)}`);
+    console.log(`   - Continuation Volume: ${FormattingUtils.formatVolume(continuationVolume)}`);
+    console.log(`   - Continuation Investment: ${FormattingUtils.formatCurrency(continuationInvestment)}`);
+    console.log(`   - Buy Price: ${FormattingUtils.formatPrice(buyPrice)} | Sell Price: ${FormattingUtils.formatPrice(sellPrice)}`);
+    console.log(`   - Price Difference: ${FormattingUtils.formatPercentage(diffPercent)}`);
+
+    // Create continuation position
+    const continuationPosition = {
+        arbitrageId: `${generateArbitrageId(buyExchangeId, sellExchangeId)}-continuation-${Date.now()}`,
+        symbol,
+        buyExchangeId,
+        sellExchangeId,
+        buyPrice,
+        sellPrice,
+        volume: continuationVolume,
+        openTime: new Date().toISOString(),
+        totalInvestmentUSD: continuationInvestment * 2, // Both buy and sell sides
+        expectedProfitUSD: (diffPercent / 100) * continuationInvestment * 2,
+        buyOrderId: null,
+        sellOrderId: null,
+        status: 'CONTINUATION',
+        tradingMode: 'TOKEN',
+        targetTokenQuantity: continuationVolume,
+        isContinuation: true,
+        originalTargetQuantity: targetQuantity,
+        accumulatedQuantity: currentQuantity + continuationVolume
+    };
+
+    // Store continuation position
+    openPositions.set(continuationPosition.arbitrageId, continuationPosition);
+    
+    // Log continuation position opening
+    await logger.logTrade("ARBITRAGE_OPEN", symbol, {
+        arbitrageId: continuationPosition.arbitrageId,
+        buyExchangeId,
+        sellExchangeId,
+        buyPrice,
+        sellPrice,
+        volume: continuationVolume,
+        buyAmount: continuationVolume,
+        sellAmount: continuationVolume,
+        buyCostUSD: FormattingUtils.formatCurrency(continuationInvestment),
+        sellProceedsUSD: FormattingUtils.formatCurrency(continuationVolume * sellPrice),
+        diffPercent: FormattingUtils.formatPercentage(diffPercent),
+        totalInvestmentUSD: FormattingUtils.formatCurrency(continuationPosition.totalInvestmentUSD),
+        expectedProfitUSD: FormattingUtils.formatCurrency(continuationPosition.expectedProfitUSD),
+        tradingMode: 'TOKEN',
+        targetTokenQuantity: continuationVolume,
+        isContinuation: true,
+        originalTargetQuantity: targetQuantity,
+        accumulatedQuantity: currentQuantity + continuationVolume,
+        details: {
+            openTime: new Date().toISOString(),
+            continuationDetails: {
+                reason: 'Token quantity continuation',
+                currentQuantity,
+                targetQuantity,
+                remainingQuantity,
+                continuationVolume
+            }
+        }
+    });
+
+    // Update trading state
+    tradingState.totalInvestment += continuationPosition.totalInvestmentUSD;
+    
+    // Record in statistics
+    statistics.recordTradeOpen({
+        volume: continuationVolume,
+        buyPrice
+    });
+
+    console.log(`✅ [TOKEN_CONTINUATION] Continuation position opened successfully`);
+    console.log(`   - New Position ID: ${continuationPosition.arbitrageId}`);
+    console.log(`   - Accumulated Quantity: ${FormattingUtils.formatVolume(currentQuantity + continuationVolume)} / ${FormattingUtils.formatVolume(targetQuantity)}`);
+    console.log(`   - Ready for execution...`);
 }

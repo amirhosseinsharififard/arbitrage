@@ -1,7 +1,10 @@
 /**
- * Main configuration file for the arbitrage trading system
- * Contains all trading parameters, exchange settings, logging preferences, and system behavior controls
+ * Example configuration file for the arbitrage trading system
+ * 
+ * Copy this file to `src/config/config.js` and customize the settings
+ * for your trading strategy and exchange accounts.
  */
+
 const config = {
     // Trading symbols configuration for each exchange
     // Both exchanges trade the same symbol to enable arbitrage opportunities
@@ -18,13 +21,23 @@ const config = {
     // Trading thresholds and risk management
     profitThresholdPercent: 2, // Minimum profit percentage to open a new position
     closeThresholdPercent: 1, // Profit percentage threshold to close an open position
+    
+    // ============================================================================
+    // TRADING MODE CONFIGURATION
+    // ============================================================================
+    
+    // Choose your trading mode:
+    // "USD" = Dollar amount-based trading (traditional)
+    // "TOKEN" = Token quantity-based trading (new feature)
+    tradingMode: "USD", // Change this to "TOKEN" for token-based trading
+    
+    // USD-Based Trading Configuration (when tradingMode = "USD")
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
     
-    // New: Token quantity-based trading configuration
-    tradingMode: "USD", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 1000, // Target number of tokens to trade when mode is "TOKEN"
-    maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
-    minTokenQuantity: 100, // Minimum token quantity for validation
+    // Token Quantity-Based Trading Configuration (when tradingMode = "TOKEN")
+    targetTokenQuantity: 1000, // Target number of tokens to trade (e.g., 1000 DEBT tokens)
+    maxTokenQuantity: 10000,   // Maximum token quantity allowed for safety
+    minTokenQuantity: 100,     // Minimum token quantity for validation
     
     maxTrades: 0, // Maximum number of trades (0 = unlimited)
     maxLossPercent: -10000, // Stop-loss threshold (disabled with large negative value)
@@ -132,5 +145,45 @@ const config = {
         enableCompression: false // Enable response compression
     }
 };
+
+// ============================================================================
+// TRADING MODE EXAMPLES
+// ============================================================================
+
+/*
+EXAMPLE 1: USD-Based Trading (tradingMode: "USD")
+==================================================
+- System invests $200 total ($100 on buy side, $100 on sell side)
+- Volume is calculated as: (100 / buyPrice) tokens
+- Example: If buyPrice = $0.001, volume = 100,000 tokens
+- Total investment = $200 (fixed)
+
+EXAMPLE 2: Token Quantity-Based Trading (tradingMode: "TOKEN")
+==============================================================
+- System trades exactly 1000 tokens (as specified by targetTokenQuantity)
+- Investment is calculated as: 1000 * buyPrice * 2
+- Example: If buyPrice = $0.001, total investment = $2.00
+- Volume = 1000 tokens (fixed)
+
+EXAMPLE 3: Token Quantity Continuation
+======================================
+- If initial trade only gets 800 tokens due to liquidity constraints
+- System automatically opens continuation position for remaining 200 tokens
+- Continues until target quantity (1000) is achieved
+- Respects account balance and profit conditions
+
+ADVANTAGES OF EACH MODE:
+========================
+USD Mode:
+- Predictable investment amount
+- Good for budget management
+- Volume varies with price
+
+TOKEN Mode:
+- Predictable token quantity
+- Good for specific token targets
+- Investment varies with price
+- Automatic continuation for incomplete trades
+*/
 
 export default config;
