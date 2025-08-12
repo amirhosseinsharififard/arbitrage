@@ -1,116 +1,112 @@
-# Cryptocurrency Arbitrage System
+# Arbitrage Trading Bot
 
-This system is designed to perform arbitrage trading between different exchanges.
+This project performs cross-exchange arbitrage using `ccxt` with detailed trade logging and a single, consistent trading strategy: buy at `LBANK` ask and sell at `MEXC` bid for symbol `DEBT/USDT:USDT`.
 
-## New Features
+## Run
 
-### 🔒 Sequential Trading
-- **Only one trade at a time**: The system always has only one open trade
-- **Wait for closure**: If a trade is open, no new trade will be opened
-- **Profit calculation**: After closing each trade, profit is calculated and recorded
-- **Next trade**: After closing a trade, the system is ready for the next trade
-
-### 🛡️ Safety Features
-- **Maximum loss**: Set maximum allowed loss threshold
-- **Maximum trades**: Limit total number of trades
-- **Fee calculation**: Consider exchange fees in calculations
-
-## How to Run
-
-### Main Execution
 ```bash
 node index.js
 ```
 
-### System Monitoring
-```bash
-node monitor.js
-```
+## Core Behavior
+
+- One open position at a time
+- Opens only when LBANK(ask)->MEXC(bid) profit ≥ `profitThresholdPercent`
+- Closes when MEXC(bid) vs LBANK(ask) profit ≤ `scenarios.alireza.closeAtPercent`
+- Considers configured fees in P&L calculations
+- Writes precise, structured logs for every open/close
 
 ## Configuration
 
-File `src/config/config.js`:
+Edit `src/config/config.js`:
 
 ```javascript
-const config = {
-  symbols: {
-    mexc: "DEBT/USDT:USDT",
-    lbank: "DEBT/USDT:USDT",
-  },
-  intervalMs: 500,                    // Check interval (milliseconds)
-  profitThresholdPercent: 2,          // Profit percentage to open a trade
-  closeThresholdPercent: 1,           // Profit percentage to close a trade
-  tradeVolumeUSD: 100,                // Trade volume (USD)
-  maxTrades: 10,                      // Maximum number of trades (0 = unlimited)
-  maxLossPercent: -5,                 // Maximum allowed loss percentage
-  feesPercent: {
-    mexc: 0.04,                       // MEXC fees
-    lbank: 0.05,                      // LBank fees
-  },
-};
+symbols: { mexc: "DEBT/USDT:USDT", lbank: "DEBT/USDT:USDT" }
+intervalMs: 100
+profitThresholdPercent: 2
+closeThresholdPercent: 1
+tradeVolumeUSD: 200
+feesPercent: { mexc: 0, lbank: 0 }
+logSettings.loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"]
+scenarios.alireza: { openThresholdPercent: 0.5, closeAtPercent: 1.5 }
 ```
 
-## Trading Logic
+## Detailed Trade Log Format
 
-### Opening a Trade
-1. Check for no open trades
-2. Calculate price difference between exchanges
-3. Compare with profit threshold
-4. Open trade if conditions are suitable
+All entries are newline-delimited JSON in `trades.log`.
 
-### Closing a Trade
-1. **Target profit reached**: Close when reaching `closeThresholdPercent`
-2. **Excessive loss**: Close when loss exceeds `profitThresholdPercent`
-3. **Maximum loss**: Close when reaching `maxLossPercent`
-
-## Logs
-
-All trades are recorded in the `trades.log` file:
-
+### ARBITRAGE_OPEN
 ```json
 {
-  "action": "OPEN",
+  "action": "ARBITRAGE_OPEN",
   "symbol": "DEBT/USDT:USDT",
-  "timestamp": "2024-01-01T12:00:00.000Z",
-  "buyExchangeId": "mexc",
-  "sellExchangeId": "lbank",
-  "buyPrice": 1.00,
-  "sellPrice": 1.02,
-  "volume": 100,
-  "diffPercent": "2.000"
+  "timestamp": "2025-01-01T12:00:00.000Z",
+  "arbitrageId": "lbank-mexc",
+  "buyExchangeId": "lbank",
+  "sellExchangeId": "mexc",
+  "buyPrice": 1.000100,
+  "sellPrice": 1.020200,
+  "volume": 100.000000,
+  "buyAmount": 100.000000,
+  "sellAmount": 100.000000,
+  "buyCostUSD": "$100.01",
+  "sellProceedsUSD": "$102.02",
+  "diffPercent": "2.020%",
+  "totalInvestmentUSD": "$202.03",
+  "expectedProfitUSD": "$4.08",
+  "details": {
+    "openTime": "2025-01-01T12:00:00.000Z",
+    "orderbookAtOpen": { "buyExchange": "lbank", "sellExchange": "mexc" },
+    "profitBreakdown": {
+      "grossDiffPercent": "2.020%",
+      "feesPercentTotal": "0.000%",
+      "netExpectedDiffPercent": "2.020%",
+      "estimatedFeesUSD": "$0.00"
+    },
+    "spreads": { "openDirection": "2.020%", "oppositeDirection": null }
+  }
 }
 ```
 
-## Monitoring
+### ARBITRAGE_CLOSE
+```json
+{
+  "action": "ARBITRAGE_CLOSE",
+  "symbol": "DEBT/USDT:USDT",
+  "timestamp": "2025-01-01T12:05:00.000Z",
+  "arbitrageId": "lbank-mexc",
+  "buyExchangeId": "lbank",
+  "sellExchangeId": "mexc",
+  "originalBuyPrice": 1.000100,
+  "originalSellPrice": 1.020200,
+  "currentBuyPrice": 1.010000,
+  "currentSellPrice": 1.030000,
+  "volume": 100.000000,
+  "buyAmount": 100.000000,
+  "sellAmount": 100.000000,
+  "originalDiffPercent": "2.020%",
+  "currentDiffPercent": "1.980%",
+  "netProfitPercent": "0.040%",
+  "actualProfitUSD": "$0.08",
+  "totalFees": "0.000%",
+  "durationMs": 300000,
+  "closeReason": "Target profit reached",
+  "tradeNumber": 1,
+  "details": { "closeTime": "2025-01-01T12:05:00.000Z" }
+}
+```
 
-### Current Status
-- Display open trades
-- Total profit/loss
-- Number of trades
-- Last trade profit
+## Files
 
-### Overall Statistics
-- Success rate
-- Average profit
-- Total trade volume
-- Number of profitable/loss-making trades
+- `index.js`: main loop and lifecycle
+- `src/prices.js`: price fetch and open/close checks
+- `src/arbitrage_bot/arbitrage.js`: open/close logic and state
+- `src/logging/logger.js`: structured logging
+- `src/monitoring/statistics.js`: session stats and display
+- `src/exchanges/exchangeManager.js`: ccxt exchange init/helpers
 
-## Important Notes
+## Notes
 
-1. **Single trade only**: The system always has only one open trade
-2. **Smart waiting**: If a trade is open, it waits for it to close
-3. **Accurate profit calculation**: Fees are considered in calculations
-4. **Safety**: Loss and trade count limitations
-5. **Complete logging**: Record all trade details
-
-## Troubleshooting
-
-### Common Issues
-- **API errors**: Check API keys and permissions
-- **Network errors**: System automatically retries
-- **No opportunities**: System waits for suitable opportunities
-
-### Logs
-- Check `trades.log` file for trade details
-- Use `monitor.js` to check status
-- Check console for error messages
+- Strategy is single-direction; opposite direction is shown for info only.
+- Logs are precise and ready for analytics ingestion.
+- Only ARBITRAGE_OPEN/ARBITRAGE_CLOSE actions are persisted in `trades.log`.
