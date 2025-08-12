@@ -204,11 +204,11 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Position closing logic
     // Try to close open positions based on current market conditions
     if (status.openPositionsCount > 0) {
-        if (mexcBidVsLbankAskPct <= config.scenarios.alireza.closeAtPercent) {
-            console.log(`🎯 Closing eligible positions: mexcBidVsLbankAskPct (${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
-            await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
+        if (lbankBidVsMexcAskPct <= config.scenarios.alireza.closeAtPercent) {
+            console.log(`🎯 Closing eligible positions: lbankBidVsMexcAskPct (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
+            await tryClosePosition(symbols.mexc, lbankPrice.bid, mexcPrice.ask);
         } else {
-            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
+            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
         }
     }
 
