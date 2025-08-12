@@ -92,8 +92,8 @@ class ExitHandler {
                 // Always preserve session summary file and only overwrite contents if explicitly allowed by config
                 await logger.writeSummaryToFile(summary);
 
-                // Append to trades.log
-                await logger.appendSummaryToTradesLog(summary);
+                // Don't append summary to trades.log - only keep position open/close logs
+                // await logger.appendSummaryToTradesLog(summary);
 
                 // Append a minimal last-exit line to summary file footer style
                 try {

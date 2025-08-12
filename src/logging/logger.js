@@ -48,6 +48,12 @@ class Logger {
      */
     async logTrade(action, symbol, data) {
         try {
+            // Check if this action should be logged based on configuration
+            const shouldLog = this.shouldLogAction(action);
+            if (!shouldLog) {
+                return; // Skip logging for excluded actions
+            }
+
             const logEntry = {
                 action,
                 symbol,
@@ -59,11 +65,31 @@ class Logger {
             await fs.appendFile(this.logFile, logLine);
 
             if (config.logSettings.enableDetailedLogging) {
-                console.log(`📝 Logged ${action} trade for ${symbol}`);
+                // console.log(`📝 Logged ${action} trade for ${symbol}`);
             }
         } catch (error) {
             console.error(`❌ Failed to log trade: ${error.message}`);
         }
+    }
+
+    /**
+     * Check if an action should be logged based on configuration
+     * @param {string} action - Action to check
+     * @returns {boolean} Whether the action should be logged
+     */
+    shouldLogAction(action) {
+        // If loggableActions is defined, only log those actions
+        if (config.logSettings.loggableActions && config.logSettings.loggableActions.length > 0) {
+            return config.logSettings.loggableActions.includes(action);
+        }
+
+        // If excludeActions is defined, don't log those actions
+        if (config.logSettings.excludeActions && config.logSettings.excludeActions.length > 0) {
+            return !config.logSettings.excludeActions.includes(action);
+        }
+
+        // Default behavior: log everything
+        return true;
     }
 
     /**

@@ -6,21 +6,21 @@ const config = {
     },
 
     // Timing and intervals
-    intervalMs: 500,
-    statusUpdateInterval: 10, // Display status every N iterations
+    intervalMs: 100,
+    statusUpdateInterval: 1000, // Display status every N iterations
     retryDelayMs: 5000, // Delay before retrying after error
 
     // Trading thresholds and limits
     profitThresholdPercent: 2, // Percentage threshold for opening a trade
     closeThresholdPercent: 1, // Percentage threshold for closing a trade
-    tradeVolumeUSD: 100, // Dollar volume for each trade
+    tradeVolumeUSD: 200, // Dollar volume for each trade (total investment across both exchanges)
     maxTrades: 0, // Maximum number of trades (0 = unlimited)
-    maxLossPercent: -1000, // Stop-loss disabled (effectively never triggers)
+    maxLossPercent: -10000, // Stop-loss disabled (effectively never triggers)
 
     // Exchange fees
     feesPercent: {
-        mexc: 0.04,
-        lbank: 0.05,
+        mexc: 0,
+        lbank: 0,
     },
 
     // Exchange configuration
@@ -28,31 +28,34 @@ const config = {
         mexc: {
             id: "mexc",
             options: { defaultType: "future" },
-            retryAttempts: 3,
+            retryAttempts: 10,
             retryDelay: 1000
         },
         lbank: {
             id: "lbank",
             options: { defaultType: "future" },
-            retryAttempts: 3,
+            retryAttempts: 10,
             retryDelay: 1000
         }
     },
 
     // Logging and monitoring
     logSettings: {
-        maxRecentTrades: 10, // Number of recent trades to display
+        maxRecentTrades: 1000, // Number of recent trades to display
         summaryUpdateInterval: 10, // How often to update summary
         enableDetailedLogging: true,
         logFile: "trades.log",
         summaryFile: "session_summary.txt",
         // New flags for persistence and console behavior
-        clearOnStartup: false,
-        preserveLogs: true,
-        preserveSummary: true,
-        printSummaryToConsole: false,
-        printStatusToConsole: false,
-        requestLogFile: "requests.log"
+        clearOnStartup: true, // Clear logs on startup
+        preserveLogs: false, // Don't preserve logs between sessions
+        preserveSummary: false, // Don't preserve summary between sessions
+        printSummaryToConsole: true,
+        printStatusToConsole: true,
+        requestLogFile: "requests.log",
+        // Control what actions get logged to trades.log
+        loggableActions: ["OPEN", "CLOSE", "TRADE", "ARBITRAGE"], // Only log actual trade actions
+        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR"] // Explicitly exclude price data logging
     },
 
     // Arbitrage validation
@@ -95,17 +98,17 @@ const config = {
     },
 
     // Scenario control
-    activeScenario: 'amir', // 'amir' or 'alireza'
+    activeScenario: 'alireza', // 'amir' or 'alireza'
     scenarios: {
         amir: {
             // Open if either direction meets threshold (uses profitThresholdPercent)
-            enabled: true
+            enabled: false
         },
         alireza: {
             // Open only if MEXC(ask)->LBANK(bid) is greater than the opposite
             openThresholdPercent: 0.5,
-            // Close when LBANK(ask)->MEXC(bid) reaches this percent
-            closeAtPercent: 1
+            // Close when lbankBidVsMexcAskPct reaches this percent
+            closeAtPercent: 1.5
         }
     },
 

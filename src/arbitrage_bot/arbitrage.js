@@ -7,7 +7,7 @@ import exchangeManager from "../exchanges/exchangeManager.js";
 
 // Map to store open arbitrage positions
 export const openPositions = new Map();
-// Key: arbitrageId (e.g., "mexc-lbank" or "lbank-mexc")
+// Key: arbitrageId (e.g., "lbank-mexc" for LBANK->MEXC arbitrage)
 // Value: { 
 //   buyExchangeId, sellExchangeId, buyPrice, sellPrice, 
 //   volume, openTime, buyOrderId, sellOrderId, 
@@ -63,8 +63,11 @@ export async function tryOpenPosition(
 
     // Only open position if profit threshold is met
     if (diffPercent >= config.profitThresholdPercent) {
-        // Optionally compute volume based on current order book depth top-of-book
-        let volume = config.tradeVolumeUSD / Math.max(buyPrice, sellPrice);
+        // Calculate volume based on total investment amount ($200)
+        // We want to invest $100 on each side (buy and sell)
+        const investmentPerSide = config.tradeVolumeUSD / 2; // $100 per side
+        let volume = investmentPerSide / buyPrice; // Volume based on buy price
+
         let orderbookSnapshot = null;
         if (config.arbitrage.useOrderBookVolume && exchangeManager.isInitialized()) {
             try {
@@ -74,14 +77,21 @@ export async function tryOpenPosition(
                     buyEx.fetchOrderBook(symbol),
                     sellEx.fetchOrderBook(symbol)
                 ]);
+
                 // For opening: we BUY at buy exchange best ASK, and SELL at sell exchange best BID
                 const buyBestAsk = buyOb.asks && buyOb.asks[0] ? { price: buyOb.asks[0][0], amount: buyOb.asks[0][1] } : null;
                 const sellBestBid = sellOb.bids && sellOb.bids[0] ? { price: sellOb.bids[0][0], amount: sellOb.bids[0][1] } : null;
-                // Use minimum available amount across sides
+
+                // Calculate volume based on available liquidity and desired investment
                 if (buyBestAsk && sellBestBid) {
-                    const desiredBaseQty = config.tradeVolumeUSD / Math.max(buyBestAsk.price, sellBestBid.price);
-                    volume = Math.min(desiredBaseQty, buyBestAsk.amount, sellBestBid.amount);
+                    // Calculate volume based on $100 investment on buy side
+                    const buyVolume = investmentPerSide / buyBestAsk.price;
+                    // Calculate volume based on $100 investment on sell side  
+                    const sellVolume = investmentPerSide / sellBestBid.price;
+                    // Use the smaller volume to ensure both sides can be executed
+                    volume = Math.min(buyVolume, sellVolume, buyBestAsk.amount, sellBestBid.amount);
                 }
+
                 const sellBestAsk = sellOb.asks && sellOb.asks[0] ? { price: sellOb.asks[0][0], amount: sellOb.asks[0][1] } : null;
                 const buyBestBid = buyOb.bids && buyOb.bids[0] ? { price: buyOb.bids[0][0], amount: buyOb.bids[0][1] } : null;
                 orderbookSnapshot = {
@@ -94,8 +104,11 @@ export async function tryOpenPosition(
                 };
             } catch {}
         }
-        const totalInvestmentUSD = CalculationUtils.calculateTotalInvestment(volume, buyPrice, sellPrice);
-        const expectedProfitUSD = CalculationUtils.calculateExpectedProfit(diffPercent, config.tradeVolumeUSD);
+
+        // Calculate total investment based on actual volume and prices
+        const totalInvestmentUSD = (volume * buyPrice) + (volume * sellPrice);
+        // Calculate expected profit based on price difference and actual investment
+        const expectedProfitUSD = (diffPercent / 100) * totalInvestmentUSD;
         const feesPercentTotal = (config.feesPercent[buyExchangeId] || 0) + (config.feesPercent[sellExchangeId] || 0);
         const openDirectionDiffPercent = (orderbookSnapshot && orderbookSnapshot.buyBestAsk && orderbookSnapshot.sellBestBid) ?
             CalculationUtils.calculatePriceDifference(orderbookSnapshot.buyBestAsk.price, orderbookSnapshot.sellBestBid.price) :
@@ -157,10 +170,27 @@ export async function tryOpenPosition(
         });
 
         console.log(
-            `[ARBITRAGE_OPEN] ${symbol} | Buy@${FormattingUtils.formatPrice(buyPrice)} from ${buyExchangeId} | Sell@${FormattingUtils.formatPrice(sellPrice)} to ${sellExchangeId} | ` +
+            `🎯 [ARBITRAGE_OPEN] ${symbol} | Buy@${FormattingUtils.formatPrice(buyPrice)} from ${buyExchangeId} | Sell@${FormattingUtils.formatPrice(sellPrice)} to ${sellExchangeId} | ` +
             `Vol:${FormattingUtils.formatVolume(volume)} | Diff:${FormattingUtils.formatPercentage(diffPercent)} | Investment:${FormattingUtils.formatCurrency(totalInvestmentUSD)} | ` +
             `Expected Profit:${FormattingUtils.formatCurrency(expectedProfitUSD)}`
         );
+
+        // Display detailed position information
+        console.log(`📊 [POSITION_DETAILS] Arbitrage ID: ${arbitrageId}`);
+        console.log(`   - Buy Exchange: ${buyExchangeId} @ ${FormattingUtils.formatPrice(buyPrice)}`);
+        console.log(`   - Sell Exchange: ${sellExchangeId} @ ${FormattingUtils.formatPrice(sellPrice)}`);
+        console.log(`   - Volume: ${FormattingUtils.formatVolume(volume)}`);
+        console.log(`   - Price Difference: ${FormattingUtils.formatPercentage(diffPercent)}`);
+        console.log(`   - Total Investment: ${FormattingUtils.formatCurrency(totalInvestmentUSD)}`);
+        console.log(`   - Expected Profit: ${FormattingUtils.formatCurrency(expectedProfitUSD)}`);
+        console.log(`   - Fees Total: ${FormattingUtils.formatPercentage(feesPercentTotal)}`);
+        console.log(`   - Net Expected Profit: ${FormattingUtils.formatPercentage(diffPercent - feesPercentTotal)}`);
+        if (orderbookSnapshot) {
+            console.log(`   - Orderbook at Open:`);
+            console.log(`     * ${buyExchangeId} Best Ask: ${FormattingUtils.formatPrice(orderbookSnapshot.buyBestAsk.price)} x ${FormattingUtils.formatVolume(orderbookSnapshot.buyBestAsk.amount)}`);
+            console.log(`     * ${sellExchangeId} Best Bid: ${FormattingUtils.formatPrice(orderbookSnapshot.sellBestBid.price)} x ${FormattingUtils.formatVolume(orderbookSnapshot.sellBestBid.price)}`);
+        }
+        console.log(`   - Open Time: ${new Date().toISOString()}`);
     }
 }
 
@@ -256,17 +286,38 @@ export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
             });
 
             console.log(
-                `[ARBITRAGE_CLOSE] ${symbol} | Original Diff:${FormattingUtils.formatPercentage(originalDiffPercent)} | Current Diff:${FormattingUtils.formatPercentage(currentDiffPercent)} | ` +
+                `📉 [ARBITRAGE_CLOSE] ${symbol} | Original Diff:${FormattingUtils.formatPercentage(originalDiffPercent)} | Current Diff:${FormattingUtils.formatPercentage(currentDiffPercent)} | ` +
                 `Net Profit:${FormattingUtils.formatPercentage(netProfitPercent)} | P&L:${FormattingUtils.formatCurrency(actualProfitUSD)} | ` +
                 `Reason: ${currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered'}`
             );
+
+            // Display detailed closing information
+            console.log(`📊 [CLOSE_DETAILS] Arbitrage ID: ${arbitrageId}`);
+            console.log(`   - Original Buy Price: ${FormattingUtils.formatPrice(position.buyPrice)} from ${position.buyExchangeId}`);
+            console.log(`   - Original Sell Price: ${FormattingUtils.formatPrice(position.sellPrice)} to ${position.sellExchangeId}`);
+            console.log(`   - Current Buy Price: ${FormattingUtils.formatPrice(buyPriceNow)}`);
+            console.log(`   - Current Sell Price: ${FormattingUtils.formatPrice(sellPriceNow)}`);
+            console.log(`   - Volume: ${FormattingUtils.formatVolume(position.volume)}`);
+            console.log(`   - Original Price Difference: ${FormattingUtils.formatPercentage(originalDiffPercent)}`);
+            console.log(`   - Current Price Difference: ${FormattingUtils.formatPercentage(currentDiffPercent)}`);
+            console.log(`   - Gross Profit Percent: ${FormattingUtils.formatPercentage(currentProfitPercent)}`);
+            console.log(`   - Total Fees: ${FormattingUtils.formatPercentage(totalFees)}`);
+            console.log(`   - Net Profit Percent: ${FormattingUtils.formatPercentage(netProfitPercent)}`);
+            console.log(`   - Actual Profit USD: ${FormattingUtils.formatCurrency(actualProfitUSD)}`);
+            console.log(`   - Close Reason: ${currentDiffPercent <= config.closeThresholdPercent ? 'Target profit reached' : 'Stop loss triggered'}`);
+            console.log(`   - Close Time: ${closeTime}`);
+            if (orderbookSnapshotAtClose) {
+                console.log(`   - Orderbook at Close:`);
+                console.log(`     * ${position.buyExchangeId} Best Ask: ${FormattingUtils.formatPrice(orderbookSnapshotAtClose.buyBestAskNow.price)} x ${FormattingUtils.formatVolume(orderbookSnapshotAtClose.buyBestAskNow.amount)}`);
+                console.log(`     * ${position.sellExchangeId} Best Bid: ${FormattingUtils.formatPrice(orderbookSnapshotAtClose.sellBestBidNow.price)} x ${FormattingUtils.formatVolume(orderbookSnapshotAtClose.sellBestBidNow.amount)}`);
+            }
 
             // Remove the closed position
             openPositions.delete(arbitrageId);
             tradingState.isAnyPositionOpen = false;
 
             // Display trade summary
-            console.log(`[SUMMARY] Arbitrage Trade #${tradingState.totalTrades} closed:`);
+            console.log(`📈 [SUMMARY] Arbitrage Trade #${tradingState.totalTrades} closed:`);
             console.log(`   - This trade P&L: ${FormattingUtils.formatCurrency(actualProfitUSD)}`);
             console.log(`   - Total P&L so far: ${FormattingUtils.formatCurrency(tradingState.totalProfit)}`);
             console.log(`   - Total trades: ${tradingState.totalTrades}`);

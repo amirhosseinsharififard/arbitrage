@@ -29,19 +29,13 @@ export class PriceService {
 
             const bestAsk = orderbook.asks && orderbook.asks[0] ? orderbook.asks[0][0] : null;
             const bestBid = orderbook.bids && orderbook.bids[0] ? orderbook.bids[0][0] : null;
-            await logger.logTrade("PRICE_ORDERBOOK", "DEBT/USDT:USDT", {
-                exchangeId: exchange.id,
-                bestBid,
-                bestAsk,
-                bidAmount: orderbook.bids && orderbook.bids[0] ? orderbook.bids[0][1] : null,
-                askAmount: orderbook.asks && orderbook.asks[0] ? orderbook.asks[0][1] : null
-            });
+            // Removed PRICE_ORDERBOOK logging - not needed for trade execution
             return { bid: bestBid, ask: bestAsk };
         } catch (error) {
             console.error(
                 `[${exchange.id}] Failed to fetch price for ${symbol} after retries: ${error.message || error}`
             );
-            await logger.logTrade("PRICE_ERROR", symbol, { exchangeId: exchange.id, error: error.message || String(error) });
+            // Removed PRICE_ERROR logging - not needed for trade execution
             return { bid: null, ask: null };
         }
     }

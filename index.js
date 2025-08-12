@@ -79,6 +79,11 @@ async function startLoop(
                     displayTradingStatus();
                 }
 
+                // Always display current iteration for monitoring
+                if (config.logSettings.printStatusToConsole) {
+                    console.log(`🔄 Iteration ${iterationCount} - ${new Date().toLocaleTimeString()}`);
+                }
+
                 // Process prices and execute arbitrage logic
                 await printBidAskPairs(symbols, exchanges);
             } catch (error) {
