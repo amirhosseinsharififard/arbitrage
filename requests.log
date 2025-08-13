@@ -12,5 +12,24 @@
 {"type":"SESSION_EXIT","timestamp":"2025-08-12T13:15:33.086Z","info":{"lastExitAt":"2025-08-12T13:15:33.086Z"}}
 {"type":"SESSION_EXIT","timestamp":"2025-08-12T13:41:49.147Z","info":{"lastExitAt":"2025-08-12T13:41:49.147Z"}}
 {"type":"SESSION_EXIT","timestamp":"2025-08-12T14:46:39.559Z","info":{"lastExitAt":"2025-08-12T14:46:39.559Z"}}
+<<<<<<< HEAD
 {"type":"SESSION_EXIT","timestamp":"2025-08-13T08:08:48.036Z","info":{"lastExitAt":"2025-08-13T08:08:48.033Z"}}
 {"type":"SESSION_EXIT","timestamp":"2025-08-13T08:50:03.512Z","info":{"lastExitAt":"2025-08-13T08:50:03.511Z"}}
+=======
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T15:35:13.440Z","info":{"lastExitAt":"2025-08-12T15:35:13.440Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T15:36:59.830Z","info":{"lastExitAt":"2025-08-12T15:36:59.830Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T15:37:39.921Z","info":{"lastExitAt":"2025-08-12T15:37:39.921Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:12:24.978Z","info":{"lastExitAt":"2025-08-12T16:12:24.978Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:15:50.450Z","info":{"lastExitAt":"2025-08-12T16:15:50.450Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:20:21.513Z","info":{"lastExitAt":"2025-08-12T16:20:21.512Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:24:18.177Z","info":{"lastExitAt":"2025-08-12T16:24:18.177Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:41:09.087Z","info":{"lastExitAt":"2025-08-12T16:41:09.086Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:44:45.185Z","info":{"lastExitAt":"2025-08-12T16:44:45.183Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:45:20.121Z","info":{"lastExitAt":"2025-08-12T16:45:20.120Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T16:50:12.645Z","info":{"lastExitAt":"2025-08-12T16:50:12.645Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T17:16:10.108Z","info":{"lastExitAt":"2025-08-12T17:16:10.106Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T17:52:32.439Z","info":{"lastExitAt":"2025-08-12T17:52:32.437Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T18:04:32.805Z","info":{"lastExitAt":"2025-08-12T18:04:32.803Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-12T18:10:33.447Z","info":{"lastExitAt":"2025-08-12T18:10:33.445Z"}}
+{"type":"SESSION_EXIT","timestamp":"2025-08-13T09:01:31.019Z","info":{"lastExitAt":"2025-08-13T09:01:31.018Z"}}
+>>>>>>> f76c2655588bf1973e6e138766cfad33c8a54fe8

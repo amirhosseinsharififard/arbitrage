@@ -26,6 +26,8 @@ import exchangeManager from "./exchanges/exchangeManager.js";
  * Prevents spam in console output when prices haven't changed
  */
 const lastProfits = new Map();
+// Tick-level cache signature to skip duplicate processing/logging when prices unchanged
+let lastTickKey = null;
 
 /**
  * Logs profit information when positive arbitrage opportunity is detected
@@ -120,6 +122,13 @@ export async function printBidAskPairs(symbols, exchanges) {
     const mexcPrice = prices.mexc; // MEXC exchange price data
     const lbankPrice = prices.lbank; // LBank exchange price data
 
+    // Skip duplicate ticks if bid/ask pairs unchanged
+    const tickKey = `${mexcPrice && mexcPrice.bid != null ? mexcPrice.bid : 'n'}|${mexcPrice && mexcPrice.ask != null ? mexcPrice.ask : 'n'}|${lbankPrice && lbankPrice.bid != null ? lbankPrice.bid : 'n'}|${lbankPrice && lbankPrice.ask != null ? lbankPrice.ask : 'n'}`;
+    if (tickKey === lastTickKey) {
+        return; // no change; skip heavy logging and processing
+    }
+    lastTickKey = tickKey;
+
     // Fetch raw order books for more accurate depth-aware decisions
     // Order books provide volume information and better price accuracy
     let mexcOb, lbankOb;
@@ -206,8 +215,17 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Try to close open positions based on current market conditions
     // The tryClosePosition function now handles all closing logic internally
     if (status.openPositionsCount > 0) {
+<<<<<<< HEAD
         console.log(`${FormattingUtils.label('POSITIONS')} P&L est: ${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)} ${chalk.gray(`(close @ ${config.scenarios.alireza.closeAtPercent}%)`)}`);
         await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
+=======
+        if (lbankBidVsMexcAskPct <= config.scenarios.alireza.closeAtPercent) {
+            console.log(`🎯 Closing eligible positions: lbankBidVsMexcAskPct (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
+            await tryClosePosition(symbols.mexc, lbankPrice.bid, mexcPrice.ask);
+        } else {
+            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
+        }
+>>>>>>> f76c2655588bf1973e6e138766cfad33c8a54fe8
     }
 
     // Display current status and monitoring information

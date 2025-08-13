@@ -16,17 +16,22 @@ const config = {
     retryDelayMs: 5000, // Delay before retrying after errors (5 seconds)
 
     // Trading thresholds and risk management
-    profitThresholdPercent: 2, // Minimum profit percentage to open a new position
-    closeThresholdPercent: 1, // Profit percentage threshold to close an open position
+    profitThresholdPercent: 2.5, // Minimum profit percentage to open a new position
+    closeThresholdPercent: -1.5, // Profit percentage threshold to close an open position
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
+<<<<<<< HEAD
     tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
     targetTokenQuantity: 1000, // Number of tokens to buy per trade (chunk size) in TOKEN mode
+=======
+    tradingMode: "USD", // "USD" for dollar-based, "TOKEN" for token quantity-based
+    targetTokenQuantity: 10000, // Target number of tokens to trade when mode is "TOKEN"
+>>>>>>> f76c2655588bf1973e6e138766cfad33c8a54fe8
     maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
     minTokenQuantity: 100, // Minimum token quantity for validation
 
-    maxTrades: 0, // Maximum number of trades (0 = unlimited)
+    maxTrades: 5, // Maximum number of trades (0 = unlimited)
 
     // Exchange fee configuration (percentage of trade value)
     // Set to 0 for testing, adjust based on actual exchange fees
@@ -112,8 +117,7 @@ const config = {
     scenarios: {
         alireza: {
             openThresholdPercent: 0.5, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: -1.5, // Close when profit reaches 1.5%
-            maxPositionDurationMinutes: 30 // Maximum time to hold a position before forced close
+            closeAtPercent: -1.5 // Close when profit reaches 1.5%
         }
     },
 

@@ -23,6 +23,8 @@ import exchangeManager from "../exchanges/exchangeManager.js";
  * Value: Complete position object with all trade details
  */
 export const openPositions = new Map();
+// Track last observed lbankBidVsMexcAskPct per position to close only on crossing
+const lastCloseDiffByPosition = new Map();
 
 /**
  * Global trading state to maintain overall system status
@@ -363,6 +365,7 @@ export async function tryOpenPosition(
             // Calculate net profit after deducting fees
             const netProfitPercent = currentProfitPercent - totalFees;
 
+<<<<<<< HEAD
             // Close based on current spread vs configured threshold
             // currentDiffPercent here corresponds to lbankBidVsMexcAskPct
             const shouldClose = currentDiffPercent >= config.scenarios.alireza.closeAtPercent;
@@ -371,6 +374,17 @@ export async function tryOpenPosition(
                 console.log(`${chalk.cyan.bold('[CLOSE_ANALYSIS]')} Position ${chalk.white(arbitrageId)}:`);
                 console.log(`   - Current Diff (lbankBidVsMexcAskPct): ${FormattingUtils.formatPercentageColored(currentDiffPercent)}`);
                 console.log(`   - Threshold: ${chalk.white(`${config.scenarios.alireza.closeAtPercent}%`)}`);
+=======
+            // Close only when currentDiffPercent crosses up through threshold
+            const threshold = config.scenarios.alireza.closeAtPercent;
+            const lastDiff = lastCloseDiffByPosition.get(arbitrageId);
+            const shouldClose = currentDiffPercent >= threshold && (lastDiff == null || lastDiff < threshold);
+            lastCloseDiffByPosition.set(arbitrageId, currentDiffPercent);
+
+            if (shouldClose) {
+                console.log(`🔍 [CLOSE_ANALYSIS] Position ${arbitrageId}:`);
+                console.log(`   - Current Diff: ${FormattingUtils.formatPercentage(currentDiffPercent)} | Prev: ${lastDiff == null ? 'n/a%' : FormattingUtils.formatPercentage(lastDiff)} | Th: ${FormattingUtils.formatPercentage(threshold)}`);
+>>>>>>> f76c2655588bf1973e6e138766cfad33c8a54fe8
                 positionsToClose.push({ arbitrageId, position });
             }
         }
@@ -496,6 +510,7 @@ export async function tryOpenPosition(
             // Remove the closed position and update global state
             openPositions.delete(arbitrageId);
             tradingState.isAnyPositionOpen = openPositions.size > 0;
+            lastCloseDiffByPosition.delete(arbitrageId);
 
             console.log(`${chalk.green('📈')} ${FormattingUtils.label('SUMMARY')} Arbitrage Trade #${chalk.yellow(tradingState.totalTrades)} closed:`);
             console.log(`   - This trade P&L: ${FormattingUtils.formatCurrencyColored(actualProfitUSD)}`);
