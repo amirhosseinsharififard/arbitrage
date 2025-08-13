@@ -14,6 +14,7 @@
  */
 
 import config from "../config/config.js";
+import chalk from "chalk";
 
 /**
  * Format a price value with appropriate decimal places
@@ -54,6 +55,22 @@ export function formatPercentage(percentage) {
 }
 
 /**
+ * Format and colorize a percentage based on sign
+ * - Positive: green
+ * - Negative: red
+ * - Zero/NaN: yellow/n-a
+ */
+export function formatPercentageColored(percentage) {
+    if (percentage == null || isNaN(percentage)) {
+        return chalk.yellow('n/a%');
+    }
+    const formatted = formatPercentage(percentage);
+    if (percentage > 0) return chalk.green(formatted);
+    if (percentage < 0) return chalk.red(formatted);
+    return chalk.yellow(formatted);
+}
+
+/**
  * Format a currency value with appropriate decimal places
  * 
  * Formats USD currency values with proper symbol and precision.
@@ -70,6 +87,23 @@ export function formatCurrency(amount) {
     // Use configured decimal places for currency formatting
     const decimalPlaces = config.display.decimalPlaces.currency;
     return `$${amount.toFixed(decimalPlaces)}`;
+}
+
+/**
+ * Format and colorize a currency amount based on sign
+ * - Positive: green with plus sign
+ * - Negative: red
+ * - Zero: gray
+ */
+export function formatCurrencyColored(amount) {
+    if (amount == null || isNaN(amount)) {
+        return chalk.yellow('$n/a');
+    }
+    const value = Number(amount);
+    const base = formatCurrency(Math.abs(value));
+    if (value > 0) return chalk.green(`+${base}`);
+    if (value < 0) return chalk.red(`-${base}`);
+    return chalk.gray(base);
 }
 
 /**
@@ -124,7 +158,39 @@ export function formatTimestamp(timestamp) {
  * @returns {string} Separator line string
  */
 export function createSeparator(length = config.display.separatorLength, character = '=') {
-    return character.repeat(length);
+    return chalk.gray(character.repeat(length));
+}
+
+/**
+ * Create a colored label like [STATUS]
+ */
+export function label(text, color = 'cyan') {
+    const fn = chalk[color] || chalk.cyan;
+    return fn.bold(`[${text}]`);
+}
+
+/**
+ * Colorize exchange names consistently
+ */
+export function colorExchange(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('mexc')) return chalk.blueBright(name);
+    if (n.includes('lbank')) return chalk.magentaBright(name);
+    return chalk.cyan(name);
+}
+
+/**
+ * Dim helper
+ */
+export function dim(text) {
+    return chalk.dim(text);
+}
+
+/**
+ * Bold helper
+ */
+export function bold(text) {
+    return chalk.bold(text);
 }
 
 /**

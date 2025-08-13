@@ -18,6 +18,7 @@ import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } fr
 import config from "./config/config.js";
 import { priceService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
+import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
 
 /**
@@ -160,16 +161,16 @@ export async function printBidAskPairs(symbols, exchanges) {
     const lbankBidVsMexcAskPct = CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid);
 
     // Display current system status and basic information
-    console.log(`[STATUS] Open positions: ${status.openPositionsCount} | Total P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)} | Total tokens: ${FormattingUtils.formatVolume(status.totalOpenTokens ?? 0)}`);
-    console.log(`[Arbitrage] LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcProfit)} | MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentage(mexcToLbankProfit)}`);
+    console.log(`${FormattingUtils.label('STATUS')} Open: ${chalk.yellow(status.openPositionsCount)} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)} | Trades: ${chalk.yellow(status.totalTrades)} | Invested: ${chalk.yellow(FormattingUtils.formatCurrency(status.totalInvestment))} | Tokens: ${chalk.yellow(FormattingUtils.formatVolume(status.totalOpenTokens ?? 0))}`);
+    console.log(`${FormattingUtils.label('Arbitrage')} LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} | MEXC(ask)->LBANK(bid): ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)}`);
 
     // Log current price differences in paired form for clarity
     // Display both percentage and absolute price differences
     const mexcBidVsLbankAskAbs = (mexcPrice.bid != null && lbankPrice.ask != null) ? (mexcPrice.bid - lbankPrice.ask) : null;
     const lbankBidVsMexcAskAbs = (lbankPrice.bid != null && mexcPrice.ask != null) ? (lbankPrice.bid - mexcPrice.ask) : null;
 
-    console.log(`[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} | LBANK: Ask=${FormattingUtils.formatPrice(lbankPrice.ask)} | Δ=${mexcBidVsLbankAskAbs != null ? mexcBidVsLbankAskAbs.toFixed(6) : 'n/a'} (${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)})`);
-    console.log(`[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} | MEXC: Ask=${FormattingUtils.formatPrice(mexcPrice.ask)} | Δ=${lbankBidVsMexcAskAbs != null ? lbankBidVsMexcAskAbs.toFixed(6) : 'n/a'} (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)})`);
+    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('MEXC')}: Bid=${chalk.white(FormattingUtils.formatPrice(mexcPrice.bid))} | ${FormattingUtils.colorExchange('LBANK')}: Ask=${chalk.white(FormattingUtils.formatPrice(lbankPrice.ask))} | Δ=${mexcBidVsLbankAskAbs != null ? chalk.white(mexcBidVsLbankAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)})`);
+    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('LBANK')}: Bid=${chalk.white(FormattingUtils.formatPrice(lbankPrice.bid))} | ${FormattingUtils.colorExchange('MEXC')}: Ask=${chalk.white(FormattingUtils.formatPrice(mexcPrice.ask))} | Δ=${lbankBidVsMexcAskAbs != null ? chalk.white(lbankBidVsMexcAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(lbankBidVsMexcAskPct)})`);
 
     // Display order book depth information if available
     if (mexcOb && lbankOb) {
@@ -178,8 +179,8 @@ export async function printBidAskPairs(symbols, exchanges) {
         const lbankBestBid = lbankOb.bids && lbankOb.bids[0] ? { price: lbankOb.bids[0][0], amount: lbankOb.bids[0][1] } : null;
         const lbankBestAsk = lbankOb.asks && lbankOb.asks[0] ? { price: lbankOb.asks[0][0], amount: lbankOb.asks[0][1] } : null;
 
-        console.log(`[DEPTH] MEXC: bestBid=${mexcBestBid ? `${FormattingUtils.formatPrice(mexcBestBid.price)} x ${mexcBestBid.amount}` : 'n/a'} bestAsk=${mexcBestAsk ? `${FormattingUtils.formatPrice(mexcBestAsk.price)} x ${mexcBestAsk.amount}` : 'n/a'} | ` +
-                    `LBANK: bestBid=${lbankBestBid ? `${FormattingUtils.formatPrice(lbankBestBid.price)} x ${lbankBestBid.amount}` : 'n/a'} bestAsk=${lbankBestAsk ? `${FormattingUtils.formatPrice(lbankBestAsk.price)} x ${lbankBestAsk.amount}` : 'n/a'}`);
+        console.log(`${FormattingUtils.label('DEPTH')} ${FormattingUtils.colorExchange('MEXC')}: bestBid=${mexcBestBid ? `${FormattingUtils.formatPrice(mexcBestBid.price)} x ${mexcBestBid.amount}` : chalk.yellow('n/a')} bestAsk=${mexcBestAsk ? `${FormattingUtils.formatPrice(mexcBestAsk.price)} x ${mexcBestAsk.amount}` : chalk.yellow('n/a')} | ` +
+                    `${FormattingUtils.colorExchange('LBANK')}: bestBid=${lbankBestBid ? `${FormattingUtils.formatPrice(lbankBestBid.price)} x ${lbankBestBid.amount}` : chalk.yellow('n/a')} bestAsk=${lbankBestAsk ? `${FormattingUtils.formatPrice(lbankBestAsk.price)} x ${lbankBestAsk.amount}` : chalk.yellow('n/a')}`);
     }
 
     // Show visual separator for better readability
@@ -188,30 +189,30 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Position monitoring and closing logic
     // Only show detailed logs when there's an open position or when opening/closing
     if (status.openPositionsCount > 0) {
-        console.log(`[CLOSE_CHECK] mexcBidVsLbankAskPct: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} | Close Threshold: ${config.scenarios.alireza.closeAtPercent}%`);
+        console.log(`${FormattingUtils.label('CLOSE_CHECK')} mexcBidVsLbankAskPct: ${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)} | Threshold: ${chalk.white(`${config.scenarios.alireza.closeAtPercent}%`)}`);
     }
 
     // Check arbitrage opportunities and try to open new positions
     // Opening logic: allow multiple positions; rely on internal caps and validations
     if (lbankToMexcProfit >= config.profitThresholdPercent) {
-        console.log(`🎯 Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Profitable!)`);
+        console.log(`${chalk.green('🎯')} Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.green('(Profitable!)')}`);
         await tryOpenPosition(symbols.lbank, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
     } else {
-        console.log(`⏳ No profitable LBANK->MEXC opportunity: ${FormattingUtils.formatPercentage(lbankToMexcProfit)} (Threshold: ${config.profitThresholdPercent}%)`);
-        console.log(`ℹ️  MEXC->LBANK direction: ${FormattingUtils.formatPercentage(mexcToLbankProfit)} (Not used for opening)`);
+        console.log(`${chalk.yellow('⏳')} No LBANK->MEXC opp: ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.gray(`(Threshold: ${config.profitThresholdPercent}%)`)}`);
+        console.log(`${chalk.blue('ℹ️ ')} MEXC->LBANK: ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)} ${chalk.gray('(not used)')}`);
     }
 
     // Position closing logic
     // Try to close open positions based on current market conditions
     // The tryClosePosition function now handles all closing logic internally
     if (status.openPositionsCount > 0) {
-        console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcBidVsLbankAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
+        console.log(`${FormattingUtils.label('POSITIONS')} P&L est: ${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)} ${chalk.gray(`(close @ ${config.scenarios.alireza.closeAtPercent}%)`)}`);
         await tryClosePosition(symbols.mexc, mexcPrice.ask, lbankPrice.bid);
     }
 
     // Display current status and monitoring information
     if (config.logSettings.printStatusToConsole) {
-        console.log(`📊 [${new Date().toLocaleTimeString()}] Status: ${status.openPositionsCount > 0 ? `${status.openPositionsCount} Positions Open` : 'No Position'} | P&L: ${FormattingUtils.formatCurrency(status.totalProfit)}`);
+        console.log(`${FormattingUtils.label(new Date().toLocaleTimeString())} ${status.openPositionsCount > 0 ? chalk.yellow(`${status.openPositionsCount} open`) : chalk.gray('No Position')} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)}`);
         
         // Show separator when there's an open position for better visual organization
         if (status.openPositionsCount > 0) {

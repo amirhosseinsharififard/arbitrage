@@ -21,8 +21,8 @@ const config = {
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
-    tradingMode: "USD", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 1000, // Target number of tokens to trade when mode is "TOKEN"
+    tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
+    targetTokenQuantity: 1000, // Number of tokens to buy per trade (chunk size) in TOKEN mode
     maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
     minTokenQuantity: 100, // Minimum token quantity for validation
 
