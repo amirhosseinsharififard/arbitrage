@@ -12,7 +12,7 @@
 import config from "../config/config.js";
 import logger from "../logging/logger.js";
 import statistics from "../monitoring/statistics.js";
-import { CalculationUtils, FormattingUtils } from "../utils/index.js";
+import { CalculationUtils, FormattingUtils, computeSpreads } from "../utils/index.js";
 import chalk from "chalk";
 import { priceService } from "../services/index.js";
 import exchangeManager from "../exchanges/exchangeManager.js";
@@ -345,86 +345,45 @@ export async function tryOpenPosition(
  * @param {number} sellPriceNow - Current sell price in the market
  */
     export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
-        // Collect arbitrageIds to close in this pass to allow simultaneous closures
+        const { mexcAskVsLbankBidPct } = computeSpreads({ lbankBid: buyPriceNow, mexcAsk: sellPriceNow });
+        const closeThreshold = -Math.abs(Number(config.scenarios.alireza.closeAtPercent));
+        const currentDiffPercent = Number(CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow));
         const positionsToClose = [];
         for (const [arbitrageId, position] of openPositions.entries()) {
             if (position.symbol !== symbol) continue;
-
-            // Calculate current price difference in the market
-            const currentDiffPercent = Number(CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow));
-
-            // Calculate current profit/loss based on original arbitrage opportunity
             const originalDiffPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
             const currentProfitPercent = originalDiffPercent - currentDiffPercent;
-
-            // Calculate total fees for both exchanges
-            const totalFees =
-                config.feesPercent[position.buyExchangeId] +
-                config.feesPercent[position.sellExchangeId];
-
-            // Calculate net profit after deducting fees
+            const totalFees = (config.feesPercent[position.buyExchangeId] || 0) + (config.feesPercent[position.sellExchangeId] || 0);
             const netProfitPercent = currentProfitPercent - totalFees;
-
-            // Close when mexcAskVsLbankBidPct reaches the target threshold
-            const closeThreshold = Number(config.scenarios.alireza.closeAtPercent); // +1.5% difference threshold
-            // Calculate mexcAskVsLbankBidPct (MEXC ask vs LBANK bid)
-            const mexcAskVsLbankBidPct = CalculationUtils.calculatePriceDifference(sellPriceNow, buyPriceNow);
-            const shouldClose = mexcAskVsLbankBidPct <= closeThreshold;
-            
-            // Debug logging
-            
-            console.log(`🔍 [DEBUG] Position ${arbitrageId}: mexcAskVsLbankBidPct=${mexcAskVsLbankBidPct}, closeThreshold=${closeThreshold}, shouldClose=${shouldClose}, condition=${mexcAskVsLbankBidPct} <= ${closeThreshold}`);
-
-            if (shouldClose) {
-                // Get the last observed difference for this position
-                const lastDiff = lastCloseDiffByPosition.get(arbitrageId);
-                
-                console.log(`🔍 [CLOSE_ANALYSIS] Position ${arbitrageId}:`);
-                console.log(`   - mexcAskVsLbankBidPct: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} | Prev: ${lastDiff == null ? 'n/a%' : FormattingUtils.formatPercentage(lastDiff)} | Target: ${FormattingUtils.formatPercentage(closeThreshold)}`);
-                console.log(`   - Close Reason: DIFFERENCE_THRESHOLD | Original Diff: ${FormattingUtils.formatPercentage(originalDiffPercent)} | mexcAskVsLbankBidPct: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}`);
-                console.log(`   - Should Close: ${shouldClose} | Condition: ${mexcAskVsLbankBidPct} <= ${closeThreshold}`);
-                positionsToClose.push({ arbitrageId, position });
-            }
+            const shouldClose = mexcAskVsLbankBidPct != null && mexcAskVsLbankBidPct >= closeThreshold;
+            if (shouldClose) positionsToClose.push({ arbitrageId, position, originalDiffPercent, totalFees, netProfitPercent });
         }
-
-        // Log if no positions are being closed
         if (positionsToClose.length === 0 && openPositions.size > 0) {
             console.log(`${chalk.yellow('⏳')} ${FormattingUtils.label('CLOSE_CHECK')} No positions meet closing criteria. ${chalk.gray('Monitoring...')}`);
-        } else if (positionsToClose.length > 0) {
+            return;
+        }
+        if (positionsToClose.length > 0) {
             console.log(`🎯 [CLOSE_READY] Found ${positionsToClose.length} positions to close`);
         }
-
-        // Batch close all eligible positions simultaneously
         if (positionsToClose.length > 0) {
             const closeTime = new Date().toISOString();
-            const currentDiffPercentBatch = CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow);
-
-            const results = positionsToClose.map(({ arbitrageId, position }) => {
-                const originalDiffPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
-                const currentProfitPercent = originalDiffPercent - currentDiffPercentBatch;
-                const totalFees = (config.feesPercent[position.buyExchangeId] || 0) + (config.feesPercent[position.sellExchangeId] || 0);
-                const netProfitPercent = currentProfitPercent - totalFees;
-                // Calculate actual profit based on the volume and price difference
-                const actualProfitUSD = (netProfitPercent / 100) * position.totalInvestmentUSD;
-                return { arbitrageId, position, originalDiffPercent, currentDiffPercentBatch, currentProfitPercent, totalFees, netProfitPercent, actualProfitUSD };
+            const results = positionsToClose.map(({ arbitrageId, position, originalDiffPercent, totalFees, netProfitPercent }) => {
+                const currentProfitPercent = originalDiffPercent - currentDiffPercent;
+                const finalNetProfitPercent = currentProfitPercent - totalFees;
+                const actualProfitUSD = (finalNetProfitPercent / 100) * position.totalInvestmentUSD;
+                return { arbitrageId, position, originalDiffPercent, currentDiffPercent, currentProfitPercent, totalFees, netProfitPercent: finalNetProfitPercent, actualProfitUSD };
             });
-
-            // Aggregate state updates once
             const batchProfit = results.reduce((a, r) => a + r.actualProfitUSD, 0);
             const batchInvestment = results.reduce((a, r) => a + r.position.totalInvestmentUSD, 0);
             tradingState.totalProfit += batchProfit;
             tradingState.lastTradeProfit = results[results.length - 1].actualProfitUSD;
             tradingState.totalTrades += results.length;
             tradingState.totalInvestment -= batchInvestment;
-
-            // Remove all from openPositions
             for (const r of results) {
                 openPositions.delete(r.arbitrageId);
                 lastCloseDiffByPosition.delete(r.arbitrageId);
             }
             tradingState.isAnyPositionOpen = openPositions.size > 0;
-
-            // Persist logs in parallel
             await Promise.all(results.map(r => logger.logTrade("ARBITRAGE_CLOSE", symbol, {
                 arbitrageId: r.arbitrageId,
                 buyExchangeId: r.position.buyExchangeId,
@@ -437,7 +396,7 @@ export async function tryOpenPosition(
                 buyAmount: r.position.volume,
                 sellAmount: r.position.volume,
                 originalDiffPercent: r.originalDiffPercent,
-                currentDiffPercent: currentDiffPercentBatch,
+                currentDiffPercent: r.currentDiffPercent,
                 netProfitPercent: r.netProfitPercent,
                 actualProfitUSD: r.actualProfitUSD,
                 totalInvestmentUSD: r.position.totalInvestmentUSD,
@@ -447,19 +406,9 @@ export async function tryOpenPosition(
                 tradeNumber: tradingState.totalTrades,
                 tradingMode: r.position.tradingMode,
                 targetTokenQuantity: r.position.targetTokenQuantity,
-                details: {
-                    closeTime,
-                    orderbookAtClose: null,
-                    profitCalculation: {
-                        formula: "actualProfitUSD = TotalInvestmentUSD * (netProfitPercent / 100)",
-                        totalInvestmentUSD: r.position.totalInvestmentUSD,
-                        netProfitPercent: r.netProfitPercent,
-                        calculatedProfit: r.actualProfitUSD
-                    }
-                }
+                details: { closeTime, orderbookAtClose: null }
             })));
-
-            console.log(`📉 [ARBITRAGE_CLOSE_BATCH] Closed ${results.length} positions | Diff: ${FormattingUtils.formatPercentageColored(currentDiffPercentBatch)} | Total P&L: ${FormattingUtils.formatCurrencyColored(batchProfit)}`);
+            console.log(`📉 [ARBITRAGE_CLOSE_BATCH] Closed ${results.length} positions | Diff: ${FormattingUtils.formatPercentageColored(currentDiffPercent)} | Total P&L: ${FormattingUtils.formatCurrencyColored(batchProfit)}`);
         }
     }
     
