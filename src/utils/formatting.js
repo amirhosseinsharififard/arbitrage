@@ -1,111 +1,284 @@
+/**
+ * Data formatting and display utilities
+ * 
+ * This module provides comprehensive formatting functions for:
+ * 1. Price formatting with configurable decimal places
+ * 2. Currency formatting with proper symbols and precision
+ * 3. Percentage formatting for profit/loss display
+ * 4. Volume formatting with appropriate units
+ * 5. Timestamp formatting for human-readable display
+ * 6. Visual separators and formatting helpers
+ * 
+ * All formatting functions respect configuration settings and
+ * provide consistent output across the system.
+ */
+
 import config from "../config/config.js";
 
 /**
- * Formatting utilities for consistent display across the application
+ * Format a price value with appropriate decimal places
+ * 
+ * Formats price values according to configuration settings.
+ * Ensures consistent precision across all price displays.
+ * 
+ * @param {number} price - Price value to format
+ * @returns {string} Formatted price string
  */
-export class FormattingUtils {
-    /**
-     * Format currency amount with proper decimal places
-     * @param {number} amount - Amount to format
-     * @param {string} currency - Currency code
-     * @returns {string} Formatted currency string
-     */
-    static formatCurrency(amount, currency = 'USD') {
-        if (amount == null || isNaN(amount)) return 'N/A';
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: config.display.decimalPlaces.currency,
-            maximumFractionDigits: config.display.decimalPlaces.currency
-        }).format(amount);
+export function formatPrice(price) {
+    if (price == null || isNaN(price)) {
+        return 'n/a';
     }
 
-    /**
-     * Format percentage with proper decimal places
-     * @param {number} value - Percentage value
-     * @param {number} decimals - Number of decimal places
-     * @returns {string} Formatted percentage string
-     */
-    static formatPercentage(value, decimals = null) {
-        if (value == null || isNaN(value)) return 'N/A';
-        const decimalPlaces = decimals !== null ? decimals : config.display.decimalPlaces.percentage;
-        return `${value.toFixed(decimalPlaces)}%`;
+    // Use configured decimal places for price formatting
+    const decimalPlaces = config.display.decimalPlaces.price;
+    return price.toFixed(decimalPlaces);
+}
+
+/**
+ * Format a percentage value with appropriate decimal places
+ * 
+ * Formats percentage values for profit/loss display.
+ * Adds % symbol and ensures consistent precision.
+ * 
+ * @param {number} percentage - Percentage value to format
+ * @returns {string} Formatted percentage string with % symbol
+ */
+export function formatPercentage(percentage) {
+    if (percentage == null || isNaN(percentage)) {
+        return 'n/a%';
     }
 
-    /**
-     * Format price with proper decimal places
-     * @param {number} price - Price to format
-     * @returns {string} Formatted price string
-     */
-    static formatPrice(price) {
-        if (price == null || isNaN(price)) return 'N/A';
-        return price.toFixed(config.display.decimalPlaces.price);
+    // Use configured decimal places for percentage formatting
+    const decimalPlaces = config.display.decimalPlaces.percentage;
+    return `${percentage.toFixed(decimalPlaces)}%`;
+}
+
+/**
+ * Format a currency value with appropriate decimal places
+ * 
+ * Formats USD currency values with proper symbol and precision.
+ * Ensures consistent display across all financial data.
+ * 
+ * @param {number} amount - Currency amount to format
+ * @returns {string} Formatted currency string with $ symbol
+ */
+export function formatCurrency(amount) {
+    if (amount == null || isNaN(amount)) {
+        return '$n/a';
     }
 
-    /**
-     * Format volume with proper decimal places
-     * @param {number} volume - Volume to format
-     * @returns {string} Formatted volume string
-     */
-    static formatVolume(volume) {
-        if (volume == null || isNaN(volume)) return 'N/A';
-        return volume.toFixed(config.display.decimalPlaces.volume);
+    // Use configured decimal places for currency formatting
+    const decimalPlaces = config.display.decimalPlaces.currency;
+    return `$${amount.toFixed(decimalPlaces)}`;
+}
+
+/**
+ * Format a volume value with appropriate decimal places
+ * 
+ * Formats trading volume values for display.
+ * Ensures consistent precision across volume displays.
+ * 
+ * @param {number} volume - Volume value to format
+ * @returns {string} Formatted volume string
+ */
+export function formatVolume(volume) {
+    if (volume == null || isNaN(volume)) {
+        return 'n/a';
     }
 
-    /**
-     * Format timestamp to readable string
-     * @param {string|Date} timestamp - Timestamp to format
-     * @returns {string} Formatted timestamp string
-     */
-    static formatTimestamp(timestamp) {
-        if (!timestamp) return 'N/A';
-        return new Date(timestamp).toLocaleString('en-US');
+    // Use configured decimal places for volume formatting
+    const decimalPlaces = config.display.decimalPlaces.volume;
+    return volume.toFixed(decimalPlaces);
+}
+
+/**
+ * Format a timestamp for human-readable display
+ * 
+ * Converts ISO timestamp strings to localized, readable format.
+ * Provides consistent time display across the system.
+ * 
+ * @param {string} timestamp - ISO timestamp string
+ * @returns {string} Formatted timestamp string
+ */
+export function formatTimestamp(timestamp) {
+    if (!timestamp) {
+        return 'n/a';
     }
 
-    /**
-     * Calculate time difference between two timestamps
-     * @param {string|Date} startTime - Start time
-     * @param {string|Date} endTime - End time
-     * @returns {string} Formatted time difference
-     */
-    static calculateTimeDifference(startTime, endTime) {
-        if (!startTime || !endTime) return 'N/A';
-        const diff = new Date(endTime) - new Date(startTime);
-        const minutes = Math.floor(diff / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        return `${minutes}m ${seconds}s`;
-    }
-
-    /**
-     * Create separator line with specified length
-     * @param {number} length - Length of separator
-     * @param {string} character - Character to use for separator
-     * @returns {string} Separator string
-     */
-    static createSeparator(length = null, character = '=') {
-        const separatorLength = length || config.display.separatorLength;
-        return character.repeat(separatorLength);
-    }
-
-    /**
-     * Format trade information for display
-     * @param {object} trade - Trade object
-     * @returns {string} Formatted trade string
-     */
-    static formatTradeInfo(trade) {
-        if (!trade) return 'N/A';
-        return `${trade.symbol} | ${trade.action} | ${this.formatCurrency(trade.profit)}`;
-    }
-
-    /**
-     * Format profit/loss information for display
-     * @param {object} profitData - Profit data object
-     * @returns {string} Formatted profit string
-     */
-    static formatProfitInfo(profitData) {
-        if (!profitData) return 'N/A';
-        return `Profit: ${this.formatPercentage(profitData.percentage)} | ${this.formatCurrency(profitData.amount)}`;
+    try {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    } catch (error) {
+        return 'Invalid timestamp';
     }
 }
 
-export default FormattingUtils;
+/**
+ * Create a visual separator line for console output
+ * 
+ * Generates consistent separator lines for better readability
+ * in console output. Length is configurable.
+ * 
+ * @param {number} length - Length of separator line (default from config)
+ * @param {string} character - Character to use for separator (default: '=')
+ * @returns {string} Separator line string
+ */
+export function createSeparator(length = config.display.separatorLength, character = '=') {
+    return character.repeat(length);
+}
+
+/**
+ * Format a number with appropriate precision based on its magnitude
+ * 
+ * Automatically adjusts decimal places based on the number's size.
+ * Small numbers get more precision, large numbers get less.
+ * 
+ * @param {number} value - Number to format
+ * @param {number} maxDecimals - Maximum decimal places to show
+ * @returns {string} Formatted number string
+ */
+export function formatSmartNumber(value, maxDecimals = 6) {
+    if (value == null || isNaN(value)) {
+        return 'n/a';
+    }
+
+    // Determine appropriate decimal places based on magnitude
+    let decimalPlaces = maxDecimals;
+
+    if (Math.abs(value) >= 1000) {
+        decimalPlaces = Math.min(maxDecimals, 2);
+    } else if (Math.abs(value) >= 100) {
+        decimalPlaces = Math.min(maxDecimals, 3);
+    } else if (Math.abs(value) >= 10) {
+        decimalPlaces = Math.min(maxDecimals, 4);
+    } else if (Math.abs(value) >= 1) {
+        decimalPlaces = Math.min(maxDecimals, 5);
+    }
+
+    return value.toFixed(decimalPlaces);
+}
+
+/**
+ * Format a large number with appropriate units (K, M, B)
+ * 
+ * Converts large numbers to human-readable format with units.
+ * Useful for displaying large volumes or amounts.
+ * 
+ * @param {number} value - Number to format
+ * @returns {string} Formatted number with appropriate unit
+ */
+export function formatLargeNumber(value) {
+    if (value == null || isNaN(value)) {
+        return 'n/a';
+    }
+
+    const absValue = Math.abs(value);
+
+    if (absValue >= 1e9) {
+        return `${(value / 1e9).toFixed(2)}B`;
+    } else if (absValue >= 1e6) {
+        return `${(value / 1e6).toFixed(2)}M`;
+    } else if (absValue >= 1e3) {
+        return `${(value / 1e3).toFixed(2)}K`;
+    } else {
+        return value.toFixed(2);
+    }
+}
+
+/**
+ * Format a duration in milliseconds to human-readable format
+ * 
+ * Converts millisecond durations to readable time format.
+ * Shows appropriate units based on duration length.
+ * 
+ * @param {number} milliseconds - Duration in milliseconds
+ * @returns {string} Formatted duration string
+ */
+export function formatDuration(milliseconds) {
+    if (milliseconds == null || isNaN(milliseconds)) {
+        return 'n/a';
+    }
+
+    const seconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds % 60}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}
+
+/**
+ * Format a file size in bytes to human-readable format
+ * 
+ * Converts byte sizes to appropriate units (KB, MB, GB).
+ * Useful for log file size display and monitoring.
+ * 
+ * @param {number} bytes - Size in bytes
+ * @returns {string} Formatted file size string
+ */
+export function formatFileSize(bytes) {
+    if (bytes == null || isNaN(bytes)) {
+        return 'n/a';
+    }
+
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) return '0 B';
+
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+}
+
+/**
+ * Format a trade status with appropriate emoji and color
+ * 
+ * Creates visually appealing trade status displays.
+ * Uses emojis and formatting for quick visual recognition.
+ * 
+ * @param {string} status - Trade status string
+ * @returns {string} Formatted status with emoji
+ */
+export function formatTradeStatus(status) {
+    if (!status) return 'Unknown';
+
+    const statusMap = {
+        'OPENING': '🔓 Opening',
+        'OPEN': '🟢 Open',
+        'CLOSING': '🔒 Closing',
+        'CLOSED': '🔴 Closed',
+        'CANCELLED': '❌ Cancelled',
+        'ERROR': '⚠️ Error'
+    };
+
+    return statusMap[status] || status;
+}
+
+/**
+ * Format a profit/loss value with appropriate color and symbol
+ * 
+ * Creates visually distinct profit/loss displays.
+ * Uses emojis and formatting to indicate positive/negative values.
+ * 
+ * @param {number} value - Profit/loss value
+ * @returns {string} Formatted P&L string with emoji
+ */
+export function formatProfitLoss(value) {
+    if (value == null || isNaN(value)) {
+        return '💰 n/a';
+    }
+
+    if (value > 0) {
+        return `📈 +${formatCurrency(value)}`;
+    } else if (value < 0) {
+        return `📉 ${formatCurrency(value)}`;
+    } else {
+        return `➖ ${formatCurrency(value)}`;
+    }
+}
