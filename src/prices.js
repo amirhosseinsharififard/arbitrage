@@ -25,6 +25,8 @@ import exchangeManager from "./exchanges/exchangeManager.js";
  * Prevents spam in console output when prices haven't changed
  */
 const lastProfits = new Map();
+// Tick-level cache signature to skip duplicate processing/logging when prices unchanged
+let lastTickKey = null;
 
 /**
  * Logs profit information when positive arbitrage opportunity is detected
@@ -119,6 +121,13 @@ export async function printBidAskPairs(symbols, exchanges) {
     const mexcPrice = prices.mexc; // MEXC exchange price data
     const lbankPrice = prices.lbank; // LBank exchange price data
 
+    // Skip duplicate ticks if bid/ask pairs unchanged
+    const tickKey = `${mexcPrice && mexcPrice.bid != null ? mexcPrice.bid : 'n'}|${mexcPrice && mexcPrice.ask != null ? mexcPrice.ask : 'n'}|${lbankPrice && lbankPrice.bid != null ? lbankPrice.bid : 'n'}|${lbankPrice && lbankPrice.ask != null ? lbankPrice.ask : 'n'}`;
+    if (tickKey === lastTickKey) {
+        return; // no change; skip heavy logging and processing
+    }
+    lastTickKey = tickKey;
+
     // Fetch raw order books for more accurate depth-aware decisions
     // Order books provide volume information and better price accuracy
     let mexcOb, lbankOb;
@@ -203,6 +212,7 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     // Position closing logic
     // Try to close open positions based on current market conditions
+    // The tryClosePosition function now handles all closing logic internally
     if (status.openPositionsCount > 0) {
         if (lbankBidVsMexcAskPct <= config.scenarios.alireza.closeAtPercent) {
             console.log(`🎯 Closing eligible positions: lbankBidVsMexcAskPct (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
