@@ -11,9 +11,9 @@ const config = {
     },
 
     // System timing and performance settings
-    intervalMs: 100, // Main loop interval in milliseconds (10 checks per second)
-    statusUpdateInterval: 1000, // How often to display status updates (every 10 iterations)
-    retryDelayMs: 5000, // Delay before retrying after errors (5 seconds)
+    intervalMs: 50, // Main loop interval in milliseconds (20 checks per second) - Increased speed
+    statusUpdateInterval: 2000, // How often to display status updates (every 40 iterations) - Reduced console spam
+    retryDelayMs: 2000, // Delay before retrying after errors (2 seconds) - Faster recovery
 
     // Trading thresholds and risk management
     profitThresholdPercent: 2.5, // Minimum profit percentage to open a new position
@@ -26,7 +26,7 @@ const config = {
     maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
     minTokenQuantity: 100, // Minimum token quantity for validation
 
-    maxTrades: 5, // Maximum number of trades (0 = unlimited)
+    maxTrades: 0, // Maximum number of trades (0 = unlimited)
 
     // Exchange fee configuration (percentage of trade value)
     // Set to 0 for testing, adjust based on actual exchange fees
@@ -53,9 +53,9 @@ const config = {
 
     // Logging and monitoring configuration
     logSettings: {
-        maxRecentTrades: 1000, // Maximum number of recent trades to display
-        summaryUpdateInterval: 10, // How often to update summary statistics
-        enableDetailedLogging: true, // Enable verbose console output
+        maxRecentTrades: 500, // Maximum number of recent trades to display - Reduced memory usage
+        summaryUpdateInterval: 20, // How often to update summary statistics - Less frequent updates
+        enableDetailedLogging: false, // Enable verbose console output - Reduced console spam
         logFile: "trades.log", // Main trade log file path
         summaryFile: "session_summary.txt", // Session summary file path
         clearOnStartup: true, // Clear log files when system starts
@@ -66,7 +66,7 @@ const config = {
         requestLogFile: "requests.log", // Network request log file
         // Only log actual trade actions, exclude price data and errors
         loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"],
-        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR"]
+        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR", "PRICE_UPDATE"] // Exclude more noise
     },
 
     // Arbitrage validation and filtering settings

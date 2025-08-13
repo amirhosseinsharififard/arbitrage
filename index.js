@@ -21,6 +21,7 @@ import { getTradingStatus } from "./src/arbitrage_bot/arbitrage.js";
 import statistics from "./src/monitoring/statistics.js";
 import logger from "./src/logging/logger.js";
 import { FormattingUtils } from "./src/utils/index.js";
+import performanceOptimizer from "./src/utils/performanceOptimizer.js";
 
 /**
  * Initialize the system on startup
@@ -42,6 +43,9 @@ async function initializeSystem() {
 
         // Reset session statistics to start fresh
         statistics.resetSessionData();
+
+        // Start performance optimization
+        performanceOptimizer.startOptimization();
 
         console.log("✅ System initialization completed!");
     } catch (error) {
