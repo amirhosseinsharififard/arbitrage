@@ -112,7 +112,8 @@ const config = {
     scenarios: {
         alireza: {
             openThresholdPercent: 0.5, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: 1.5 // Close when profit reaches 1.5%
+            closeAtPercent: -1.5, // Close when profit reaches 1.5%
+            maxPositionDurationMinutes: 30 // Maximum time to hold a position before forced close
         }
     },
 
