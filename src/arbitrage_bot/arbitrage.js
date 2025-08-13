@@ -644,3 +644,85 @@ export async function tryContinueTokenQuantityTrading(
     console.log(`   - Accumulated Quantity: ${FormattingUtils.formatVolume(currentQuantity + continuationVolume)} / ${FormattingUtils.formatVolume(targetQuantity)}`);
     console.log(`   - Ready for execution...`);
 }
+
+/**
+ * Restore open positions from trades.log file
+ * This function reads the log file and restores any positions that were opened but not closed
+ */
+export function restoreOpenPositionsFromLog() {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const logFile = path.join(process.cwd(), 'trades.log');
+        
+        if (!fs.existsSync(logFile)) {
+            console.log('📄 No trades.log file found, starting with empty positions');
+            return;
+        }
+
+        const logContent = fs.readFileSync(logFile, 'utf8');
+        const lines = logContent.split('\n').filter(line => line.trim());
+        
+        let restoredCount = 0;
+        const openedPositions = new Map();
+        const closedPositions = new Set();
+
+        // Parse all log entries
+        for (const line of lines) {
+            try {
+                const entry = JSON.parse(line);
+                
+                if (entry.action === 'ARBITRAGE_OPEN') {
+                    openedPositions.set(entry.arbitrageId, {
+                        arbitrageId: entry.arbitrageId,
+                        symbol: entry.symbol,
+                        buyExchangeId: entry.buyExchangeId,
+                        sellExchangeId: entry.sellExchangeId,
+                        buyPrice: entry.buyPrice,
+                        sellPrice: entry.sellPrice,
+                        volume: entry.volume,
+                        buyAmount: entry.buyAmount,
+                        sellAmount: entry.sellAmount,
+                        buyCostUSD: entry.buyCostUSD,
+                        sellProceedsUSD: entry.sellProceedsUSD,
+                        diffPercent: entry.diffPercent,
+                        totalInvestmentUSD: entry.totalInvestmentUSD,
+                        expectedProfitUSD: entry.expectedProfitUSD,
+                        tradingMode: entry.tradingMode,
+                        targetTokenQuantity: entry.targetTokenQuantity,
+                        openTime: entry.timestamp,
+                        details: entry.details
+                    });
+                } else if (entry.action === 'ARBITRAGE_CLOSE') {
+                    closedPositions.add(entry.arbitrageId);
+                }
+            } catch (parseError) {
+                // Skip invalid JSON lines
+                continue;
+            }
+        }
+
+        // Restore positions that were opened but not closed
+        for (const [arbitrageId, position] of openedPositions.entries()) {
+            if (!closedPositions.has(arbitrageId)) {
+                openPositions.set(arbitrageId, position);
+                restoredCount++;
+                
+                // Update trading state
+                tradingState.isAnyPositionOpen = true;
+                tradingState.totalInvestment += position.totalInvestmentUSD;
+                
+                console.log(`🔄 Restored position: ${arbitrageId} | Volume: ${position.volume} | Investment: $${position.totalInvestmentUSD}`);
+            }
+        }
+
+        if (restoredCount > 0) {
+            console.log(`✅ Restored ${restoredCount} open positions from trades.log`);
+        } else {
+            console.log('📄 No open positions found in trades.log');
+        }
+        
+    } catch (error) {
+        console.log(`⚠️ Error restoring positions from log: ${error.message}`);
+    }
+}

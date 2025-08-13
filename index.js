@@ -17,11 +17,11 @@ import config from "./src/config/config.js";
 import { retryWrapper } from "./src/error/errorBoundory.js";
 import exchangeManager from "./src/exchanges/exchangeManager.js";
 import exitHandler from "./src/system/exitHandler.js";
-import { getTradingStatus } from "./src/arbitrage_bot/arbitrage.js";
+import { getTradingStatus, restoreOpenPositionsFromLog } from "./src/arbitrage_bot/arbitrage.js";
 import statistics from "./src/monitoring/statistics.js";
 import logger from "./src/logging/logger.js";
 import { FormattingUtils } from "./src/utils/index.js";
-import performanceOptimizer from "./src/utils/performanceOptimizer.js";
+import { performanceMonitor } from "./src/utils/performanceOptimizer.js";
 
 /**
  * Initialize the system on startup
@@ -44,8 +44,11 @@ async function initializeSystem() {
         // Reset session statistics to start fresh
         statistics.resetSessionData();
 
-        // Start performance optimization
-        performanceOptimizer.startOptimization();
+        // Restore open positions from trades.log file
+        restoreOpenPositionsFromLog();
+
+        // Start performance monitoring
+        console.log("🚀 Performance monitoring started");
 
         console.log("✅ System initialization completed!");
     } catch (error) {
