@@ -1,0 +1,1 @@
+{"action":"ARBITRAGE_OPEN","symbol":"DEBT/USDT:USDT","timestamp":"2025-08-11T14:55:17.624Z","arbitrageId":"lbank-mexc","buyExchangeId":"lbank","sellExchangeId":"mexc","buyPrice":0.004301,"sellPrice":0.004444,"volume":22502.2502250225,"diffPercent":"3.325%","totalInvestmentUSD":"$196.78","expectedProfitUSD":"$6.65"}

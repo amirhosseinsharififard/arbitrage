@@ -1,4 +1,9 @@
-import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
+import {
+  tryClosePosition,
+  tryOpenPosition,
+  openPositions,
+  getTradingStatus,
+} from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
 import { priceService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
@@ -16,30 +21,42 @@ const lastProfits = new Map();
  * @param {number} thresholdPercent - Minimum profit threshold
  */
 async function logPositiveProfit(
-    label,
-    bidPrice,
-    askPrice,
-    feeBuyPercent,
-    feeSellPercent,
-    thresholdPercent = config.arbitrage.defaultThresholdPercent
+  label,
+  bidPrice,
+  askPrice,
+  feeBuyPercent,
+  feeSellPercent,
+  thresholdPercent = config.arbitrage.defaultThresholdPercent
 ) {
-    if (bidPrice == null || askPrice == null) return;
+  if (bidPrice == null || askPrice == null) return;
 
-    const grossProfitPercent = CalculationUtils.calculatePriceDifference(bidPrice, askPrice);
-    const totalFeesPercent = feeBuyPercent + feeSellPercent;
-    const netProfitPercent = grossProfitPercent - totalFeesPercent;
+  const grossProfitPercent = CalculationUtils.calculatePriceDifference(
+    bidPrice,
+    askPrice
+  );
+  const totalFeesPercent = feeBuyPercent + feeSellPercent;
+  const netProfitPercent = grossProfitPercent - totalFeesPercent;
 
-    // Check if threshold filtering is enabled
-    if (config.arbitrage.enableThresholdFiltering && netProfitPercent < thresholdPercent) {
-        return;
-    }
+  // Check if threshold filtering is enabled
+  if (
+    config.arbitrage.enableThresholdFiltering &&
+    netProfitPercent < thresholdPercent
+  ) {
+    return;
+  }
 
-    console.log(
-        `${label}: Bid= ${FormattingUtils.formatPrice(bidPrice)}, Ask= ${FormattingUtils.formatPrice(askPrice)}, ` +
-        `Gross Profit: ${FormattingUtils.formatPercentage(grossProfitPercent)}, ` +
-        `Fees: ${FormattingUtils.formatPercentage(totalFeesPercent)}, ` +
-        `Net Profit After Fees: ${FormattingUtils.formatPercentage(netProfitPercent)}`
-    );
+  console.log(
+    `${label}: Bid= ${FormattingUtils.formatPrice(
+      bidPrice
+    )}, Ask= ${FormattingUtils.formatPrice(askPrice)}, ` +
+      `Gross Profit: ${FormattingUtils.formatPercentage(
+        grossProfitPercent
+      )}, ` +
+      `Fees: ${FormattingUtils.formatPercentage(totalFeesPercent)}, ` +
+      `Net Profit After Fees: ${FormattingUtils.formatPercentage(
+        netProfitPercent
+      )}`
+  );
 }
 
 /**
@@ -50,20 +67,20 @@ async function logPositiveProfit(
  * @param {number} sellPrice - Sell price
  */
 async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
-    const key = `${buy}->${sell}`;
-    const last = lastProfits.get(key);
+  const key = `${buy}->${sell}`;
+  const last = lastProfits.get(key);
 
-    if (!last || last.buyPrice !== buyPrice || last.sellPrice !== sellPrice) {
-        await logPositiveProfit(
-            `BUY=> ${buy} & SELL=> ${sell}`,
-            buyPrice,
-            sellPrice,
-            config.feesPercent[buy] || 0,
-            config.feesPercent[sell] || 0,
-            config.profitThresholdPercent
-        );
-        lastProfits.set(key, { buyPrice, sellPrice });
-    }
+  if (!last || last.buyPrice !== buyPrice || last.sellPrice !== sellPrice) {
+    await logPositiveProfit(
+      `BUY=> ${buy} & SELL=> ${sell}`,
+      buyPrice,
+      sellPrice,
+      config.feesPercent[buy] || 0,
+      config.feesPercent[sell] || 0,
+      config.profitThresholdPercent
+    );
+    lastProfits.set(key, { buyPrice, sellPrice });
+  }
 }
 
 /**
@@ -72,71 +89,112 @@ async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
  * @param {Map} exchanges - Map containing exchange instances
  */
 export async function printBidAskPairs(symbols, exchanges) {
-    // Fetch current prices from both exchanges
-    const prices = await priceService.getPricesFromExchanges(exchanges, symbols);
-    const mexcPrice = prices.mexc;
-    const lbankPrice = prices.lbank;
+  // Fetch current prices from both exchanges
+  const prices = await priceService.getPricesFromExchanges(exchanges, symbols);
+  const mexcPrice = prices.mexc;
+  const lbankPrice = prices.lbank;
 
-    // Display current system status
-    const status = getTradingStatus();
-    console.log(`[STATUS] Open position: ${status.isAnyPositionOpen ? 'Yes' : 'No'} | Total P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)}`);
+  // Display current system status
+  const status = getTradingStatus();
+  console.log(
+    `[STATUS] Open position: ${
+      status.isAnyPositionOpen ? "Yes" : "No"
+    } | Total P&L: ${FormattingUtils.formatCurrency(
+      status.totalProfit
+    )} | Total trades: ${
+      status.totalTrades
+    } | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)}`
+  );
 
-    // Calculate current price differences for both directions
-    const mexcToLbankDiff = CalculationUtils.calculatePriceDifference(mexcPrice.bid, lbankPrice.ask);
-    const lbankToMexcDiff = CalculationUtils.calculatePriceDifference(lbankPrice.bid, mexcPrice.ask);
+  // Calculate current price differences for both directions
+  const mexcToLbankDiff = CalculationUtils.calculatePriceDifference(
+    mexcPrice.bid,
+    lbankPrice.ask
+  );
+  const lbankToMexcDiff = CalculationUtils.calculatePriceDifference(
+    lbankPrice.bid,
+    mexcPrice.ask
+  );
 
-    // Log current price differences
-    console.log(`[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(mexcPrice.bid)} Ask=${FormattingUtils.formatPrice(mexcPrice.ask)}`);
-    console.log(`[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(lbankPrice.bid)} Ask=${FormattingUtils.formatPrice(lbankPrice.ask)}`);
-    console.log(`[DIFF] MEXC→LBANK: ${FormattingUtils.formatPercentage(mexcToLbankDiff)} | LBANK→MEXC: ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`);
+  // Log current price differences
+  console.log(
+    `[PRICES] MEXC: Bid=${FormattingUtils.formatPrice(
+      mexcPrice.bid
+    )} Ask=${FormattingUtils.formatPrice(mexcPrice.ask)}`
+  );
+  console.log(
+    `[PRICES] LBANK: Bid=${FormattingUtils.formatPrice(
+      lbankPrice.bid
+    )} Ask=${FormattingUtils.formatPrice(lbankPrice.ask)}`
+  );
+  console.log(
+    `[DIFF] MEXC→LBANK: ${FormattingUtils.formatPercentage(
+      mexcToLbankDiff
+    )} | LBANK→MEXC: ${FormattingUtils.formatPercentage(lbankToMexcDiff)}`
+  );
 
-    // Check arbitrage opportunities and try to open positions
-    if (!status.isAnyPositionOpen) {
-        // Check MEXC -> LBANK arbitrage opportunity
-        if (mexcToLbankDiff >= config.profitThresholdPercent) {
-            console.log(`🎯 ARBITRAGE OPPORTUNITY: MEXC→LBANK (${FormattingUtils.formatPercentage(mexcToLbankDiff)} >= ${FormattingUtils.formatPercentage(config.profitThresholdPercent)})`);
-            await tryOpenPosition(
-                symbols.mexc,
-                "mexc", // Buy from MEXC
-                "lbank", // Sell to LBANK
-                mexcPrice.bid, // Buying price in MEXC
-                lbankPrice.ask // Selling price in LBANK
-            );
-        }
-        // Check LBANK -> MEXC arbitrage opportunity
-        else if (lbankToMexcDiff >= config.profitThresholdPercent) {
-            console.log(`🎯 ARBITRAGE OPPORTUNITY: LBANK→MEXC (${FormattingUtils.formatPercentage(lbankToMexcDiff)} >= ${FormattingUtils.formatPercentage(config.profitThresholdPercent)})`);
-            await tryOpenPosition(
-                symbols.lbank,
-                "lbank", // Buy from LBANK
-                "mexc", // Sell to MEXC
-                lbankPrice.bid, // Buying price in LBANK
-                mexcPrice.ask // Selling price in MEXC
-            );
-        }
+  // Check arbitrage opportunities and try to open positions
+  if (!status.isAnyPositionOpen) {
+    // Check MEXC -> LBANK arbitrage opportunity
+    if (mexcToLbankDiff >= config.profitThresholdPercent) {
+      console.log(
+        `🎯 ARBITRAGE OPPORTUNITY: MEXC→LBANK (${FormattingUtils.formatPercentage(
+          mexcToLbankDiff
+        )} >= ${FormattingUtils.formatPercentage(
+          config.profitThresholdPercent
+        )})`
+      );
+      await tryOpenPosition(
+        symbols.mexc,
+        "mexc", // Buy from MEXC
+        "lbank", // Sell to LBANK
+        mexcPrice.bid, // Buying price in MEXC
+        lbankPrice.ask // Selling price in LBANK
+      );
     }
-
-    // Try to close open positions based on current market conditions
-    if (status.isAnyPositionOpen) {
-        // For MEXC -> LBANK position
-        if (openPositions.has("mexc-lbank")) {
-            await tryClosePosition(
-                symbols.mexc,
-                mexcPrice.bid, // Current buying price in MEXC
-                lbankPrice.ask // Current selling price in LBANK
-            );
-        }
-        // For LBANK -> MEXC position
-        else if (openPositions.has("lbank-mexc")) {
-            await tryClosePosition(
-                symbols.lbank,
-                lbankPrice.bid, // Current buying price in LBANK
-                mexcPrice.ask // Current selling price in MEXC
-            );
-        }
+    // Check LBANK -> MEXC arbitrage opportunity
+    else if (lbankToMexcDiff >= config.profitThresholdPercent) {
+      console.log(
+        `🎯 ARBITRAGE OPPORTUNITY: LBANK→MEXC (${FormattingUtils.formatPercentage(
+          lbankToMexcDiff
+        )} >= ${FormattingUtils.formatPercentage(
+          config.profitThresholdPercent
+        )})`
+      );
+      await tryOpenPosition(
+        symbols.lbank,
+        "lbank", // Buy from LBANK
+        "mexc", // Sell to MEXC
+        lbankPrice.bid, // Buying price in LBANK
+        mexcPrice.ask // Selling price in MEXC
+      );
     }
+  }
 
-    console.log(FormattingUtils.createSeparator());
+  // Try to close open positions based on current market conditions
+  if (status.isAnyPositionOpen) {
+    await tryClosePosition(symbols.mexc, {
+      mexc: mexcPrice,
+      lbank: lbankPrice,
+    });
+  }
+  // For MEXC -> LBANK position
+  if (openPositions.has("mexc-lbank")) {
+    await tryClosePosition(
+      symbols.mexc,
+      mexcPrice.bid, // Current buying price in MEXC
+      lbankPrice.ask // Current selling price in LBANK
+    );
+  }
+  // For LBANK -> MEXC position
+  else if (openPositions.has("lbank-mexc")) {
+    await tryClosePosition(
+      symbols.lbank,
+      lbankPrice.bid, // Current buying price in LBANK
+      mexcPrice.ask // Current selling price in MEXC
+    );
+  }
+  console.log(FormattingUtils.createSeparator());
 }
 
 // Re-export the getPrice function for backward compatibility
