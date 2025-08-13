@@ -16,8 +16,8 @@ const config = {
     retryDelayMs: 2000, // Delay before retrying after errors (2 seconds) - Faster recovery
 
     // Trading thresholds and risk management
-    profitThresholdPercent: 2.5, // Minimum profit percentage to open a new position
-    closeThresholdPercent: -1.5, // Profit percentage threshold to close an open position
+    profitThresholdPercent: 2, // Minimum profit percentage to open a new position
+    closeThresholdPercent: 1.5, // Profit percentage threshold to close an open position
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
@@ -111,8 +111,8 @@ const config = {
     // Current logic trades only in LBANK(ask)->MEXC(bid) direction
     scenarios: {
         alireza: {
-            openThresholdPercent: 0.5, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: -1.5 // Close when loss reaches -2.0%
+            openThresholdPercent: 2.5, // Minimum profit % to open LBANK->MEXC position
+            closeAtPercent: 1.5 // Close when current difference reaches +1%
         }
     },
 

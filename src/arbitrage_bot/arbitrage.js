@@ -351,7 +351,7 @@ export async function tryOpenPosition(
             if (position.symbol !== symbol) continue;
 
             // Calculate current price difference in the market
-            const currentDiffPercent = CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow);
+            const currentDiffPercent = Number(CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow));
 
             // Calculate current profit/loss based on original arbitrage opportunity
             const originalDiffPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
@@ -365,13 +365,24 @@ export async function tryOpenPosition(
             // Calculate net profit after deducting fees
             const netProfitPercent = currentProfitPercent - totalFees;
 
-            // Close when loss limit is reached (current profit >= loss limit, since loss is negative)
-            const lossLimit = config.scenarios.alireza.closeAtPercent; // -1.5% loss limit
-            const shouldClose = currentProfitPercent >= lossLimit;
+            // Close when mexcAskVsLbankBidPct reaches the target threshold
+            const closeThreshold = Number(config.scenarios.alireza.closeAtPercent); // +1.5% difference threshold
+            // Calculate mexcAskVsLbankBidPct (MEXC ask vs LBANK bid)
+            const mexcAskVsLbankBidPct = CalculationUtils.calculatePriceDifference(sellPriceNow, buyPriceNow);
+            const shouldClose = mexcAskVsLbankBidPct <= closeThreshold;
+            
+            // Debug logging
+            
+            console.log(`🔍 [DEBUG] Position ${arbitrageId}: mexcAskVsLbankBidPct=${mexcAskVsLbankBidPct}, closeThreshold=${closeThreshold}, shouldClose=${shouldClose}, condition=${mexcAskVsLbankBidPct} <= ${closeThreshold}`);
 
             if (shouldClose) {
+                // Get the last observed difference for this position
+                const lastDiff = lastCloseDiffByPosition.get(arbitrageId);
+                
                 console.log(`🔍 [CLOSE_ANALYSIS] Position ${arbitrageId}:`);
-                console.log(`   - Current Diff: ${FormattingUtils.formatPercentage(currentDiffPercent)} | Prev: ${lastDiff == null ? 'n/a%' : FormattingUtils.formatPercentage(lastDiff)} | Th: ${FormattingUtils.formatPercentage(threshold)}`);
+                console.log(`   - mexcAskVsLbankBidPct: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} | Prev: ${lastDiff == null ? 'n/a%' : FormattingUtils.formatPercentage(lastDiff)} | Target: ${FormattingUtils.formatPercentage(closeThreshold)}`);
+                console.log(`   - Close Reason: DIFFERENCE_THRESHOLD | Original Diff: ${FormattingUtils.formatPercentage(originalDiffPercent)} | mexcAskVsLbankBidPct: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}`);
+                console.log(`   - Should Close: ${shouldClose} | Condition: ${mexcAskVsLbankBidPct} <= ${closeThreshold}`);
                 positionsToClose.push({ arbitrageId, position });
             }
         }
@@ -379,6 +390,8 @@ export async function tryOpenPosition(
         // Log if no positions are being closed
         if (positionsToClose.length === 0 && openPositions.size > 0) {
             console.log(`${chalk.yellow('⏳')} ${FormattingUtils.label('CLOSE_CHECK')} No positions meet closing criteria. ${chalk.gray('Monitoring...')}`);
+        } else if (positionsToClose.length > 0) {
+            console.log(`🎯 [CLOSE_READY] Found ${positionsToClose.length} positions to close`);
         }
 
         // Batch close all eligible positions simultaneously

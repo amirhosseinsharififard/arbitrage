@@ -84,9 +84,15 @@ export function formatCurrency(amount) {
         return '$n/a';
     }
 
+    // Ensure amount is a number
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount)) {
+        return '$n/a';
+    }
+
     // Use configured decimal places for currency formatting
     const decimalPlaces = config.display.decimalPlaces.currency;
-    return `$${amount.toFixed(decimalPlaces)}`;
+    return `$${numericAmount.toFixed(decimalPlaces)}`;
 }
 
 /**
@@ -120,9 +126,15 @@ export function formatVolume(volume) {
         return 'n/a';
     }
 
+    // Ensure volume is a number
+    const numericVolume = Number(volume);
+    if (isNaN(numericVolume)) {
+        return 'n/a';
+    }
+
     // Use configured decimal places for volume formatting
     const decimalPlaces = config.display.decimalPlaces.volume;
-    return volume.toFixed(decimalPlaces);
+    return numericVolume.toFixed(decimalPlaces);
 }
 
 /**

@@ -162,12 +162,13 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     // Calculate profit percentages for each trading direction
     const lbankToMexcProfit = CalculationUtils.calculatePriceDifference(lbankPrice.ask, mexcPrice.bid);
-    const mexcToLbankProfit = CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid);
+    const mexcToLbankProfit = Math.abs(CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid));
 
     // Calculate percentages used for paired PRICES lines and close checks
     // These are the same as above but used for different display purposes
     const mexcBidVsLbankAskPct = CalculationUtils.calculatePriceDifference(lbankPrice.ask, mexcPrice.bid);
-    const lbankBidVsMexcAskPct = CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid);
+    const lbankBidVsMexcAskPct = Math.abs(CalculationUtils.calculatePriceDifference(mexcPrice.ask, lbankPrice.bid));
+    const mexcAskVsLbankBidPct = CalculationUtils.calculatePriceDifference(lbankPrice.bid, mexcPrice.ask);
 
     // Display current system status and basic information
     console.log(`${FormattingUtils.label('STATUS')} Open: ${chalk.yellow(status.openPositionsCount)} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)} | Trades: ${chalk.yellow(status.totalTrades)} | Invested: ${chalk.yellow(FormattingUtils.formatCurrency(status.totalInvestment))} | Tokens: ${chalk.yellow(FormattingUtils.formatVolume(status.totalOpenTokens ?? 0))}`);
@@ -215,11 +216,11 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Try to close open positions based on current market conditions
     // The tryClosePosition function now handles all closing logic internally
     if (status.openPositionsCount > 0) {
-        if (lbankBidVsMexcAskPct >= config.scenarios.alireza.closeAtPercent) {
-            console.log(`🎯 Closing eligible positions: lbankBidVsMexcAskPct (${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)}) >= ${config.scenarios.alireza.closeAtPercent}%`);
-            await tryClosePosition(symbols.mexc, lbankPrice.bid, mexcPrice.ask);
+        if (mexcAskVsLbankBidPct <= config.scenarios.alireza.closeAtPercent) {
+            console.log(`🎯 Closing eligible positions: mexcAskVsLbankBidPct (${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}) <= ${config.scenarios.alireza.closeAtPercent}%`);
+            await tryClosePosition(symbols.lbank, lbankPrice.bid, mexcPrice.ask);
         } else {
-            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(lbankBidVsMexcAskPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
+            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} (Close threshold: ${config.scenarios.alireza.closeAtPercent}%)`);
         }
     }
 
