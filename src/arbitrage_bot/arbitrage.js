@@ -389,6 +389,7 @@ export async function tryOpenPosition(
             tradingState.totalTrades++;
             tradingState.totalInvestment -= position.totalInvestmentUSD;
 
+            
             // Fetch latest order books to capture closing market conditions
             let orderbookSnapshotAtClose = null;
             if (exchangeManager.isInitialized()) {
