@@ -350,14 +350,14 @@ export async function tryOpenPosition(
             // Calculate net profit after deducting fees
             const netProfitPercent = currentProfitPercent - totalFees;
 
-            // Only close if profit after fees is above the threshold (even if negative)
-            const shouldCloseForProfit = netProfitPercent >= config.scenarios.alireza.closeAtPercent;
-            const shouldClose = shouldCloseForProfit;
+            // Close based on current spread vs configured threshold
+            // currentDiffPercent here corresponds to lbankBidVsMexcAskPct
+            const shouldClose = currentDiffPercent >= config.scenarios.alireza.closeAtPercent;
 
             if (shouldClose) {
                 console.log(`🔍 [CLOSE_ANALYSIS] Position ${arbitrageId}:`);
-                console.log(`   - Net Profit: ${FormattingUtils.formatPercentage(netProfitPercent)}`);
-                console.log(`   - Close for Profit: ${shouldCloseForProfit} (${netProfitPercent} >= ${config.scenarios.alireza.closeAtPercent})`);
+                console.log(`   - Current Diff (lbankBidVsMexcAskPct): ${FormattingUtils.formatPercentage(currentDiffPercent)}`);
+                console.log(`   - Threshold: ${config.scenarios.alireza.closeAtPercent}%`);
                 positionsToClose.push({ arbitrageId, position });
             }
         }
