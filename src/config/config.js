@@ -21,13 +21,8 @@ const config = {
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
-<<<<<<< HEAD
     tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 1000, // Number of tokens to buy per trade (chunk size) in TOKEN mode
-=======
-    tradingMode: "USD", // "USD" for dollar-based, "TOKEN" for token quantity-based
     targetTokenQuantity: 10000, // Target number of tokens to trade when mode is "TOKEN"
->>>>>>> f76c2655588bf1973e6e138766cfad33c8a54fe8
     maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
     minTokenQuantity: 100, // Minimum token quantity for validation
 
@@ -117,7 +112,7 @@ const config = {
     scenarios: {
         alireza: {
             openThresholdPercent: 0.5, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: -1.5 // Close when profit reaches 1.5%
+            closeAtPercent: -1.5 // Close when loss reaches -2.0%
         }
     },
 
