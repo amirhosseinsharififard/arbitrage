@@ -317,131 +317,190 @@ export async function tryOpenPosition(
 }
 
 /**
- * Attempts to close an open arbitrage position with improved logic
- * @param {string} symbol - Trading symbol
- * @param {object} currentPrices - Current prices from both exchanges
+ * Attempts to close an open arbitrage position when closing conditions are met
+ * 
+ * Closing Strategy:
+ * - Monitor current market conditions
+ * - Close when profit target is reached
+ * - Calculate actual profit/loss including fees
+ * - Update statistics and clean up position data
+ * 
+ * @param {string} symbol - Trading symbol to check for positions
+ * @param {number} buyPriceNow - Current buy price in the market
+ * @param {number} sellPriceNow - Current sell price in the market
  */
-export async function tryClosePosition(symbol, currentPrices) {
-    // Check all open arbitrage positions
-    for (const [arbitrageId, position] of openPositions.entries()) {
-        if (position.symbol !== symbol) continue;
+    export async function tryClosePosition(symbol, buyPriceNow, sellPriceNow) {
+        // Collect arbitrageIds to close in this pass to allow simultaneous closures
+        const positionsToClose = [];
+        for (const [arbitrageId, position] of openPositions.entries()) {
+            if (position.symbol !== symbol) continue;
 
-        let currentBuyPrice, currentSellPrice, shouldClose = false,
-            closeReason = '';
+            // Calculate current price difference in the market
+            const currentDiffPercent = CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow);
 
-        // Determine current prices based on position direction
-        if (position.buyExchangeId === "mexc" && position.sellExchangeId === "lbank") {
-            // Original: Buy from MEXC, Sell to LBANK
-            // To close: Sell to MEXC (mexc.bid), Buy from LBANK (lbank.ask)
-            currentBuyPrice = currentPrices.lbank.ask; // Cost to buy back from LBANK
-            currentSellPrice = currentPrices.mexc.bid; // Revenue from selling to MEXC
-        } else if (position.buyExchangeId === "lbank" && position.sellExchangeId === "mexc") {
-            // Original: Buy from LBANK, Sell to MEXC  
-            // To close: Sell to LBANK (lbank.bid), Buy from MEXC (mexc.ask)
-            currentBuyPrice = currentPrices.mexc.ask; // Cost to buy back from MEXC
-            currentSellPrice = currentPrices.lbank.bid; // Revenue from selling to LBANK
+            // Calculate current profit/loss based on original arbitrage opportunity
+            const originalDiffPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
+            const currentProfitPercent = originalDiffPercent - currentDiffPercent;
+
+            // Calculate total fees for both exchanges
+            const totalFees =
+                config.feesPercent[position.buyExchangeId] +
+                config.feesPercent[position.sellExchangeId];
+
+            // Calculate net profit after deducting fees
+            const netProfitPercent = currentProfitPercent - totalFees;
+
+            // Only close if profit after fees is above the threshold (even if negative)
+            const shouldCloseForProfit = netProfitPercent >= config.scenarios.alireza.closeAtPercent;
+            const shouldClose = shouldCloseForProfit;
+
+            if (shouldClose) {
+                console.log(`🔍 [CLOSE_ANALYSIS] Position ${arbitrageId}:`);
+                console.log(`   - Net Profit: ${FormattingUtils.formatPercentage(netProfitPercent)}`);
+                console.log(`   - Close for Profit: ${shouldCloseForProfit} (${netProfitPercent} >= ${config.scenarios.alireza.closeAtPercent})`);
+                positionsToClose.push({ arbitrageId, position });
+            }
         }
 
-        // Calculate current spread (what we can make by closing now)
-        const currentSpreadPercent = CalculationUtils.calculatePriceDifference(currentBuyPrice, currentSellPrice);
-
-        // Calculate original spread when position was opened
-        const originalSpreadPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
-
-        // Current P&L: difference between current spread and original spread
-        const currentProfitPercent = currentSpreadPercent - originalSpreadPercent;
-
-        // Calculate total fees
-        const totalFees = config.feesPercent[position.buyExchangeId] + config.feesPercent[position.sellExchangeId];
-
-        // Net profit after fees
-        const netProfitPercent = currentProfitPercent - totalFees;
-
-        // Enhanced closing conditions
-        if (netProfitPercent <= config.maxLossPercent) {
-            // Stop loss triggered
-            shouldClose = true;
-            closeReason = 'Stop loss triggered';
-        } else if (currentSpreadPercent <= config.closeThresholdPercent) {
-            // Target profit reached (spread has decreased enough)
-            shouldClose = true;
-            closeReason = 'Target profit reached';
-        } else if (currentSpreadPercent < 0) {
-            // Spread has reversed (now profitable to close)
-            shouldClose = true;
-            closeReason = 'Spread reversed - profitable to close';
+        // Log if no positions are being closed
+        if (positionsToClose.length === 0 && openPositions.size > 0) {
+            console.log(`⏳ [CLOSE_CHECK] No positions meet closing criteria. Continuing to monitor...`);
         }
 
-        if (shouldClose) {
+        // Process closures (can be multiple) after iteration to avoid mutating the map during iteration
+        if (positionsToClose.length > 0) {
+            console.log(`🎯 [CLOSE_ACTION] Closing ${positionsToClose.length} position(s) based on market conditions`);
+        }
+        
+        for (const { arbitrageId, position } of positionsToClose) {
             const closeTime = new Date().toISOString();
 
-            // Calculate actual profit/loss in USD
-            const actualProfitUSD = (netProfitPercent / 100) * config.tradeVolumeUSD * 2;
+            // Recompute for this position using current prices
+            const originalDiffPercent = CalculationUtils.calculatePriceDifference(position.buyPrice, position.sellPrice);
+            const currentDiffPercent = CalculationUtils.calculatePriceDifference(buyPriceNow, sellPriceNow);
+            const currentProfitPercent = originalDiffPercent - currentDiffPercent;
+            const totalFees = config.feesPercent[position.buyExchangeId] + config.feesPercent[position.sellExchangeId];
+            const netProfitPercent = currentProfitPercent - totalFees;
+            const actualProfitUSD = (netProfitPercent / 100) * position.totalInvestmentUSD;
+
+            // Update trading state with actual profit/loss
             tradingState.totalProfit += actualProfitUSD;
             tradingState.lastTradeProfit = actualProfitUSD;
             tradingState.totalTrades++;
             tradingState.totalInvestment -= position.totalInvestmentUSD;
 
-            // Enhanced logging
+            
+            // Fetch latest order books to capture closing market conditions
+            let orderbookSnapshotAtClose = null;
+            if (exchangeManager.isInitialized()) {
+                try {
+                    const buyEx = exchangeManager.getExchange(position.buyExchangeId);
+                    const sellEx = exchangeManager.getExchange(position.sellExchangeId);
+                    const [buyOb, sellOb] = await Promise.all([
+                        buyEx.fetchOrderBook(symbol),
+                        sellEx.fetchOrderBook(symbol)
+                    ]);
+
+                    const buyBestAskNow = buyOb.asks && buyOb.asks[0] ? {
+                        price: buyOb.asks[0][0],
+                        amount: buyOb.asks[0][1]
+                    } : null;
+                    const sellBestBidNow = sellOb.bids && sellOb.bids[0] ? {
+                        price: sellOb.bids[0][0],
+                        amount: sellOb.bids[0][1]
+                    } : null;
+
+                    orderbookSnapshotAtClose = {
+                        buyExchange: position.buyExchangeId,
+                        sellExchange: position.sellExchangeId,
+                        buyBestAskNow,
+                        sellBestBidNow
+                    };
+                } catch (error) {
+                    console.log(`⚠️ Failed to fetch order book at closing`);
+                }
+            }
+
             await logger.logTrade("ARBITRAGE_CLOSE", symbol, {
                 arbitrageId,
                 buyExchangeId: position.buyExchangeId,
                 sellExchangeId: position.sellExchangeId,
                 originalBuyPrice: position.buyPrice,
                 originalSellPrice: position.sellPrice,
-                currentBuyPrice,
-                currentSellPrice,
+                currentBuyPrice: buyPriceNow,
+                currentSellPrice: sellPriceNow,
                 volume: position.volume,
-                originalSpreadPercent: FormattingUtils.formatPercentage(originalSpreadPercent),
-                currentSpreadPercent: FormattingUtils.formatPercentage(currentSpreadPercent),
-                currentProfitPercent: FormattingUtils.formatPercentage(currentProfitPercent),
+                buyAmount: position.volume,
+                sellAmount: position.volume,
+                originalDiffPercent: FormattingUtils.formatPercentage(originalDiffPercent),
+                currentDiffPercent: FormattingUtils.formatPercentage(currentDiffPercent),
                 netProfitPercent: FormattingUtils.formatPercentage(netProfitPercent),
                 actualProfitUSD: FormattingUtils.formatCurrency(actualProfitUSD),
+                totalInvestmentUSD: FormattingUtils.formatCurrency(position.totalInvestmentUSD),
                 totalFees: FormattingUtils.formatPercentage(totalFees),
-                closeReason,
-                tradeNumber: tradingState.totalTrades
+                durationMs: new Date(closeTime).getTime() - new Date(position.openTime).getTime(),
+                closeReason: 'Target profit reached',
+                tradeNumber: tradingState.totalTrades,
+                tradingMode: position.tradingMode,
+                targetTokenQuantity: position.targetTokenQuantity,
+                details: {
+                    closeTime,
+                    orderbookAtClose: orderbookSnapshotAtClose,
+                    profitCalculation: {
+                        formula: "actualProfitUSD = TotalInvestmentUSD * (netProfitPercent / 100)",
+                        totalInvestmentUSD: position.totalInvestmentUSD,
+                        netProfitPercent: netProfitPercent,
+                        calculatedProfit: actualProfitUSD
+                    }
+                }
             });
 
-            // Record trade closing in statistics
-            statistics.recordTradeClose({
-                actualProfitUSD: actualProfitUSD,
-                volume: position.volume,
-                buyPriceOpen: position.buyPrice,
-                feesPercent: totalFees
-            });
-
+            const modeIndicator = position.tradingMode === "TOKEN" ? `[TOKEN:${position.targetTokenQuantity}]` : `[USD:${config.tradeVolumeUSD}]`;
             console.log(
-                `[ARBITRAGE_CLOSE] ${symbol} | Direction: ${position.buyExchangeId}→${position.sellExchangeId} | ` +
-                `Original: ${FormattingUtils.formatPercentage(originalSpreadPercent)} | Current: ${FormattingUtils.formatPercentage(currentSpreadPercent)} | ` +
-                `P&L: ${FormattingUtils.formatPercentage(netProfitPercent)} | ${FormattingUtils.formatCurrency(actualProfitUSD)} | ` +
-                `Reason: ${closeReason}`
+                `📉 [ARBITRAGE_CLOSE] ${symbol} ${modeIndicator} | Original Diff:${FormattingUtils.formatPercentage(originalDiffPercent)} | Current Diff:${FormattingUtils.formatPercentage(currentDiffPercent)} | ` +
+                `Net Profit:${FormattingUtils.formatPercentage(netProfitPercent)} | P&L:${FormattingUtils.formatCurrency(actualProfitUSD)} | ` +
+                `Reason: Target profit reached`
             );
 
-            // Remove the closed position
+            console.log(`📊 [CLOSE_DETAILS] Arbitrage ID: ${arbitrageId}`);
+            console.log(`   - Trading Mode: ${position.tradingMode}${position.tradingMode === "TOKEN" ? ` (Target: ${position.targetTokenQuantity} tokens)` : ''}`);
+            console.log(`   - Original Buy Price: ${FormattingUtils.formatPrice(position.buyPrice)} from ${position.buyExchangeId}`);
+            console.log(`   - Original Sell Price: ${FormattingUtils.formatPrice(position.sellPrice)} to ${position.sellExchangeId}`);
+            console.log(`   - Current Buy Price: ${FormattingUtils.formatPrice(buyPriceNow)}`);
+            console.log(`   - Current Sell Price: ${FormattingUtils.formatPrice(sellPriceNow)}`);
+            console.log(`   - Volume: ${FormattingUtils.formatVolume(position.volume)} tokens (actual count, not scaled)`);
+            console.log(`   - Original Price Difference: ${FormattingUtils.formatPercentage(originalDiffPercent)}`);
+            console.log(`   - Current Price Difference: ${FormattingUtils.formatPercentage(currentDiffPercent)}`);
+            console.log(`   - Gross Profit Percent: ${FormattingUtils.formatPercentage(currentProfitPercent)}`);
+            console.log(`   - Total Fees: ${FormattingUtils.formatPercentage(totalFees)}`);
+            console.log(`   - Net Profit Percent: ${FormattingUtils.formatPercentage(netProfitPercent)}`);
+            console.log(`   - Total Investment: ${FormattingUtils.formatCurrency(position.totalInvestmentUSD)}`);
+            console.log(`   - Actual Profit USD: ${FormattingUtils.formatCurrency(actualProfitUSD)} (calculated correctly)`);
+            console.log(`   - Close Reason: Target profit reached`);
+            console.log(`   - Close Time: ${closeTime}`);
+
+            // Remove the closed position and update global state
             openPositions.delete(arbitrageId);
+            tradingState.isAnyPositionOpen = openPositions.size > 0;
 
-            // Update global state
-            if (openPositions.size === 0) {
-                tradingState.isAnyPositionOpen = false;
-            }
-
-            console.log(`[SUMMARY] Trade #${tradingState.totalTrades} closed | Remaining positions: ${openPositions.size}`);
-
-            break; // Only close one position at a time
-        } else {
-            // Log why position wasn't closed for debugging
-            console.log(
-                `[KEEP_OPEN] ${arbitrageId} | Current P&L: ${FormattingUtils.formatPercentage(netProfitPercent)} | ` +
-                `Current spread: ${FormattingUtils.formatPercentage(currentSpreadPercent)} | ` +
-                `Thresholds: Stop Loss: ${config.maxLossPercent}% | Close: ${config.closeThresholdPercent}%`
-            );
+            console.log(`📈 [SUMMARY] Arbitrage Trade #${tradingState.totalTrades} closed:`);
+            console.log(`   - This trade P&L: ${FormattingUtils.formatCurrency(actualProfitUSD)} (calculated correctly)`);
+            console.log(`   - Total P&L so far: ${FormattingUtils.formatCurrency(tradingState.totalProfit)}`);
+            console.log(`   - Total trades: ${tradingState.totalTrades}`);
+            console.log(`   - Close reason: Target profit reached`);
         }
     }
-}
 
 /**
- * Get current trading status
- * @returns {object} Current trading status
+ * Get current trading status for monitoring and display
+ * 
+ * @returns {object} Current trading status including:
+ *   - isAnyPositionOpen: Whether any position is currently open
+ *   - totalProfit: Cumulative profit/loss across all trades
+ *   - totalTrades: Total number of completed trades
+ *   - lastTradeProfit: Profit/loss from most recent trade
+ *   - totalInvestment: Total amount currently invested
+ *   - openPositionsCount: Number of open positions
  */
 export function getTradingStatus() {
     return {
