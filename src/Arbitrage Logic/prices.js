@@ -111,19 +111,20 @@ export async function printBidAskPairs(symbols, exchanges) {
     console.log(FormattingUtils.createSeparator());
 
     // Position opening logic
-    if (lbankToMexcProfit >= config.profitThresholdPercent) {
+    const openThreshold = Number(config.scenarios?.alireza?.openThresholdPercent ?? config.profitThresholdPercent);
+    if (lbankToMexcProfit != null && lbankToMexcProfit >= openThreshold) {
         console.log(`${chalk.green('🎯')} Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.green('(Profitable!)')}`);
         await tryOpenPosition(symbols.lbank, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
     } else {
-        console.log(`${chalk.yellow('⏳')} No LBANK->MEXC opp: ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.gray(`(Threshold: ${config.profitThresholdPercent}%)`)}`);
+        console.log(`${chalk.yellow('⏳')} No LBANK->MEXC opp: ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.gray(`(Threshold: ${openThreshold}%)`)}`);
         console.log(`${chalk.blue('ℹ️ ')} MEXC->LBANK: ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)} ${chalk.gray('(not used)')}`);
     }
 
     // Position closing logic
     if (status.openPositionsCount > 0) {
-        const closeThreshold = Math.abs(Number(config.scenarios.alireza.closeAtPercent));
+        const closeThreshold = Math.abs(Number(config.scenarios?.alireza?.closeAtPercent ?? config.closeThresholdPercent));
         if (mexcAskVsLbankBidPct != null && mexcAskVsLbankBidPct <= closeThreshold) {
-            console.log(`🎯 Closing eligible positions: mexcAskVsLbankBidPct (${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}) >= ${FormattingUtils.formatPercentage(closeThreshold)}`);
+            console.log(`🎯 Closing eligible positions: mexcAskVsLbankBidPct (${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}) <= ${FormattingUtils.formatPercentage(closeThreshold)}`);
             await tryClosePosition(symbols.lbank, lbankPrice.bid, mexcPrice.ask);
         } else {
             console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} (Close threshold: ${FormattingUtils.formatPercentage(closeThreshold)})`);

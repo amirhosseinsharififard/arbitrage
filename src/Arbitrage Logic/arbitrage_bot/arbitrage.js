@@ -90,6 +90,11 @@ export async function tryOpenPosition(
     buyPrice,
     sellPrice
 ) {
+    // Prevent multiple concurrent positions unless explicitly allowed
+    if (config.maxTrades === 1 && tradingState.isAnyPositionOpen) {
+        console.log(`⛔ [OPEN_BLOCKED] A position is already open. Skipping new open.`);
+        return;
+    }
     // Generate unique identifier for this arbitrage position
     const arbitrageId = generateArbitrageId(buyExchangeId, sellExchangeId);
 
@@ -305,6 +310,11 @@ export async function tryOpenPosition(
                 position.status = 'OPEN';
             } catch (execErr) {
                 console.log(`❌ [ORDER_EXECUTION] Failed to open legs: ${execErr && execErr.message ? execErr.message : String(execErr)}`);
+                // Rollback the position state since execution failed
+                openPositions.delete(arbitrageId);
+                tradingState.isAnyPositionOpen = openPositions.size > 0;
+                tradingState.totalInvestment -= totalInvestmentUSD;
+                return;
             }
         } else {
             console.log(`🟡 [ORDER_EXECUTION] Open not approved. Skipping live orders.`);
