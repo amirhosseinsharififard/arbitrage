@@ -72,9 +72,10 @@ class PriceService {
                 }
             }
 
-            // Fetch order book from exchange
+            // Fetch order book from exchange with symbol normalization
             const start = Date.now();
-            const orderBook = await exchange.fetchOrderBook(symbol);
+            const tradableSymbol = (exchange && exchange.markets && exchange.markets[symbol]) ? symbol : (symbol.includes(':') ? symbol.split(':')[0] : symbol);
+            const orderBook = await exchange.fetchOrderBook(tradableSymbol);
             const end = Date.now();
             try {
                 const requestRecorder = (await
