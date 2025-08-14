@@ -102,43 +102,67 @@ export function getPuppeteerPages() {
 }
 
 // These APIs should be called by arbitrage logic only after confirmation
+// Executes open-side UI flow on target exchange without refreshing pages.
+// Assumes pages were prepared at startup; stops if not logged-in.
 export async function requestOpenPosition(exchange, tokenQuantity, confirmed = false) {
     if (!confirmed) return;
-    if (exchange === "mexc" && state.mexc.page) {
-        if (!state.mexc.isLoggedIn) throw new Error("MEXC not logged in. Open position UI action blocked.");
-        await mexcToggleOpenTab(state.mexc.page);
-        await fillMexcTokenQuantity(state.mexc.page, Number(config.targetTokenQuantity));
-        await mexcClickOpenShort(state.mexc.page);
-        console.log("[PUPPETEER] MEXC open short executed.");
-        return;
-    }
-    if (exchange === "lbank" && state.lbank.page) {
-        if (!state.lbank.isLoggedIn) throw new Error("LBank not logged in. Open position UI action blocked.");
-        await lbankToggleOpenTab(state.lbank.page);
-        await fillLbankTokenQuantity(state.lbank.page, Number(config.targetTokenQuantity));
-        await lbankClickOpenLong(state.lbank.page);
-        console.log("[PUPPETEER] LBank open long executed.");
-        return;
+    const ex = String(exchange || "").toLowerCase();
+    try {
+        if (ex === "mexc") {
+            if (!state.mexc.page) throw new Error("MEXC page is not available");
+            if (!state.mexc.isLoggedIn) throw new Error("MEXC not logged in. Open position UI action blocked.");
+            await mexcToggleOpenTab(state.mexc.page);
+            await fillMexcTokenQuantity(state.mexc.page, Number(config.targetTokenQuantity));
+            await mexcClickOpenShort(state.mexc.page);
+            console.log("[PUPPETEER] MEXC open short executed.");
+            return;
+        }
+        if (ex === "lbank") {
+            if (!state.lbank.page) throw new Error("LBank page is not available");
+            if (!state.lbank.isLoggedIn) throw new Error("LBank not logged in. Open position UI action blocked.");
+            await lbankToggleOpenTab(state.lbank.page);
+            await fillLbankTokenQuantity(state.lbank.page, Number(config.targetTokenQuantity));
+            await lbankClickOpenLong(state.lbank.page);
+            console.log("[PUPPETEER] LBank open long executed.");
+            return;
+        }
+        throw new Error(`Unknown exchange passed to requestOpenPosition: ${exchange}`);
+    } catch (err) {
+        const message = err ? .message || String(err);
+        console.error(`[PUPPETEER][OPEN][${ex}] Failed: ${message}`);
+        throw err;
     }
 }
 
+// Executes close-side UI flow on target exchange without refreshing pages.
+// Assumes pages were prepared at startup; stops if not logged-in.
 export async function requestClosePosition(exchange, confirmed = false) {
     if (!confirmed) return;
-    if (exchange === "mexc" && state.mexc.page) {
-        if (!state.mexc.isLoggedIn) throw new Error("MEXC not logged in. Close UI action blocked.");
-        await mexcToggleCloseTab(state.mexc.page);
-        await fillMexcTokenQuantity(state.mexc.page, Number(config.targetTokenQuantity));
-        await mexcClickCloseShort(state.mexc.page);
-        console.log("[PUPPETEER] MEXC close short executed.");
-        return;
-    }
-    if (exchange === "lbank" && state.lbank.page) {
-        if (!state.lbank.isLoggedIn) throw new Error("LBank not logged in. Close UI action blocked.");
-        await lbankToggleCloseTab(state.lbank.page);
-        await fillLbankTokenQuantity(state.lbank.page, Number(config.targetTokenQuantity));
-        await lbankClickCloseLong(state.lbank.page);
-        console.log("[PUPPETEER] LBank close long executed.");
-        return;
+    const ex = String(exchange || "").toLowerCase();
+    try {
+        if (ex === "mexc") {
+            if (!state.mexc.page) throw new Error("MEXC page is not available");
+            if (!state.mexc.isLoggedIn) throw new Error("MEXC not logged in. Close UI action blocked.");
+            await mexcToggleCloseTab(state.mexc.page);
+            await fillMexcTokenQuantity(state.mexc.page, Number(config.targetTokenQuantity));
+            await mexcClickCloseShort(state.mexc.page);
+            console.log("[PUPPETEER] MEXC close short executed.");
+            return;
+        }
+        if (ex === "lbank") {
+            if (!state.lbank.page) throw new Error("LBank page is not available");
+            if (!state.lbank.isLoggedIn) throw new Error("LBank not logged in. Close UI action blocked.");
+            await lbankToggleCloseTab(state.lbank.page);
+            await fillLbankTokenQuantity(state.lbank.page, Number(config.targetTokenQuantity));
+            await lbankClickCloseLong(state.lbank.page);
+            console.log("[PUPPETEER] LBank close long executed.");
+            return;
+        }
+        throw new Error(`Unknown exchange passed to requestClosePosition: ${exchange}`);
+    } catch (err) {
+        const message = err ? .message || String(err);
+        console.error(`[PUPPETEER][CLOSE][${ex}] Failed: ${message}`);
+        throw err;
     }
 }
 

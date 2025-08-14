@@ -4,7 +4,7 @@
 - معامله بر اساس دلار (USD)
 - معامله بر اساس تعداد توکن (TOKEN)
 
-همچنین ماژول Puppeteer برای آماده‌سازی رابط کاربری صرافی‌ها (باز کردن تب Open/Close و پر کردن ورودی تعداد توکن) ادغام شده است؛ به‌طوری‌که عملیات‌های حساس (کلیک نهایی خرید/فروش) تنها پس از تایید شما انجام خواهند شد.
+همچنین ماژول Puppeteer برای آماده‌سازی و اجرای رابط کاربری صرافی‌ها (باز/بسته کردن پوزیشن، پر کردن ورودی تعداد توکن) ادغام شده است؛ عملیات تنها پس از تایید اجرا می‌شود و پس از یک‌بار تایید لاگین برای هر دو صرافی، دیگر چک لاگین تکرار نمی‌شود و صفحه‌ها رفرش نمی‌شوند.
 
 ## ویژگی‌ها
 
@@ -12,7 +12,7 @@
 - **کنترل دقیق حجم**: بر اساس نقدشوندگی دفتر سفارش و محدودیت‌های پیکربندی
 - **ثبت لاگ کامل**: رویدادهای Open/Close با جزئیات کامل در `trades.log`
 - **مدیریت خطا**: با `retryWrapper` و گزارش‌ خطا
-- **Puppeteer Controller**: باز کردن صفحات، بررسی وضعیت لاگین، آماده‌سازی UI (تب‌ها و ورودی‌ها)
+- **Puppeteer Controller**: باز کردن صفحات، بررسی وضعیت لاگین (فقط تا اولین تایید)، آماده‌سازی و اجرای UI (تب‌ها/ورودی‌ها/کلیک دکمه)
 
 ## ساختار پروژه (خلاصه)
 
@@ -89,10 +89,14 @@ npm run puppeteer -- blank
   - صفحات را باز می‌کند، وضعیت لاگین را بررسی و پیام لازم را لاگ می‌کند.
 
 - `requestOpenPosition(exchange, tokenQuantity, confirmed)`
-  - پس از تایید (`confirmed: true`) تب Open را فعال و ورودی تعداد توکن را پر می‌کند.
+  - پس از تایید (`confirmed: true`) تب Open را فعال می‌کند، مقدار `targetTokenQuantity` را از کانفیگ وارد می‌کند، سپس روی دکمه‌های باز کردن پوزیشن کلیک می‌کند:
+    - LBank: Open Long
+    - MEXC: Open Short
 
 - `requestClosePosition(exchange, confirmed)`
-  - پس از تایید، تب Close را فعال می‌کند.
+  - پس از تایید تب Close را فعال می‌کند، مقدار `targetTokenQuantity` را وارد می‌کند، سپس روی دکمه‌های بستن پوزیشن کلیک می‌کند:
+    - LBank: Close Long
+    - MEXC: Close Short
 
 نمونه استفاده از تاییدها در منطق آربیتراژ:
 ```javascript
@@ -120,6 +124,14 @@ setCloseApproved('mexc', true);
 ```json
 {"action":"ARBITRAGE_OPEN","symbol":"DEBT/USDT:USDT", "data": {"arbitrageId":"lbank-mexc", "volume":1000}}
 ```
+
+## خطاها و پیام‌ها
+
+برای عیب‌یابی سریع، پیام‌های خطا با کد اختصاصی لاگ می‌شوند:
+- MEXC: `MEXC_NOT_LOGGED_IN`, `MEXC_QTY_INPUT_NOT_FOUND`, `MEXC_BUTTON_NOT_FOUND`
+- LBank: `LBANK_NOT_LOGGED_IN`, `LBANK_QTY_INPUT_NOT_FOUND`, `LBANK_BUTTON_NOT_FOUND`
+
+همچنین در `controller.js` همه‌ی عملیات‌های Open/Close در بلوک try/catch لاگ شده و در صورت خطا پیام‌هایی مانند `[PUPPETEER][OPEN][mexc] Failed: ...` چاپ می‌شود.
 
 ## نکات امنیتی
 

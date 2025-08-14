@@ -395,15 +395,22 @@ export async function tryOpenPosition(
                 return { arbitrageId, position, originalDiffPercent, currentDiffPercent, currentProfitPercent, totalFees, netProfitPercent: finalNetProfitPercent, actualProfitUSD };
             });
             // Prepare UI for close via Puppeteer (only after approval)
-            const anyExchange = results[0]?.position?.sellExchangeId || "mexc";
-            if (isCloseApproved(anyExchange)) {
-                try {
-                    await requestClosePosition(anyExchange, true);
-                } catch (uiErr) {
-                    console.log(`⚠️ [PUPPETEER_UI] Failed to prepare close UI: ${uiErr?.message || uiErr}`);
+            // Close both legs: LBank (Close Long) and MEXC (Close Short)
+            const legExchanges = new Set();
+            for (const r of results) {
+                if (r?.position?.buyExchangeId) legExchanges.add(r.position.buyExchangeId);
+                if (r?.position?.sellExchangeId) legExchanges.add(r.position.sellExchangeId);
+            }
+            for (const ex of legExchanges) {
+                if (isCloseApproved(ex)) {
+                    try {
+                        await requestClosePosition(ex, true);
+                    } catch (uiErr) {
+                        console.log(`⚠️ [PUPPETEER_UI] Failed to prepare close UI on ${ex}: ${uiErr?.message || uiErr}`);
+                    }
+                } else {
+                    console.log(`🟡 [PUPPETEER_UI] Close not approved for ${ex}. Skipping UI prep.`);
                 }
-            } else {
-                console.log(`🟡 [PUPPETEER_UI] Close not approved for ${anyExchange}. Skipping UI prep.`);
             }
 
             const batchProfit = results.reduce((a, r) => a + r.actualProfitUSD, 0);

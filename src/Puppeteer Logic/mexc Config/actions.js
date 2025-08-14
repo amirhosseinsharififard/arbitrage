@@ -27,23 +27,45 @@ export async function ensureMexcLoggedIn(page) {
             }
         } catch {}
     }
-    throw new Error("MEXC not logged in. Please run login flow first.");
+    const err = new Error("MEXC not logged in. Please run login flow first.");
+    err.code = "MEXC_NOT_LOGGED_IN";
+    throw err;
 }
 
 export async function fillTokenQuantity(page, tokenQuantity) {
-    await page.waitForSelector(mexcSelectors.tokenQuantityInput, { visible: true });
-    const input = await page.$(mexcSelectors.tokenQuantityInput);
-    if (!input) throw new Error("Token quantity input not found");
-    await input.click({ clickCount: 3 });
-    await input.type(String(tokenQuantity), { delay: 20 });
+    try {
+        await page.waitForSelector(mexcSelectors.tokenQuantityInput, { visible: true, timeout: 5000 });
+        const input = await page.$(mexcSelectors.tokenQuantityInput);
+        if (!input) {
+            const err = new Error("Token quantity input not found on MEXC");
+            err.code = "MEXC_QTY_INPUT_NOT_FOUND";
+            throw err;
+        }
+        await input.click({ clickCount: 3 });
+        await input.type(String(tokenQuantity), { delay: 20 });
+    } catch (e) {
+        const msg = e ? .message || String(e);
+        console.error(`[MEXC][fillTokenQuantity] ${msg}`);
+        throw e;
+    }
 }
 
 export async function toggleOpenTab(page) {
-    await page.click(mexcSelectors.openToggleButton);
+    try {
+        await page.click(mexcSelectors.openToggleButton);
+    } catch (e) {
+        console.error(`[MEXC][toggleOpenTab] ${e?.message || e}`);
+        throw e;
+    }
 }
 
 export async function toggleCloseTab(page) {
-    await page.click(mexcSelectors.closeToggleButton);
+    try {
+        await page.click(mexcSelectors.closeToggleButton);
+    } catch (e) {
+        console.error(`[MEXC][toggleCloseTab] ${e?.message || e}`);
+        throw e;
+    }
 }
 
 // Placeholders for future wiring once selectors provided
@@ -184,5 +206,7 @@ async function clickButtonWithFallback(page, options) {
             }
         }
     }
-    throw new Error("Unable to locate target button by selector or visible text");
+    const err = new Error("Unable to locate target button by selector or visible text (MEXC)");
+    err.code = "MEXC_BUTTON_NOT_FOUND";
+    throw err;
 }

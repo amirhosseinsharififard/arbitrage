@@ -27,19 +27,36 @@ export async function ensureLbankLoggedIn(page) {
         }
     }
     // If nothing matched, assume not logged in
-    throw new Error("LBank not logged in. Please run login flow first.");
+    const err = new Error("LBank not logged in. Please run login flow first.");
+    err.code = "LBANK_NOT_LOGGED_IN";
+    throw err;
 }
 
 export async function fillTokenQuantity(page, tokenQuantity) {
-    await page.waitForSelector(lbankSelectors.tokenQuantityInput, { visible: true });
-    const input = await page.$(lbankSelectors.tokenQuantityInput);
-    if (!input) throw new Error("Token quantity input not found on LBank");
-    await input.click({ clickCount: 3 });
-    await input.type(String(tokenQuantity), { delay: 20 });
+    try {
+        await page.waitForSelector(lbankSelectors.tokenQuantityInput, { visible: true, timeout: 5000 });
+        const input = await page.$(lbankSelectors.tokenQuantityInput);
+        if (!input) {
+            const err = new Error("Token quantity input not found on LBank");
+            err.code = "LBANK_QTY_INPUT_NOT_FOUND";
+            throw err;
+        }
+        await input.click({ clickCount: 3 });
+        await input.type(String(tokenQuantity), { delay: 20 });
+    } catch (e) {
+        const msg = e ? .message || String(e);
+        console.error(`[LBANK][fillTokenQuantity] ${msg}`);
+        throw e;
+    }
 }
 
 export async function toggleOpenTab(page) {
-    await page.click(lbankSelectors.openToggleButton);
+    try {
+        await page.click(lbankSelectors.openToggleButton);
+    } catch (e) {
+        console.error(`[LBANK][toggleOpenTab] ${e?.message || e}`);
+        throw e;
+    }
 }
 
 export async function clickOpenLong(page) {
@@ -59,7 +76,12 @@ export async function clickOpenShort(page) {
 }
 
 export async function toggleCloseTab(page) {
-    await page.click(lbankSelectors.closeToggleButton);
+    try {
+        await page.click(lbankSelectors.closeToggleButton);
+    } catch (e) {
+        console.error(`[LBANK][toggleCloseTab] ${e?.message || e}`);
+        throw e;
+    }
 }
 
 export async function clickCloseShort(page) {
@@ -168,7 +190,9 @@ async function clickButtonWithFallback(page, options) {
             }
         }
     }
-    throw new Error("Unable to locate target button by selector or visible text on LBank");
+    const err = new Error("Unable to locate target button by selector or visible text (LBank)");
+    err.code = "LBANK_BUTTON_NOT_FOUND";
+    throw err;
 }
 
 export async function isOnLbankFutures(page) {
