@@ -75,6 +75,14 @@ npm run puppeteer -- blank
   - `PUPPETEER_HEADLESS`: مقادیر قابل قبول: `true`, `false`, یا `new`
   - `CHROME_PATH`: مسیر اجرایی مرورگر دلخواه
   - `PUPPETEER_SLOWMO`: تاخیر اعمال عملیات‌ها (ms)
+  
+- پروفایل پایدار مرورگر و کوکی‌ها:
+  - برای جلوگیری از لاگین مجدد، از دو روش استفاده شده است:
+    1) ذخیره/بازیابی کوکی‌ها در `src/Puppeteer Logic/.cookies/{mexc|lbank}.json`
+    2) اجرای مرورگر با پروفایل اختصاصی پایدار:
+       - MEXC: `./src/Puppeteer Logic/.profile_mexc`
+       - LBank: `./src/Puppeteer Logic/.profile_lbank`
+  - کافیست یک‌بار لاگین را تکمیل کنید؛ بعد از آن سشن در پروفایل و کوکی‌ها حفظ می‌شود و در اجرای بعدی نیازی به لاگین نیست (تا زمانی که صرافی سشن را منقضی نکند).
 
 ## وضعیت لاگین
 
@@ -110,6 +118,16 @@ import { setOpenApproved, setCloseApproved } from "./src/Arbitrage Logic/system/
 setOpenApproved('mexc', true);
 setCloseApproved('mexc', true);
 ```
+
+### تایید خودکار در پیکربندی
+به‌صورت پیش‌فرض در `config.js` تایید خودکار فعال است:
+```js
+approvals: {
+  autoApproveOpen: true,
+  autoApproveClose: true
+}
+```
+می‌توانید این‌ها را false کنید یا با متغیر محیطی بازنویسی نمایید.
 
 ## مدیریت خطا
 

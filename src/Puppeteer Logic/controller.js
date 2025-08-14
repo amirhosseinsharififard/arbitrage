@@ -12,6 +12,8 @@ const state = {
     lbank: { browser: null, page: null, isLoggedIn: false, isOnTarget: false, pollId: null }
 };
 
+let controllerStarted = false;
+
 function maybeStopPolling() {
     try {
         if (state.mexc.isLoggedIn && state.lbank.isLoggedIn) {
@@ -29,7 +31,8 @@ function maybeStopPolling() {
 }
 
 async function launchMexc() {
-    const { browser, page } = await loginMexc({ headless: false });
+    if (state.mexc.browser) return; // already launched
+    const { browser, page } = await loginMexc({ headless: false, userDataDir: './src/Puppeteer Logic/.profile_mexc' });
     state.mexc = { browser, page };
     try {
         await openMexcFutures(page);
@@ -50,7 +53,8 @@ async function launchMexc() {
 }
 
 async function launchLbank() {
-    const { browser, page } = await loginLbank({ headless: false });
+    if (state.lbank.browser) return; // already launched
+    const { browser, page } = await loginLbank({ headless: false, userDataDir: './src/Puppeteer Logic/.profile_lbank' });
     state.lbank = { browser, page };
     try {
         await openLbankFutures(page);
@@ -72,10 +76,15 @@ async function launchLbank() {
 
 export async function startPuppeteerController() {
     try {
+        if (controllerStarted) {
+            console.log("[PUPPETEER] Controller already started. Skipping re-launch.");
+            return;
+        }
+        controllerStarted = true;
         console.log("[PUPPETEER] Launching browsers...");
         await Promise.allSettled([
-            retryWrapper(launchMexc),
-            retryWrapper(launchLbank)
+            launchMexc(),
+            launchLbank()
         ]);
         console.log("[PUPPETEER] Initialization complete. Windows should be open.");
         // Attach stop to exit handler if available
@@ -178,4 +187,5 @@ export async function stopPuppeteerController() {
             state[key] = { browser: null, page: null };
         }
     }
+    controllerStarted = false;
 }

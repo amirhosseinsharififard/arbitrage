@@ -1,3 +1,5 @@
+import config from "../config/config.js";
+
 const openApprovalByExchange = new Map();
 const closeApprovalByExchange = new Map();
 
@@ -16,6 +18,9 @@ export function setCloseApproved(exchange, approved) {
 export function isOpenApproved(exchange) {
     const key = normalizeExchangeId(exchange);
     if (openApprovalByExchange.has(key)) return openApprovalByExchange.get(key);
+    // Config default
+    if (config ? .approvals ? .autoApproveOpen === true) return true;
+    // Env fallback
     const env = process.env.PUPPETEER_AUTO_APPROVE_OPEN;
     return env === "1" || env === "true";
 }
@@ -23,6 +28,9 @@ export function isOpenApproved(exchange) {
 export function isCloseApproved(exchange) {
     const key = normalizeExchangeId(exchange);
     if (closeApprovalByExchange.has(key)) return closeApprovalByExchange.get(key);
+    // Config default
+    if (config ? .approvals ? .autoApproveClose === true) return true;
+    // Env fallback
     const env = process.env.PUPPETEER_AUTO_APPROVE_CLOSE;
     return env === "1" || env === "true";
 }

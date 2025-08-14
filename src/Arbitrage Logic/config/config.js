@@ -22,8 +22,8 @@ const config = {
 
     // New: Token quantity-based trading configuration
     tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 5000, // Per-trade token batch size
-    maxTokenQuantity: 35000, // Total allowed tokens across open positions
+    targetTokenQuantity: 3000, // Per-trade token batch size
+    maxTokenQuantity: 15000, // Total allowed tokens across open positions
 
     maxTrades: 0, // Maximum number of trades (0 = unlimited)
 
@@ -128,6 +128,12 @@ const config = {
         maxConcurrentRequests: 5, // Maximum concurrent API requests
         requestTimeout: 30000, // API request timeout (30 seconds)
         enableCompression: false // Enable response compression
+    },
+
+    // UI approvals for Puppeteer actions
+    approvals: {
+        autoApproveOpen: true, // Automatically allow UI actions for opening positions
+        autoApproveClose: true // Automatically allow UI actions for closing positions
     }
 };
 
