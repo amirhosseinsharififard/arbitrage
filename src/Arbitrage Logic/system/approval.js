@@ -19,7 +19,7 @@ export function isOpenApproved(exchange) {
     const key = normalizeExchangeId(exchange);
     if (openApprovalByExchange.has(key)) return openApprovalByExchange.get(key);
     // Config default
-    if (config ? .approvals ? .autoApproveOpen === true) return true;
+    if (config && config.approvals && config.approvals.autoApproveOpen === true) return true;
     // Env fallback
     const env = process.env.PUPPETEER_AUTO_APPROVE_OPEN;
     return env === "1" || env === "true";
@@ -29,7 +29,7 @@ export function isCloseApproved(exchange) {
     const key = normalizeExchangeId(exchange);
     if (closeApprovalByExchange.has(key)) return closeApprovalByExchange.get(key);
     // Config default
-    if (config ? .approvals ? .autoApproveClose === true) return true;
+    if (config && config.approvals && config.approvals.autoApproveClose === true) return true;
     // Env fallback
     const env = process.env.PUPPETEER_AUTO_APPROVE_CLOSE;
     return env === "1" || env === "true";
