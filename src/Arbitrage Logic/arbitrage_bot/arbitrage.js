@@ -16,8 +16,8 @@ import { CalculationUtils, FormattingUtils, computeSpreads } from "../utils/inde
 import chalk from "chalk";
 import { priceService } from "../services/index.js";
 import exchangeManager from "../exchanges/exchangeManager.js";
-import { requestOpenPosition, requestClosePosition } from "../../Puppeteer Logic/controller.js";
 import { isOpenApproved, isCloseApproved } from "../system/approval.js";
+import { openArbitrageLegs, closeArbitrageLegs } from "../services/orderService.js";
 
 /**
  * Global storage for open arbitrage positions
@@ -291,27 +291,23 @@ export async function tryOpenPosition(
             }
         });
 
-        // Prepare UI for manual/assisted execution via Puppeteer (only after approval)
-        // First prepare BUY side (LBank) → Open Long with configured token quantity
-        if (isOpenApproved(buyExchangeId)) {
+        // Execute real orders via CCXT if approvals allow
+        if (isOpenApproved(buyExchangeId) && isOpenApproved(sellExchangeId)) {
             try {
-                await requestOpenPosition(buyExchangeId, volume, true);
-            } catch (uiErr) {
-                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI on ${buyExchangeId}: ${uiErr?.message || uiErr}`);
+                const { buyOrder, sellOrder } = await openArbitrageLegs({
+                    buyExchangeId,
+                    sellExchangeId,
+                    symbol,
+                    volume,
+                });
+                position.buyOrderId = (buyOrder && buyOrder.id) ? buyOrder.id : null;
+                position.sellOrderId = (sellOrder && sellOrder.id) ? sellOrder.id : null;
+                position.status = 'OPEN';
+            } catch (execErr) {
+                console.log(`❌ [ORDER_EXECUTION] Failed to open legs: ${execErr?.message || execErr}`);
             }
         } else {
-            console.log(`🟡 [PUPPETEER_UI] Open not approved for ${buyExchangeId}. Skipping UI prep.`);
-        }
-
-        // Then prepare SELL side (MEXC) → Open Short with configured token quantity
-        if (isOpenApproved(sellExchangeId)) {
-            try {
-                await requestOpenPosition(sellExchangeId, volume, true);
-            } catch (uiErr) {
-                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI on ${sellExchangeId}: ${uiErr?.message || uiErr}`);
-            }
-        } else {
-            console.log(`🟡 [PUPPETEER_UI] Open not approved for ${sellExchangeId}. Skipping UI prep.`);
+            console.log(`🟡 [ORDER_EXECUTION] Open not approved. Skipping live orders.`);
         }
 
         // Record trade opening in statistics for monitoring
@@ -394,23 +390,23 @@ export async function tryOpenPosition(
                 const actualProfitUSD = (finalNetProfitPercent / 100) * position.totalInvestmentUSD;
                 return { arbitrageId, position, originalDiffPercent, currentDiffPercent, currentProfitPercent, totalFees, netProfitPercent: finalNetProfitPercent, actualProfitUSD };
             });
-            // Prepare UI for close via Puppeteer (only after approval)
-            // Close both legs: LBank (Close Long) and MEXC (Close Short)
-            const legExchanges = new Set();
-            for (const r of results) {
-                if (r?.position?.buyExchangeId) legExchanges.add(r.position.buyExchangeId);
-                if (r?.position?.sellExchangeId) legExchanges.add(r.position.sellExchangeId);
-            }
-            for (const ex of legExchanges) {
-                if (isCloseApproved(ex)) {
-                    try {
-                        await requestClosePosition(ex, true);
-                    } catch (uiErr) {
-                        console.log(`⚠️ [PUPPETEER_UI] Failed to prepare close UI on ${ex}: ${uiErr?.message || uiErr}`);
-                    }
-                } else {
-                    console.log(`🟡 [PUPPETEER_UI] Close not approved for ${ex}. Skipping UI prep.`);
+            // Execute real close orders via CCXT if approvals allow
+            const any = results[0];
+            const buyExchangeIdClose = any?.position?.buyExchangeId;
+            const sellExchangeIdClose = any?.position?.sellExchangeId;
+            if (isCloseApproved(buyExchangeIdClose) && isCloseApproved(sellExchangeIdClose)) {
+                try {
+                    await closeArbitrageLegs({
+                        buyExchangeId: buyExchangeIdClose,
+                        sellExchangeId: sellExchangeIdClose,
+                        symbol,
+                        volume: any?.position?.volume,
+                    });
+                } catch (execErr) {
+                    console.log(`❌ [ORDER_EXECUTION] Failed to close legs: ${execErr?.message || execErr}`);
                 }
+            } else {
+                console.log(`🟡 [ORDER_EXECUTION] Close not approved. Skipping live orders.`);
             }
 
             const batchProfit = results.reduce((a, r) => a + r.actualProfitUSD, 0);

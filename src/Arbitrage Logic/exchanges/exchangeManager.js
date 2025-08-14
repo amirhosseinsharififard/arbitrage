@@ -99,6 +99,7 @@ class ExchangeManager {
      */
     async createExchange(id, options, retryAttempts = 3, retryDelay = 1000) {
         // Create new CCXT exchange instance
+        // CCXT expects apiKey/secret at top level of constructor options
         const exchange = new ccxt[id](options);
 
         // Load markets with retry logic
@@ -107,6 +108,29 @@ class ExchangeManager {
             retryAttempts,
             retryDelay
         );
+
+        // Optional futures setup: leverage/margin per config
+        try {
+            const exchangeConfig = this.getExchangeConfig(id);
+            const leverage = exchangeConfig && exchangeConfig.leverage;
+            if (Number.isFinite(leverage) && leverage > 0) {
+                const symbolForLeverage = (exchangeConfig && exchangeConfig.symbolForLeverage) || (config.symbols && config.symbols[id]) || '';
+                if (symbolForLeverage) {
+                    await exchange.setLeverage(leverage, symbolForLeverage);
+                    console.log(`⚙️  ${id} leverage set to ${leverage} on ${symbolForLeverage}`);
+                }
+            }
+            const marginMode = exchangeConfig && exchangeConfig.marginMode;
+            if (marginMode && typeof exchange.setMarginMode === 'function') {
+                const symbolForMargin = (exchangeConfig && exchangeConfig.symbolForLeverage) || (config.symbols && config.symbols[id]) || '';
+                if (symbolForMargin) {
+                    await exchange.setMarginMode(marginMode, symbolForMargin);
+                    console.log(`⚙️  ${id} margin mode set to ${marginMode} on ${symbolForMargin}`);
+                }
+            }
+        } catch (e) {
+            console.log(`⚠️  Failed to set leverage on ${id}: ${e && e.message ? e.message : String(e)}`);
+        }
 
         return exchange;
     }

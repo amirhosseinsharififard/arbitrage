@@ -2,6 +2,8 @@
  * Main configuration file for the arbitrage trading system
  * Contains all trading parameters, exchange settings, logging preferences, and system behavior controls
  */
+import dotenv from "dotenv";
+dotenv.config();
 const config = {
     // Trading symbols configuration for each exchange
     // Both exchanges trade the same symbol to enable arbitrage opportunities
@@ -38,13 +40,43 @@ const config = {
     exchanges: {
         mexc: {
             id: "mexc", // Exchange identifier
-            options: { defaultType: "future" }, // Use futures trading
+            options: {
+                apiKey: process.env.MEXC_API_KEY || "",
+                secret: process.env.MEXC_SECRET || "",
+                enableRateLimit: true,
+                options: { defaultType: "future" }
+            }, // CCXT config: credentials at top-level, exchange.options for nested defaults
+            leverage: 3, // default leverage for futures
+            marginMode: "cross", // or "isolated" if supported
+            // Optional: override symbol to apply leverage/margin settings on
+            // symbolForLeverage: "DEBT/USDT:USDT",
+            // Exchange-specific extra order params
+            params: {
+                openLong: { positionSide: "LONG", reduceOnly: false },
+                openShort: { positionSide: "SHORT", reduceOnly: false },
+                closeLong: { positionSide: "LONG", reduceOnly: true },
+                closeShort: { positionSide: "SHORT", reduceOnly: true }
+            },
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
         },
         lbank: {
             id: "lbank", // Exchange identifier
-            options: { defaultType: "future" }, // Use futures trading
+            options: {
+                apiKey: process.env.LBANK_API_KEY || "",
+                secret: process.env.LBANK_SECRET || "",
+                enableRateLimit: true,
+                options: { defaultType: "future" }
+            }, // CCXT config: credentials at top-level, exchange.options for nested defaults
+            leverage: 3, // default leverage for futures
+            marginMode: "cross",
+            // symbolForLeverage: "DEBT/USDT:USDT",
+            params: {
+                openLong: { positionSide: "LONG", reduceOnly: false },
+                openShort: { positionSide: "SHORT", reduceOnly: false },
+                closeLong: { positionSide: "LONG", reduceOnly: true },
+                closeShort: { positionSide: "SHORT", reduceOnly: true }
+            },
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
         }
@@ -134,6 +166,37 @@ const config = {
     approvals: {
         autoApproveOpen: true, // Automatically allow UI actions for opening positions
         autoApproveClose: true // Automatically allow UI actions for closing positions
+    },
+
+    // Order execution defaults
+    orderExecution: {
+        orderType: "market", // default order type for open/close
+        useReduceOnlyOnClose: true, // apply reduceOnly when closing
+        // Per-exchange extra params override
+        extraParams: {
+            mexc: {
+                openLong: {},
+                openShort: {},
+                closeLong: {},
+                closeShort: {}
+            },
+            lbank: {
+                openLong: {},
+                openShort: {},
+                closeLong: {},
+                closeShort: {}
+            }
+        }
+    },
+
+    // Price service tuning
+    priceService: {
+        minFetchIntervalMs: 100 // throttle subsequent price fetches per symbol-exchange
+    },
+
+    // Puppeteer toggle (kept for legacy; disabled in API mode)
+    puppeteer: {
+        enabled: false
     }
 };
 

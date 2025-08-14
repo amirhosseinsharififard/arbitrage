@@ -76,6 +76,16 @@ npm run puppeteer -- blank
   - `CHROME_PATH`: مسیر اجرایی مرورگر دلخواه
   - `PUPPETEER_SLOWMO`: تاخیر اعمال عملیات‌ها (ms)
   
+### کلیدهای API برای اجرای واقعی سفارش‌ها (CCXT)
+در فایل `.env` مقادیر زیر را قرار دهید:
+```
+MEXC_API_KEY=your_mexc_api_key
+MEXC_SECRET=your_mexc_secret
+LBANK_API_KEY=your_lbank_api_key
+LBANK_SECRET=your_lbank_secret
+```
+این مقادیر در `src/Arbitrage Logic/config/config.js` خوانده می‌شوند و به CCXT پاس داده می‌شوند.
+  
 - پروفایل پایدار مرورگر و کوکی‌ها:
   - برای جلوگیری از لاگین مجدد، از دو روش استفاده شده است:
     1) ذخیره/بازیابی کوکی‌ها در `src/Puppeteer Logic/.cookies/{mexc|lbank}.json`
@@ -83,6 +93,24 @@ npm run puppeteer -- blank
        - MEXC: `./src/Puppeteer Logic/.profile_mexc`
        - LBank: `./src/Puppeteer Logic/.profile_lbank`
   - کافیست یک‌بار لاگین را تکمیل کنید؛ بعد از آن سشن در پروفایل و کوکی‌ها حفظ می‌شود و در اجرای بعدی نیازی به لاگین نیست (تا زمانی که صرافی سشن را منقضی نکند).
+
+## پیکربندی معاملات (CCXT)
+
+- کلیدهای API در `.env`:
+```
+MEXC_API_KEY=your_mexc_api_key
+MEXC_SECRET=your_mexc_secret
+LBANK_API_KEY=your_lbank_api_key
+LBANK_SECRET=your_lbank_secret
+```
+
+- تنظیمات مهم در `src/Arbitrage Logic/config/config.js`:
+  - `exchanges.{mexc,lbank}.options.enableRateLimit = true` برای جلوگیری از بن
+  - `exchanges.{mexc,lbank}.leverage = 3` لوریج پیش‌فرض (قابل تغییر)
+  - `exchanges.{mexc,lbank}.marginMode = "cross" | "isolated"` در صورت پشتیبانی
+  - `exchanges.{mexc,lbank}.params.*` برای پارامترهای سفارش: `positionSide`, `reduceOnly` و ...
+  - `orderExecution.orderType` نوع سفارش (پیش‌فرض: `market`)
+  - `orderExecution.useReduceOnlyOnClose` (پیش‌فرض: true)
 
 ## وضعیت لاگین
 

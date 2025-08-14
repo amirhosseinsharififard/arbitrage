@@ -38,7 +38,7 @@ class PriceService {
 
         // Track last fetch times to implement rate limiting
         this.lastFetchTimes = new Map();
-        this.minFetchInterval = 100; // Minimum 100ms between fetches
+        this.minFetchInterval = (config && config.priceService && Number(config.priceService.minFetchIntervalMs)) || 100; // ms
     }
 
     /**
