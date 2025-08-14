@@ -9,7 +9,7 @@ const config = {
     // Both exchanges trade the same symbol to enable arbitrage opportunities
     symbols: {
         mexc: "DEBT/USDT:USDT", // MEXC unified futures/swap symbol
-        lbank: "DEBT?USDT", // LBank unified swap symbol style
+        lbank: "DEBT/USDT", // LBank unified swap symbol style
     },
 
     // System timing and performance settings
