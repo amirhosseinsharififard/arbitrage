@@ -22,9 +22,8 @@ const config = {
 
     // New: Token quantity-based trading configuration
     tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 10000, // Target number of tokens to trade when mode is "TOKEN"
-    maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
-    minTokenQuantity: 100, // Minimum token quantity for validation
+    targetTokenQuantity: 5000, // Per-trade token batch size
+    maxTokenQuantity: 35000, // Total allowed tokens across open positions
 
     maxTrades: 0, // Maximum number of trades (0 = unlimited)
 

@@ -201,11 +201,7 @@ export async function tryOpenPosition(
         const perTradeMax = Math.min(config.maxTokenQuantity, remainingAllowedTokens);
         volume = Math.min(volume, perTradeMax);
 
-        // Enforce minimum token quantity per trade
-        if (volume < config.minTokenQuantity) {
-            console.log(`⛔ [OPEN_BLOCKED] Volume ${FormattingUtils.formatVolume(volume)} below minimum per-trade quantity ${config.minTokenQuantity}. Skipping open.`);
-            return;
-        }
+        // No minimum token quantity enforcement; proceed with any positive volume allowed by liquidity and caps
 
         // Calculate financial metrics for the position
         const buyCostUSD = volume * buyPrice; // Notional on buy leg
