@@ -5,9 +5,9 @@
  * without changing any business logic.
  */
 
-import { CalculationUtils } from "./src/utils/calculations.js";
-import calculationCache from "./src/utils/calculationCache.js";
-import { batchProcessor, performanceMonitor } from "./src/utils/performanceOptimizer.js";
+import { CalculationUtils } from "./src/Arbitrage Logic/utils/calculations.js";
+import calculationCache from "./src/Arbitrage Logic/utils/calculationCache.js";
+import { batchProcessor, performanceMonitor } from "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 
 // Test data generation
 function generateTestData(count = 10000) {

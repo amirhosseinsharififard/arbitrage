@@ -75,7 +75,7 @@ const config = {
         enableFeeCalculation: true, // Include fees in profit calculations
         enableThresholdFiltering: false, // Enable profit threshold filtering
         defaultThresholdPercent: 0.5, // Default threshold for profit logging
-        useOrderBookVolume: true // Use order book volumes to cap trade size
+        useOrderBookVolume: false // Use order book volumes to cap trade size
     },
 
     // Error handling and system resilience settings

@@ -4,7 +4,8 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "build": "babel src --out-dir dis"
+        "build": "babel src --out-dir dis",
+        "puppeteer": "node \"./src/Puppeteer Logic/index.js\""
     },
     "bin": "index.js",
     "devDependencies": {

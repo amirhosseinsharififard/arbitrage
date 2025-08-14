@@ -12,16 +12,16 @@
  * arbitrage trades based on configured thresholds and strategies.
  */
 
-import { printBidAskPairs } from "./src/prices.js";
-import config from "./src/config/config.js";
-import { retryWrapper } from "./src/error/errorBoundory.js";
-import exchangeManager from "./src/exchanges/exchangeManager.js";
-import exitHandler from "./src/system/exitHandler.js";
-import { getTradingStatus, restoreOpenPositionsFromLog } from "./src/arbitrage_bot/arbitrage.js";
-import statistics from "./src/monitoring/statistics.js";
-import logger from "./src/logging/logger.js";
-import { FormattingUtils } from "./src/utils/index.js";
-import { performanceMonitor } from "./src/utils/performanceOptimizer.js";
+import { printBidAskPairs } from "./src/Arbitrage Logic/prices.js";
+import config from "./src/Arbitrage Logic/config/config.js";
+import { retryWrapper } from "./src/Arbitrage Logic/error/errorBoundory.js";
+import exchangeManager from "./src/Arbitrage Logic/exchanges/exchangeManager.js";
+import exitHandler from "./src/Arbitrage Logic/system/exitHandler.js";
+import { getTradingStatus, restoreOpenPositionsFromLog } from "./src/Arbitrage Logic/arbitrage_bot/arbitrage.js";
+import statistics from "./src/Arbitrage Logic/monitoring/statistics.js";
+import logger from "./src/Arbitrage Logic/logging/logger.js";
+import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
+import { performanceMonitor } from "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 
 /**
  * Initialize the system on startup
