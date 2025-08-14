@@ -19,29 +19,31 @@ export async function createMarketOrder(exchangeId, symbol, side, amount, params
         const start = Date.now();
         let order;
         let priceArg = undefined;
+        // Resolve a tradable unified symbol for this exchange
+        const tradableSymbol = resolveTradableSymbol(ex, symbol);
         if (type === "market" && String(side).toLowerCase() === "buy") {
             try {
-                const p = await priceService.getPrice(exchangeId, symbol);
+                const p = await priceService.getPrice(exchangeId, tradableSymbol);
                 if (p && typeof p.ask === 'number' && isFinite(p.ask) && p.ask > 0) {
                     priceArg = p.ask;
                 }
             } catch {}
         }
         try {
-            order = await ex.createOrder(symbol, type, side, amount, priceArg, params);
+            order = await ex.createOrder(tradableSymbol, type, side, amount, priceArg, params);
         } finally {
             const end = Date.now();
             if (requestRecorder && requestRecorder.setEnabled) requestRecorder.setEnabled(true);
             if (requestRecorder && requestRecorder.recordRequestCycle) {
                 requestRecorder.recordRequestCycle({
-                    request: { method: 'createOrder', url: `${ex.id}:${symbol}`, headers: {}, body: { type, side, amount, price: priceArg, params }, exchangeId, symbol },
-                    response: { status: order ? 200 : 'UNKNOWN', headers: {}, body: order || null, exchangeId, symbol },
+                    request: { method: 'createOrder', url: `${ex.id}:${tradableSymbol}`, headers: {}, body: { type, side, amount, price: priceArg, params }, exchangeId, symbol: tradableSymbol },
+                    response: { status: order ? 200 : 'UNKNOWN', headers: {}, body: order || null, exchangeId, symbol: tradableSymbol },
                     startTime: start,
                     endTime: end
                 });
             }
             if (config.logSettings.printRequestsToConsole) {
-                console.log(`[API][${exchangeId}] createOrder ${symbol} ${side} ${amount} price=${priceArg ?? 'NA'} ->`, order);
+                console.log(`[API][${exchangeId}] createOrder ${tradableSymbol} ${side} ${amount} price=${priceArg ?? 'NA'} ->`, order);
             }
         }
         await logger.logTrade("ORDER_EXECUTION", symbol, {
@@ -88,4 +90,28 @@ export async function closeArbitrageLegs({ buyExchangeId, sellExchangeId, symbol
         createMarketOrder(sellExchangeId, symbol, "buy", volume, buyParams),
     ]);
     return { closeLongOrder, closeShortOrder };
+}
+
+function resolveTradableSymbol(exchange, desiredSymbol) {
+    try {
+        if (exchange && exchange.markets && exchange.markets[desiredSymbol]) return desiredSymbol;
+        // Try removing settle suffix like :USDT
+        if (desiredSymbol.includes(':')) {
+            const alt = desiredSymbol.split(':')[0];
+            if (exchange.markets && exchange.markets[alt]) return alt;
+        }
+        // Scan markets by base/quote
+        const [baseAndQuote] = desiredSymbol.split(':');
+        const [base, quote] = baseAndQuote.split('/');
+        if (exchange && exchange.markets) {
+            for (const sym of Object.keys(exchange.markets)) {
+                const m = exchange.markets[sym];
+                const isSwapLike = (m && ((m.type === 'swap') || (m.future === true) || (m.contract === true)));
+                if (m && m.base === base && m.quote === quote && isSwapLike) {
+                    return sym;
+                }
+            }
+        }
+    } catch {}
+    return desiredSymbol;
 }
