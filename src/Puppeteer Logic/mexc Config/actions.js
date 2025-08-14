@@ -60,6 +60,29 @@ export async function clickCloseLong(page) {
     await page.click(mexcSelectors.closeLongButton);
 }
 
+// Returns boolean login state without throwing
+export async function detectMexcLoggedIn(page) {
+    try {
+        const [loginButton, registerButton] = await Promise.all([
+            page.$(mexcSelectors.loginButton),
+            page.$(mexcSelectors.registerButton)
+        ]);
+        const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
+        return !isLoggedOut;
+    } catch {
+        return false;
+    }
+}
+
+export async function isOnMexcFutures(page) {
+    try {
+        const url = (await page.url()).toLowerCase();
+        return url.includes("/futures/");
+    } catch {
+        return false;
+    }
+}
+
 export async function clickAsk(page) {
     if (!mexcSelectors.askButton) throw new Error("Ask button selector not set yet");
     await page.click(mexcSelectors.askButton);

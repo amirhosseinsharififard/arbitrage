@@ -56,3 +56,33 @@ export async function clickCloseShort(page) {
 export async function clickCloseLong(page) {
     await page.click(lbankSelectors.closeLongButton);
 }
+
+// Returns boolean login state without throwing
+export async function detectLbankLoggedIn(page) {
+    try {
+        if (lbankSelectors.loginButton && lbankSelectors.registerButton) {
+            const [loginButton, registerButton] = await Promise.all([
+                page.$(lbankSelectors.loginButton),
+                page.$(lbankSelectors.registerButton)
+            ]);
+            const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
+            return !isLoggedOut;
+        }
+        if (lbankSelectors.loginIndicator) {
+            const indicator = await page.$(lbankSelectors.loginIndicator);
+            return Boolean(indicator);
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}
+
+export async function isOnLbankFutures(page) {
+    try {
+        const url = (await page.url()).toLowerCase();
+        return url.includes("/futures/");
+    } catch {
+        return false;
+    }
+}
