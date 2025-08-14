@@ -1,28 +1,33 @@
-import { LBANK_FUTURES_URL, lbankSelectors } from "./config.js";
+import { LBANK_FUTURES_URL, lbankSelectors, lbankButtonTexts } from "./config.js";
 
 export async function openLbankFutures(page) {
     await page.goto(LBANK_FUTURES_URL, { waitUntil: "networkidle2" });
 }
 
 export async function ensureLbankLoggedIn(page) {
-    // If BOTH login and register buttons exist → not logged in (CSS to be provided later)
+    // If BOTH login and register buttons exist → not logged in
     if (lbankSelectors.loginButton && lbankSelectors.registerButton) {
         const [loginButton, registerButton] = await Promise.all([
             page.$(lbankSelectors.loginButton),
             page.$(lbankSelectors.registerButton)
         ]);
         const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
-        if (isLoggedOut) throw new Error("LBank not logged in. Please run login flow first.");
-        return true;
+        if (!isLoggedOut) return true;
     }
-    // Fallback: use loginIndicator (avatar etc.) if provided
-    if (lbankSelectors.loginIndicator) {
-        const indicator = await page.$(lbankSelectors.loginIndicator);
-        if (!indicator) throw new Error("LBank not logged in. Please run login flow first.");
-        return true;
+    // Positive indicator (CSS or XPath)
+    if (lbankSelectors.loggedInIndicator) {
+        const indicatorSelector = lbankSelectors.loggedInIndicator;
+        if (indicatorSelector.includes("//") || indicatorSelector.startsWith("xpath:")) {
+            const xpath = indicatorSelector.startsWith("xpath:") ? indicatorSelector.slice(6) : indicatorSelector;
+            const handles = await page.$x(xpath);
+            if (handles && handles.length > 0) return true;
+        } else {
+            const indicator = await page.$(indicatorSelector);
+            if (indicator) return true;
+        }
     }
-    // If nothing provided, assume not logged in to be safe
-    throw new Error("LBank login selectors not configured. Please provide loginButton/registerButton or loginIndicator.");
+    // If nothing matched, assume not logged in
+    throw new Error("LBank not logged in. Please run login flow first.");
 }
 
 export async function fillTokenQuantity(page, tokenQuantity) {
@@ -38,11 +43,19 @@ export async function toggleOpenTab(page) {
 }
 
 export async function clickOpenLong(page) {
-    await page.click(lbankSelectors.openLongButton);
+    await clickButtonWithFallback(page, {
+        explicitSelector: lbankSelectors.openLongButton,
+        textCandidates: lbankButtonTexts.openLong,
+        containerSelector: lbankSelectors.openContainer,
+    });
 }
 
 export async function clickOpenShort(page) {
-    await page.click(lbankSelectors.openShortButton);
+    await clickButtonWithFallback(page, {
+        explicitSelector: lbankSelectors.openShortButton,
+        textCandidates: lbankButtonTexts.openShort,
+        containerSelector: lbankSelectors.openContainer,
+    });
 }
 
 export async function toggleCloseTab(page) {
@@ -50,11 +63,19 @@ export async function toggleCloseTab(page) {
 }
 
 export async function clickCloseShort(page) {
-    await page.click(lbankSelectors.closeShortButton);
+    await clickButtonWithFallback(page, {
+        explicitSelector: lbankSelectors.closeShortButton,
+        textCandidates: lbankButtonTexts.closeShort,
+        containerSelector: lbankSelectors.closeContainer,
+    });
 }
 
 export async function clickCloseLong(page) {
-    await page.click(lbankSelectors.closeLongButton);
+    await clickButtonWithFallback(page, {
+        explicitSelector: lbankSelectors.closeLongButton,
+        textCandidates: lbankButtonTexts.closeLong,
+        containerSelector: lbankSelectors.closeContainer,
+    });
 }
 
 // Returns boolean login state without throwing
@@ -66,16 +87,88 @@ export async function detectLbankLoggedIn(page) {
                 page.$(lbankSelectors.registerButton)
             ]);
             const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
-            return !isLoggedOut;
+            if (!isLoggedOut) return true;
         }
-        if (lbankSelectors.loginIndicator) {
-            const indicator = await page.$(lbankSelectors.loginIndicator);
-            return Boolean(indicator);
+        if (lbankSelectors.loggedInIndicator) {
+            const indicatorSelector = lbankSelectors.loggedInIndicator;
+            if (indicatorSelector.includes("//") || indicatorSelector.startsWith("xpath:")) {
+                const xpath = indicatorSelector.startsWith("xpath:") ? indicatorSelector.slice(6) : indicatorSelector;
+                const handles = await page.$x(xpath);
+                if (handles && handles.length > 0) return true;
+            } else {
+                const indicator = await page.$(indicatorSelector);
+                if (indicator) return true;
+            }
         }
         return false;
     } catch {
         return false;
     }
+}
+
+// Generic fallback clicker using visible text (mirrors MEXC behavior)
+async function clickButtonWithFallback(page, options) {
+    const { explicitSelector, textCandidates, containerSelector } = options || {};
+    if (explicitSelector) {
+        // Try CSS first
+        const cssHandle = await page.$(explicitSelector).catch(() => null);
+        if (cssHandle) {
+            await page.click(explicitSelector);
+            return;
+        }
+        // If it looks like an XPath, try XPath
+        if (explicitSelector.includes("//") || explicitSelector.startsWith("xpath:")) {
+            const xpath = explicitSelector.startsWith("xpath:") ? explicitSelector.slice(6) : explicitSelector;
+            const xpathHandles = await page.$x(xpath);
+            if (xpathHandles && xpathHandles.length > 0) {
+                try {
+                    await xpathHandles[0].evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+                } catch {}
+                await xpathHandles[0].click();
+                return;
+            }
+        }
+    }
+
+    const scope = containerSelector && (await page.$(containerSelector));
+    for (const text of textCandidates || []) {
+        const candidateSelectors = [
+            `//button[normalize-space(.)='${text}']`,
+            `//span[normalize-space(.)='${text}']/ancestor::button[1]`,
+            `//div[normalize-space(.)='${text}']`,
+            `//a[normalize-space(.)='${text}']`,
+        ];
+        for (const xpath of candidateSelectors) {
+            const handles = scope ? await scope.$x(xpath) : await page.$x(xpath);
+            if (handles && handles.length > 0) {
+                try {
+                    await handles[0].evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+                } catch {}
+                await handles[0].click();
+                return;
+            }
+        }
+    }
+    // Last resort: contains() partial match search
+    for (const text of textCandidates || []) {
+        const partials = [
+            `//button[contains(normalize-space(.), '${text}')]`,
+            `//span[contains(normalize-space(.), '${text}')]/ancestor::button[1]`,
+            `//div[contains(normalize-space(.), '${text}')]`,
+            `//a[contains(normalize-space(.), '${text}')]`,
+        ];
+        for (const xpath of partials) {
+            const handles = scope ? await scope.$x(xpath) : await page.$x(xpath);
+            if (handles && handles.length > 0) {
+                try {
+                    await handles[0].evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
+                } catch {}
+                await handles[0].click();
+                return;
+            }
+        }
+    }
+    throw new Error("Unable to locate target button by selector or visible text on LBank");
 }
 
 export async function isOnLbankFutures(page) {
