@@ -95,6 +95,7 @@ const config = {
         printSummaryToConsole: true, // Display summary in console
         printStatusToConsole: true, // Display status updates in console
         requestLogFile: "requests.log", // Network request log file
+        printRequestsToConsole: true, // Also print raw API requests/responses to terminal
         // Only log actual trade actions, exclude price data and errors
         loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"],
         excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR", "PRICE_UPDATE"] // Exclude more noise

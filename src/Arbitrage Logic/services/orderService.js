@@ -1,6 +1,7 @@
 import exchangeManager from "../exchanges/exchangeManager.js";
 import logger from "../logging/logger.js";
 import config from "../config/config.js";
+import requestRecorder from "../services/requestRecorder.js";
 
 function toMessage(err) {
     try {
@@ -14,7 +15,25 @@ export async function createMarketOrder(exchangeId, symbol, side, amount, params
     const ex = exchangeManager.getExchange(exchangeId);
     try {
         const type = (config && config.orderExecution && config.orderExecution.orderType) || "market";
-        const order = await ex.createOrder(symbol, type, side, amount, undefined, params);
+        const start = Date.now();
+        let order;
+        try {
+            order = await ex.createOrder(symbol, type, side, amount, undefined, params);
+        } finally {
+            const end = Date.now();
+            if (requestRecorder && requestRecorder.setEnabled) requestRecorder.setEnabled(true);
+            if (requestRecorder && requestRecorder.recordRequestCycle) {
+                requestRecorder.recordRequestCycle({
+                    request: { method: 'createOrder', url: `${ex.id}:${symbol}`, headers: {}, body: { type, side, amount, params }, exchangeId, symbol },
+                    response: { status: order ? 200 : 'UNKNOWN', headers: {}, body: order || null, exchangeId, symbol },
+                    startTime: start,
+                    endTime: end
+                });
+            }
+            if (config.logSettings.printRequestsToConsole) {
+                console.log(`[API][${exchangeId}] createOrder ${symbol} ${side} ${amount} ->`, order);
+            }
+        }
         await logger.logTrade("ORDER_EXECUTION", symbol, {
             exchangeId,
             side,

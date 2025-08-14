@@ -73,7 +73,23 @@ class PriceService {
             }
 
             // Fetch order book from exchange
+            const start = Date.now();
             const orderBook = await exchange.fetchOrderBook(symbol);
+            const end = Date.now();
+            try {
+                const requestRecorder = (await
+                    import ('./requestRecorder.js')).default;
+                requestRecorder && requestRecorder.setEnabled && requestRecorder.setEnabled(true);
+                requestRecorder && requestRecorder.recordRequestCycle && requestRecorder.recordRequestCycle({
+                    request: { method: 'fetchOrderBook', url: `${exchange.id}:${symbol}`, headers: {}, body: null, exchangeId, symbol },
+                    response: { status: 200, headers: {}, body: { bids: orderBook.bids ? .length, asks: orderBook.asks ? .length }, exchangeId, symbol },
+                    startTime: start,
+                    endTime: end
+                });
+                if (config.logSettings.printRequestsToConsole) {
+                    console.log(`[API][${exchangeId}] fetchOrderBook ${symbol} -> bids:${orderBook.bids?.length || 0} asks:${orderBook.asks?.length || 0}`);
+                }
+            } catch {}
 
             // Extract best bid and ask prices
             const bestBid = orderBook.bids && orderBook.bids[0] ? orderBook.bids[0][0] : null;
