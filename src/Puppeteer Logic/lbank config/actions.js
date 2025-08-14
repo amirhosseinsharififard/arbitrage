@@ -5,12 +5,24 @@ export async function openLbankFutures(page) {
 }
 
 export async function ensureLbankLoggedIn(page) {
-    // If login indicator exists, it implies user IS logged in
-    const indicator = await page.$(lbankSelectors.loginIndicator);
-    if (!indicator) {
-        throw new Error("LBank not logged in. Please run login flow first.");
+    // If BOTH login and register buttons exist → not logged in (CSS to be provided later)
+    if (lbankSelectors.loginButton && lbankSelectors.registerButton) {
+        const [loginButton, registerButton] = await Promise.all([
+            page.$(lbankSelectors.loginButton),
+            page.$(lbankSelectors.registerButton)
+        ]);
+        const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
+        if (isLoggedOut) throw new Error("LBank not logged in. Please run login flow first.");
+        return true;
     }
-    return true;
+    // Fallback: use loginIndicator (avatar etc.) if provided
+    if (lbankSelectors.loginIndicator) {
+        const indicator = await page.$(lbankSelectors.loginIndicator);
+        if (!indicator) throw new Error("LBank not logged in. Please run login flow first.");
+        return true;
+    }
+    // If nothing provided, assume not logged in to be safe
+    throw new Error("LBank login selectors not configured. Please provide loginButton/registerButton or loginIndicator.");
 }
 
 export async function fillTokenQuantity(page, tokenQuantity) {

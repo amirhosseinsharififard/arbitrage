@@ -1,7 +1,10 @@
 export const LBANK_FUTURES_URL = "https://www.lbank.com/futures/debtusdt";
 
 export const lbankSelectors = {
-    // Presence means user IS logged in (opposite to MEXC logic)
+    // Login state detection: if BOTH loginButton and registerButton exist → NOT logged in
+    loginButton: "html body div#__next section.sc-jgyNOb.jTLWIE.lbk-trading-layout.lbk-trading-layout-professional-right.adjustable.ru header.sc-ddsBQL.creOle.lbank-header div.sc-gVzlyS.bOAGOz div.sc-dSyEWX.iMrMGA.header-right a button.sc-dIfARi.NrEWd.sc-fyBusP.klnJLS.login-button.lbank-btn.lbank-btn-secondary.lbank-btn-round.lbank-btn-ghost.lbank-btn-hovered span.sc-idXgbr.cBSEVq",
+    registerButton: "html body div#__next section.sc-jgyNOb.jTLWIE.lbk-trading-layout.lbk-trading-layout-professional-right.adjustable.ru header.sc-ddsBQL.creOle.lbank-header div.sc-gVzlyS.bOAGOz div.sc-dSyEWX.iMrMGA.header-right a button.sc-dIfARi.NrEWd.sc-bGhRYA.iUuJhi.register-button.lbank-btn.lbank-btn-brand.lbank-btn-round.lbank-btn-hovered span.sc-idXgbr.cBSEVq",
+    // Optional: indicator for being logged in (avatar etc.)
     loginIndicator: "html body div#__next section.sc-jgyNOb.jTLWIE.lbk-trading-layout.lbk-trading-layout-professional-right.adjustable.ru header.sc-eZceyY.dUA-dID.lbank-header div.sc-MAqyW.grtnhR div.sc-cbfGDZ.guSjua.header-right div.sc-bTtZEv.jvZgKX.sc-fYyKnq.gygAhZ span.sc-hQIyOC.cSvkLn a.sc-fSKiAx.jVCpYC.a-link img.sc-bkldj.grEAWS",
 
     // Token quantity input field inside order form

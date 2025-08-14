@@ -44,6 +44,17 @@ export async function startPuppeteerController() {
             retryWrapper(launchLbank)
         ]);
         console.log("[PUPPETEER] Initialization complete. Windows should be open.");
+        // Attach stop to exit handler if available
+        try {
+            const exitHandlerModule = await
+            import ("../Arbitrage Logic/system/exitHandler.js");
+            const exitHandler = exitHandlerModule.default;
+            if (exitHandler && typeof exitHandler.addExitHandler === 'function') {
+                exitHandler.addExitHandler(async() => {
+                    await stopPuppeteerController();
+                });
+            }
+        } catch {}
     } catch (error) {
         console.error(`[PUPPETEER] Failed to initialize controller: ${error?.message || error}`);
     }

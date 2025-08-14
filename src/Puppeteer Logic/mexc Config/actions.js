@@ -6,9 +6,12 @@ export async function openMexcFutures(page) {
 }
 
 export async function ensureMexcLoggedIn(page) {
-    // If login button exists → not logged in
-    const loginButton = await page.$(mexcSelectors.loginButton);
-    const isLoggedOut = Boolean(loginButton);
+    // If BOTH login and register buttons exist → not logged in
+    const [loginButton, registerButton] = await Promise.all([
+        page.$(mexcSelectors.loginButton),
+        page.$(mexcSelectors.registerButton)
+    ]);
+    const isLoggedOut = Boolean(loginButton) && Boolean(registerButton);
     if (isLoggedOut) {
         throw new Error("MEXC not logged in. Please run login flow first.");
     }
