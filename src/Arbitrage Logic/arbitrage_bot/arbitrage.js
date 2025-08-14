@@ -292,11 +292,23 @@ export async function tryOpenPosition(
         });
 
         // Prepare UI for manual/assisted execution via Puppeteer (only after approval)
+        // First prepare BUY side (LBank) → Open Long with configured token quantity
+        if (isOpenApproved(buyExchangeId)) {
+            try {
+                await requestOpenPosition(buyExchangeId, volume, true);
+            } catch (uiErr) {
+                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI on ${buyExchangeId}: ${uiErr?.message || uiErr}`);
+            }
+        } else {
+            console.log(`🟡 [PUPPETEER_UI] Open not approved for ${buyExchangeId}. Skipping UI prep.`);
+        }
+
+        // Then prepare SELL side (MEXC) → Open Short with configured token quantity
         if (isOpenApproved(sellExchangeId)) {
             try {
                 await requestOpenPosition(sellExchangeId, volume, true);
             } catch (uiErr) {
-                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI: ${uiErr?.message || uiErr}`);
+                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI on ${sellExchangeId}: ${uiErr?.message || uiErr}`);
             }
         } else {
             console.log(`🟡 [PUPPETEER_UI] Open not approved for ${sellExchangeId}. Skipping UI prep.`);
