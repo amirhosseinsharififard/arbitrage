@@ -2,6 +2,7 @@ import exchangeManager from "../exchanges/exchangeManager.js";
 import logger from "../logging/logger.js";
 import config from "../config/config.js";
 import requestRecorder from "../services/requestRecorder.js";
+import priceService from "./priceService.js";
 
 function toMessage(err) {
     try {
@@ -17,21 +18,30 @@ export async function createMarketOrder(exchangeId, symbol, side, amount, params
         const type = (config && config.orderExecution && config.orderExecution.orderType) || "market";
         const start = Date.now();
         let order;
+        let priceArg = undefined;
+        if (type === "market" && String(side).toLowerCase() === "buy") {
+            try {
+                const p = await priceService.getPrice(exchangeId, symbol);
+                if (p && typeof p.ask === 'number' && isFinite(p.ask) && p.ask > 0) {
+                    priceArg = p.ask;
+                }
+            } catch {}
+        }
         try {
-            order = await ex.createOrder(symbol, type, side, amount, undefined, params);
+            order = await ex.createOrder(symbol, type, side, amount, priceArg, params);
         } finally {
             const end = Date.now();
             if (requestRecorder && requestRecorder.setEnabled) requestRecorder.setEnabled(true);
             if (requestRecorder && requestRecorder.recordRequestCycle) {
                 requestRecorder.recordRequestCycle({
-                    request: { method: 'createOrder', url: `${ex.id}:${symbol}`, headers: {}, body: { type, side, amount, params }, exchangeId, symbol },
+                    request: { method: 'createOrder', url: `${ex.id}:${symbol}`, headers: {}, body: { type, side, amount, price: priceArg, params }, exchangeId, symbol },
                     response: { status: order ? 200 : 'UNKNOWN', headers: {}, body: order || null, exchangeId, symbol },
                     startTime: start,
                     endTime: end
                 });
             }
             if (config.logSettings.printRequestsToConsole) {
-                console.log(`[API][${exchangeId}] createOrder ${symbol} ${side} ${amount} ->`, order);
+                console.log(`[API][${exchangeId}] createOrder ${symbol} ${side} ${amount} price=${priceArg ?? 'NA'} ->`, order);
             }
         }
         await logger.logTrade("ORDER_EXECUTION", symbol, {
