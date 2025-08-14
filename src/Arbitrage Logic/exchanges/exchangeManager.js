@@ -122,7 +122,15 @@ class ExchangeManager {
                 await publicExchange.loadMarkets();
                 return publicExchange;
             }
-            throw error;
+            // For other errors, try public access immediately
+            console.log(`⚠️  Error loading markets for ${id}: ${error.message}, trying public access...`);
+            const publicExchange = new ccxt[id]({
+                ...options,
+                apiKey: undefined,
+                secret: undefined
+            });
+            await publicExchange.loadMarkets();
+            return publicExchange;
         }
 
         // Optional futures setup: leverage/margin per config

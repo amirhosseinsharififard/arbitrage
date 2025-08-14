@@ -43,7 +43,13 @@ export async function createMarketOrder(exchangeId, symbol, side, amount, params
                 });
             }
             if (config.logSettings.printRequestsToConsole) {
-                console.log(`[API][${exchangeId}] createOrder ${tradableSymbol} ${side} ${amount} price=${priceArg ?? 'NA'} ->`, order);
+                const orderInfo = order ? {
+                    id: order.id || 'NO_ID',
+                    status: order.status || 'UNKNOWN',
+                    filled: order.filled || 0,
+                    remaining: order.remaining || amount
+                } : 'FAILED';
+                console.log(`[API][${exchangeId}] createOrder ${tradableSymbol} ${side} ${amount} price=${priceArg ?? 'NA'} ->`, orderInfo);
             }
         }
         await logger.logTrade("ORDER_EXECUTION", symbol, {
