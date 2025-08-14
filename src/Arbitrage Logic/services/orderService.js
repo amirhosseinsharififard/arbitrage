@@ -35,8 +35,10 @@ export async function openArbitrageLegs({ buyExchangeId, sellExchangeId, symbol,
     // Buy (open long) on buyExchangeId; Sell (open short) on sellExchangeId
     const buyExchangeCfg = (config && config.exchanges && config.exchanges[buyExchangeId]) || {};
     const sellExchangeCfg = (config && config.exchanges && config.exchanges[sellExchangeId]) || {};
-    const buyParams = {...(buyExchangeCfg.params && buyExchangeCfg.params.openLong), ...(config.orderExecution.extraParams[buyExchangeId] ? .openLong || {}) };
-    const sellParams = {...(sellExchangeCfg.params && sellExchangeCfg.params.openShort), ...(config.orderExecution.extraParams[sellExchangeId] ? .openShort || {}) };
+    const extraBuy = (config && config.orderExecution && config.orderExecution.extraParams && config.orderExecution.extraParams[buyExchangeId] && config.orderExecution.extraParams[buyExchangeId].openLong) || {};
+    const extraSell = (config && config.orderExecution && config.orderExecution.extraParams && config.orderExecution.extraParams[sellExchangeId] && config.orderExecution.extraParams[sellExchangeId].openShort) || {};
+    const buyParams = {...(buyExchangeCfg.params && buyExchangeCfg.params.openLong), ...extraBuy };
+    const sellParams = {...(sellExchangeCfg.params && sellExchangeCfg.params.openShort), ...extraSell };
     const [buyOrder, sellOrder] = await Promise.all([
         createMarketOrder(buyExchangeId, symbol, "buy", volume, buyParams),
         createMarketOrder(sellExchangeId, symbol, "sell", volume, sellParams),
@@ -48,8 +50,10 @@ export async function closeArbitrageLegs({ buyExchangeId, sellExchangeId, symbol
     // Close long on buyExchangeId by SELL reduce-only; Close short on sellExchangeId by BUY reduce-only
     const buyExchangeCfg = (config && config.exchanges && config.exchanges[buyExchangeId]) || {};
     const sellExchangeCfg = (config && config.exchanges && config.exchanges[sellExchangeId]) || {};
-    const sellParams = {...(buyExchangeCfg.params && buyExchangeCfg.params.closeLong), ...(config.orderExecution.extraParams[buyExchangeId] ? .closeLong || {}) };
-    const buyParams = {...(sellExchangeCfg.params && sellExchangeCfg.params.closeShort), ...(config.orderExecution.extraParams[sellExchangeId] ? .closeShort || {}) };
+    const extraCloseLong = (config && config.orderExecution && config.orderExecution.extraParams && config.orderExecution.extraParams[buyExchangeId] && config.orderExecution.extraParams[buyExchangeId].closeLong) || {};
+    const extraCloseShort = (config && config.orderExecution && config.orderExecution.extraParams && config.orderExecution.extraParams[sellExchangeId] && config.orderExecution.extraParams[sellExchangeId].closeShort) || {};
+    const sellParams = {...(buyExchangeCfg.params && buyExchangeCfg.params.closeLong), ...extraCloseLong };
+    const buyParams = {...(sellExchangeCfg.params && sellExchangeCfg.params.closeShort), ...extraCloseShort };
     const [closeLongOrder, closeShortOrder] = await Promise.all([
         createMarketOrder(buyExchangeId, symbol, "sell", volume, sellParams),
         createMarketOrder(sellExchangeId, symbol, "buy", volume, buyParams),
