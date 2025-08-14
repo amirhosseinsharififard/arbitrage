@@ -37,9 +37,12 @@ class APILogger {
     }
 
     saveToFile(filename = 'api_logs.json') {
-        const fs = require('fs');
-        fs.writeFileSync(filename, JSON.stringify(this.logs, null, 2));
-        console.log(`📁 API logs saved to ${filename}`);
+        import('fs').then(fs => {
+            fs.writeFileSync(filename, JSON.stringify(this.logs, null, 2));
+            console.log(`📁 API logs saved to ${filename}`);
+        }).catch(err => {
+            console.log(`⚠️ Could not save logs to file: ${err.message}`);
+        });
     }
 }
 
