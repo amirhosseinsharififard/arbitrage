@@ -9,7 +9,7 @@ const config = {
     // Both exchanges trade the same symbol to enable arbitrage opportunities
     symbols: {
         mexc: "DEBT/USDT:USDT", // MEXC unified futures/swap symbol
-        lbank: "DEBT/USDT", // LBank unified swap symbol style
+        lbank: "DEBT/USDT:USDT", // LBank unified swap symbol style
     },
 
     // System timing and performance settings
@@ -18,8 +18,8 @@ const config = {
     retryDelayMs: 2000, // Delay before retrying after errors (2 seconds) - Faster recovery
 
     // Trading thresholds and risk management
-    profitThresholdPercent: 3.1, // Minimum profit percentage to open a new position
-    closeThresholdPercent: 2.5, // Profit percentage threshold to close an open position
+    profitThresholdPercent: 2., // Minimum profit percentage to open a new position
+    closeThresholdPercent: 1.5, // Profit percentage threshold to close an open position
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
@@ -44,7 +44,7 @@ const config = {
                 apiKey: process.env.MEXC_API_KEY || "",
                 secret: process.env.MEXC_SECRET || "",
                 enableRateLimit: true,
-                options: { defaultType: "future" }
+                options: { defaultType: "swap" } // use perpetual swaps
             }, // CCXT config: credentials at top-level, exchange.options for nested defaults
             leverage: 3, // default leverage for futures
             marginMode: "cross", // or "isolated" if supported
@@ -66,7 +66,7 @@ const config = {
                 apiKey: process.env.LBANK_API_KEY || "",
                 secret: process.env.LBANK_SECRET || "",
                 enableRateLimit: true,
-                options: { defaultType: "future" }
+                options: { defaultType: "swap" }
             }, // CCXT config: credentials at top-level, exchange.options for nested defaults
             leverage: 3, // default leverage for futures
             marginMode: "cross",
