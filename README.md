@@ -1,10 +1,10 @@
 ## معرفی سیستم آربیتراژ (فارسی)
 
-این پروژه یک سیستم آربیتراژ رمز‌ارز است که با استفاده از داده‌های صرافی‌ها (MEXC و LBank) فرصت‌های سودآور را شناسایی می‌کند. حالت‌های معامله به دو صورت پشتیبانی می‌شوند:
+این پروژه یک سیستم آربیتراژ رمز‌ارز است که با استفاده از API های صرافی‌ها (MEXC و LBank) فرصت‌های سودآور را شناسایی و معاملات را اجرا می‌کند. حالت‌های معامله به دو صورت پشتیبانی می‌شوند:
 - معامله بر اساس دلار (USD)
 - معامله بر اساس تعداد توکن (TOKEN)
 
-همچنین ماژول Puppeteer برای آماده‌سازی و اجرای رابط کاربری صرافی‌ها (باز/بسته کردن پوزیشن، پر کردن ورودی تعداد توکن) ادغام شده است؛ عملیات تنها پس از تایید اجرا می‌شود و پس از یک‌بار تایید لاگین برای هر دو صرافی، دیگر چک لاگین تکرار نمی‌شود و صفحه‌ها رفرش نمی‌شوند.
+**نکته مهم**: این سیستم از CCXT برای اجرای مستقیم معاملات از طریق API استفاده می‌کند. ماژول Puppeteer غیرفعال شده است.
 
 ## ویژگی‌ها
 
@@ -12,7 +12,10 @@
 - **کنترل دقیق حجم**: بر اساس نقدشوندگی دفتر سفارش و محدودیت‌های پیکربندی
 - **ثبت لاگ کامل**: رویدادهای Open/Close با جزئیات کامل در `trades.log`
 - **مدیریت خطا**: با `retryWrapper` و گزارش‌ خطا
-- **Puppeteer Controller**: باز کردن صفحات، بررسی وضعیت لاگین (فقط تا اولین تایید)، آماده‌سازی و اجرای UI (تب‌ها/ورودی‌ها/کلیک دکمه)
+- **CCXT API Trading**: اجرای مستقیم معاملات از طریق API با پشتیبانی از futures trading
+- **Rate Limiting**: جلوگیری از بن شدن با `enableRateLimit`
+- **Leverage & Margin**: پشتیبانی از لوریج و مارجین مود
+- **Position Management**: مدیریت خودکار پوزیشن‌های LONG/SHORT
 
 ## ساختار پروژه (خلاصه)
 
@@ -59,23 +62,17 @@ npm start
 
 پس از اجرا:
 - سیستم آربیتراژ شروع می‌شود.
-- کنترلر Puppeteer همزمان صفحات MEXC و LBank را باز می‌کند.
-- اگر نیاز به لاگین باشد، در ترمینال اعلام می‌شود کدام صفحه نیاز به لاگین دارد.
+- اتصال به صرافی‌ها از طریق API برقرار می‌شود.
+- معاملات به صورت خودکار اجرا می‌شوند.
 
-4) اجرای تستی Puppeteer (اختیاری):
+4) اجرای تستی (اختیاری):
 ```bash
-npm run puppeteer -- mexc
-npm run puppeteer -- lbank
-npm run puppeteer -- blank
+# تست نمادهای موجود در صرافی‌ها
+node test_symbols.js
 ```
 
-## تنظیمات Puppeteer
+## تنظیمات API Trading
 
-- متغیرهای محیطی (اختیاری):
-  - `PUPPETEER_HEADLESS`: مقادیر قابل قبول: `true`, `false`, یا `new`
-  - `CHROME_PATH`: مسیر اجرایی مرورگر دلخواه
-  - `PUPPETEER_SLOWMO`: تاخیر اعمال عملیات‌ها (ms)
-  
 ### کلیدهای API برای اجرای واقعی سفارش‌ها (CCXT)
 در فایل `.env` مقادیر زیر را قرار دهید:
 ```
@@ -86,13 +83,12 @@ LBANK_SECRET=your_lbank_secret
 ```
 این مقادیر در `src/Arbitrage Logic/config/config.js` خوانده می‌شوند و به CCXT پاس داده می‌شوند.
   
-- پروفایل پایدار مرورگر و کوکی‌ها:
-  - برای جلوگیری از لاگین مجدد، از دو روش استفاده شده است:
-    1) ذخیره/بازیابی کوکی‌ها در `src/Puppeteer Logic/.cookies/{mexc|lbank}.json`
-    2) اجرای مرورگر با پروفایل اختصاصی پایدار:
-       - MEXC: `./src/Puppeteer Logic/.profile_mexc`
-       - LBank: `./src/Puppeteer Logic/.profile_lbank`
-  - کافیست یک‌بار لاگین را تکمیل کنید؛ بعد از آن سشن در پروفایل و کوکی‌ها حفظ می‌شود و در اجرای بعدی نیازی به لاگین نیست (تا زمانی که صرافی سشن را منقضی نکند).
+- **نکات مهم API Trading**:
+  - `enableRateLimit: true` برای جلوگیری از بن شدن
+  - `leverage: 3` لوریج پیش‌فرض (قابل تغییر)
+  - `marginMode: "cross"` مارجین مود پیش‌فرض
+  - `positionSide: "LONG"/"SHORT"` برای تعیین جهت پوزیشن
+  - `reduceOnly: true/false` برای کنترل باز/بسته کردن پوزیشن
 
 ## پیکربندی معاملات (CCXT)
 
@@ -112,40 +108,26 @@ LBANK_SECRET=your_lbank_secret
   - `orderExecution.orderType` نوع سفارش (پیش‌فرض: `market`)
   - `orderExecution.useReduceOnlyOnClose` (پیش‌فرض: true)
 
-## وضعیت لاگین
+## وضعیت اتصال API
 
-- MEXC: اگر دکمه‌های `loginButton` و `registerButton` هر دو وجود داشته باشند، کاربر لاگین نیست.
-- LBank: یا با `loginButton`/`registerButton` (در صورت ارائه CSS) یا با `loginIndicator` (آواتار) چک می‌شود.
+- سیستم به صورت خودکار اتصال به API های صرافی‌ها را بررسی می‌کند
+- در صورت عدم دسترسی به API، خطا در لاگ ثبت می‌شود
+- Rate limiting به صورت خودکار اعمال می‌شود
 
-## APIهای Puppeteer Controller
+## APIهای Order Service
 
-در `src/Puppeteer Logic/controller.js`:
+در `src/Arbitrage Logic/services/orderService.js`:
 
-- `startPuppeteerController()`
-  - صفحات را باز می‌کند، وضعیت لاگین را بررسی و پیام لازم را لاگ می‌کند.
+- `openArbitrageLegs({ buyExchangeId, sellExchangeId, symbol, volume })`
+  - باز کردن پوزیشن LONG در buyExchange و SHORT در sellExchange
+  - استفاده از `positionSide` و `reduceOnly: false`
 
-- `requestOpenPosition(exchange, tokenQuantity, confirmed)`
-  - پس از تایید (`confirmed: true`) تب Open را فعال می‌کند، مقدار `targetTokenQuantity` را از کانفیگ وارد می‌کند، سپس روی دکمه‌های باز کردن پوزیشن کلیک می‌کند:
-    - LBank: Open Long
-    - MEXC: Open Short
+- `closeArbitrageLegs({ buyExchangeId, sellExchangeId, symbol, volume })`
+  - بستن پوزیشن LONG در buyExchange و SHORT در sellExchange
+  - استفاده از `positionSide` و `reduceOnly: true`
 
-- `requestClosePosition(exchange, confirmed)`
-  - پس از تایید تب Close را فعال می‌کند، مقدار `targetTokenQuantity` را وارد می‌کند، سپس روی دکمه‌های بستن پوزیشن کلیک می‌کند:
-    - LBank: Close Long
-    - MEXC: Close Short
-
-نمونه استفاده از تاییدها در منطق آربیتراژ:
-```javascript
-import { setOpenApproved, setCloseApproved } from "./src/Arbitrage Logic/system/approval.js";
-
-// فعال‌سازی تایید خودکار از طریق محیط:
-// PUPPETEER_AUTO_APPROVE_OPEN=true
-// PUPPETEER_AUTO_APPROVE_CLOSE=true
-
-// یا در زمان اجرا:
-setOpenApproved('mexc', true);
-setCloseApproved('mexc', true);
-```
+- `createMarketOrder(exchangeId, symbol, side, amount, params)`
+  - ایجاد سفارش market با پارامترهای futures trading
 
 ### تایید خودکار در پیکربندی
 به‌صورت پیش‌فرض در `config.js` تایید خودکار فعال است:
@@ -155,7 +137,6 @@ approvals: {
   autoApproveClose: true
 }
 ```
-می‌توانید این‌ها را false کنید یا با متغیر محیطی بازنویسی نمایید.
 
 ## مدیریت خطا
 

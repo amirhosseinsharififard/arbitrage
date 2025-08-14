@@ -44,7 +44,7 @@ const config = {
                 apiKey: process.env.MEXC_API_KEY || "",
                 secret: process.env.MEXC_SECRET || "",
                 enableRateLimit: true,
-                options: { defaultType: "swap" } // use perpetual swaps
+                options: { defaultType: "futures" } // use perpetual swaps
             }, // CCXT config: credentials at top-level, exchange.options for nested defaults
             leverage: 3, // default leverage for futures
             marginMode: "cross", // or "isolated" if supported
@@ -52,8 +52,8 @@ const config = {
             // symbolForLeverage: "DEBT/USDT:USDT",
             // Exchange-specific extra order params
             params: {
-                openLong: { positionSide: "LONG", reduceOnly: false },
-                openShort: { positionSide: "SHORT", reduceOnly: false },
+                openLong: { positionSide: "LONG", reduceOnly: true },
+                openShort: { positionSide: "SHORT", reduceOnly: true },
                 closeLong: { positionSide: "LONG", reduceOnly: true },
                 closeShort: { positionSide: "SHORT", reduceOnly: true }
             },
@@ -66,14 +66,14 @@ const config = {
                 apiKey: process.env.LBANK_API_KEY || "",
                 secret: process.env.LBANK_SECRET || "",
                 enableRateLimit: true,
-                options: { defaultType: "swap" }
+                options: { defaultType: "futures" }
             }, // CCXT config: credentials at top-level, exchange.options for nested defaults
             leverage: 3, // default leverage for futures
             marginMode: "cross",
             // symbolForLeverage: "DEBT/USDT:USDT",
             params: {
-                openLong: { positionSide: "LONG", reduceOnly: false },
-                openShort: { positionSide: "SHORT", reduceOnly: false },
+                openLong: { positionSide: "LONG", reduceOnly: true },
+                openShort: { positionSide: "SHORT", reduceOnly: true },
                 closeLong: { positionSide: "LONG", reduceOnly: true },
                 closeShort: { positionSide: "SHORT", reduceOnly: true }
             },

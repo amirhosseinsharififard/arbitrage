@@ -103,11 +103,27 @@ class ExchangeManager {
         const exchange = new ccxt[id](options);
 
         // Load markets with retry logic
-        await retryWrapper(
-            exchange.loadMarkets.bind(exchange), [],
-            retryAttempts,
-            retryDelay
-        );
+        // Skip API key validation for public data (prices, orderbooks)
+        try {
+            await retryWrapper(
+                exchange.loadMarkets.bind(exchange), [],
+                retryAttempts,
+                retryDelay
+            );
+        } catch (error) {
+            // If API key is invalid, try to load markets without authentication
+            if (error.message && error.message.includes('Api key info invalid')) {
+                console.log(`⚠️  API key invalid for ${id}, trying public access...`);
+                const publicExchange = new ccxt[id]({
+                    ...options,
+                    apiKey: undefined,
+                    secret: undefined
+                });
+                await publicExchange.loadMarkets();
+                return publicExchange;
+            }
+            throw error;
+        }
 
         // Optional futures setup: leverage/margin per config
         try {
