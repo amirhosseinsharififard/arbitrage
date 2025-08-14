@@ -17,9 +17,9 @@ export async function ensureMexcLoggedIn(page) {
     }
     // Fallback: check explicit logged-in indicator XPath if provided
     if (mexcSelectors.loggedInIndicator) {
-        const indicatorXPath = mexcSelectors.loggedInIndicator.startsWith("xpath:")
-            ? mexcSelectors.loggedInIndicator.slice(6)
-            : mexcSelectors.loggedInIndicator;
+        const indicatorXPath = mexcSelectors.loggedInIndicator.startsWith("xpath:") ?
+            mexcSelectors.loggedInIndicator.slice(6) :
+            mexcSelectors.loggedInIndicator;
         try {
             const handles = await page.$x(indicatorXPath);
             if (handles && handles.length > 0) {
@@ -95,9 +95,9 @@ export async function detectMexcLoggedIn(page) {
         if (!isLoggedOut) return true;
         // If logged-out by buttons logic, try positive indicator
         if (mexcSelectors.loggedInIndicator) {
-            const indicatorXPath = mexcSelectors.loggedInIndicator.startsWith("xpath:")
-                ? mexcSelectors.loggedInIndicator.slice(6)
-                : mexcSelectors.loggedInIndicator;
+            const indicatorXPath = mexcSelectors.loggedInIndicator.startsWith("xpath:") ?
+                mexcSelectors.loggedInIndicator.slice(6) :
+                mexcSelectors.loggedInIndicator;
             const handles = await page.$x(indicatorXPath);
             if (handles && handles.length > 0) return true;
         }
