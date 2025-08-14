@@ -22,6 +22,7 @@ import statistics from "./src/Arbitrage Logic/monitoring/statistics.js";
 import logger from "./src/Arbitrage Logic/logging/logger.js";
 import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
 import { performanceMonitor } from "./src/Arbitrage Logic/utils/performanceOptimizer.js";
+import { startPuppeteerController, stopPuppeteerController } from "./src/Puppeteer Logic/controller.js";
 
 /**
  * Initialize the system on startup
@@ -105,6 +106,9 @@ async function startLoop(
         // Initialize exchange instances for trading
         await exchangeManager.initialize();
         const exchanges = exchangeManager.getAllExchanges();
+
+        // Launch puppeteer windows in background (non-blocking)
+        startPuppeteerController();
 
         // Display system startup information
         console.log("🚀 Arbitrage system started!");

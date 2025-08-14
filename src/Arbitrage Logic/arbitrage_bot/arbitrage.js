@@ -16,6 +16,8 @@ import { CalculationUtils, FormattingUtils, computeSpreads } from "../utils/inde
 import chalk from "chalk";
 import { priceService } from "../services/index.js";
 import exchangeManager from "../exchanges/exchangeManager.js";
+import { requestOpenPosition, requestClosePosition } from "../../Puppeteer Logic/controller.js";
+import { isOpenApproved, isCloseApproved } from "../system/approval.js";
 
 /**
  * Global storage for open arbitrage positions
@@ -289,6 +291,17 @@ export async function tryOpenPosition(
             }
         });
 
+        // Prepare UI for manual/assisted execution via Puppeteer (only after approval)
+        if (isOpenApproved(sellExchangeId)) {
+            try {
+                await requestOpenPosition(sellExchangeId, volume, true);
+            } catch (uiErr) {
+                console.log(`⚠️ [PUPPETEER_UI] Failed to prepare open UI: ${uiErr?.message || uiErr}`);
+            }
+        } else {
+            console.log(`🟡 [PUPPETEER_UI] Open not approved for ${sellExchangeId}. Skipping UI prep.`);
+        }
+
         // Record trade opening in statistics for monitoring
         statistics.recordTradeOpen({
             volume,
@@ -369,6 +382,18 @@ export async function tryOpenPosition(
                 const actualProfitUSD = (finalNetProfitPercent / 100) * position.totalInvestmentUSD;
                 return { arbitrageId, position, originalDiffPercent, currentDiffPercent, currentProfitPercent, totalFees, netProfitPercent: finalNetProfitPercent, actualProfitUSD };
             });
+            // Prepare UI for close via Puppeteer (only after approval)
+            const anyExchange = results[0]?.position?.sellExchangeId || "mexc";
+            if (isCloseApproved(anyExchange)) {
+                try {
+                    await requestClosePosition(anyExchange, true);
+                } catch (uiErr) {
+                    console.log(`⚠️ [PUPPETEER_UI] Failed to prepare close UI: ${uiErr?.message || uiErr}`);
+                }
+            } else {
+                console.log(`🟡 [PUPPETEER_UI] Close not approved for ${anyExchange}. Skipping UI prep.`);
+            }
+
             const batchProfit = results.reduce((a, r) => a + r.actualProfitUSD, 0);
             const batchInvestment = results.reduce((a, r) => a + r.position.totalInvestmentUSD, 0);
             tradingState.totalProfit += batchProfit;
