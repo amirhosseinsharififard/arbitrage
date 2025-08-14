@@ -44,7 +44,7 @@ export async function fillTokenQuantity(page, tokenQuantity) {
         await input.click({ clickCount: 3 });
         await input.type(String(tokenQuantity), { delay: 20 });
     } catch (e) {
-        const msg = e ? .message || String(e);
+        const msg = (e && e.message) ? e.message : String(e);
         console.error(`[LBANK][fillTokenQuantity] ${msg}`);
         throw e;
     }

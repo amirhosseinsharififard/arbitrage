@@ -128,7 +128,7 @@ export async function requestOpenPosition(exchange, tokenQuantity, confirmed = f
         }
         throw new Error(`Unknown exchange passed to requestOpenPosition: ${exchange}`);
     } catch (err) {
-        const message = err ? .message || String(err);
+        const message = (err && err.message) ? err.message : String(err);
         console.error(`[PUPPETEER][OPEN][${ex}] Failed: ${message}`);
         throw err;
     }
@@ -160,7 +160,7 @@ export async function requestClosePosition(exchange, confirmed = false) {
         }
         throw new Error(`Unknown exchange passed to requestClosePosition: ${exchange}`);
     } catch (err) {
-        const message = err ? .message || String(err);
+        const message = (err && err.message) ? err.message : String(err);
         console.error(`[PUPPETEER][CLOSE][${ex}] Failed: ${message}`);
         throw err;
     }
