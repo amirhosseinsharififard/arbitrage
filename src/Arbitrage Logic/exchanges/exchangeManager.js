@@ -112,16 +112,27 @@ class ExchangeManager {
         // Optional futures setup: leverage/margin per config
         try {
             const exchangeConfig = this.getExchangeConfig(id);
+            const idLower = String(id || '').toLowerCase();
             const leverage = exchangeConfig && exchangeConfig.leverage;
-            if (Number.isFinite(leverage) && leverage > 0) {
+            if (Number.isFinite(leverage) && leverage > 0 && typeof exchange.setLeverage === 'function') {
                 const symbolForLeverage = (exchangeConfig && exchangeConfig.symbolForLeverage) || (config.symbols && config.symbols[id]) || '';
                 if (symbolForLeverage) {
-                    await exchange.setLeverage(leverage, symbolForLeverage);
-                    console.log(`⚙️  ${id} leverage set to ${leverage} on ${symbolForLeverage}`);
+                    if (idLower === 'mexc') {
+                        // MEXC requires openType (1 isolated, 2 cross) and positionType (1 long, 2 short)
+                        const openTypeCode = (exchangeConfig && exchangeConfig.marginMode === 'isolated') ? 1 : 2;
+                        await Promise.allSettled([
+                            exchange.setLeverage(leverage, symbolForLeverage, { openType: openTypeCode, positionType: 1 }),
+                            exchange.setLeverage(leverage, symbolForLeverage, { openType: openTypeCode, positionType: 2 })
+                        ]);
+                        console.log(`⚙️  ${id} leverage set to ${leverage} (both sides) on ${symbolForLeverage}`);
+                    } else if (typeof exchange.setLeverage === 'function') {
+                        await exchange.setLeverage(leverage, symbolForLeverage);
+                        console.log(`⚙️  ${id} leverage set to ${leverage} on ${symbolForLeverage}`);
+                    }
                 }
             }
             const marginMode = exchangeConfig && exchangeConfig.marginMode;
-            if (marginMode && typeof exchange.setMarginMode === 'function') {
+            if (marginMode && typeof exchange.setMarginMode === 'function' && idLower !== 'mexc') {
                 const symbolForMargin = (exchangeConfig && exchangeConfig.symbolForLeverage) || (config.symbols && config.symbols[id]) || '';
                 if (symbolForMargin) {
                     await exchange.setMarginMode(marginMode, symbolForMargin);
@@ -129,7 +140,7 @@ class ExchangeManager {
                 }
             }
         } catch (e) {
-            console.log(`⚠️  Failed to set leverage on ${id}: ${e && e.message ? e.message : String(e)}`);
+            console.log(`⚠️  Futures setup warning on ${id}: ${e && e.message ? e.message : String(e)}`);
         }
 
         return exchange;

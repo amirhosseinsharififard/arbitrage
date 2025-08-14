@@ -304,7 +304,7 @@ export async function tryOpenPosition(
                 position.sellOrderId = (sellOrder && sellOrder.id) ? sellOrder.id : null;
                 position.status = 'OPEN';
             } catch (execErr) {
-                console.log(`❌ [ORDER_EXECUTION] Failed to open legs: ${execErr?.message || execErr}`);
+                console.log(`❌ [ORDER_EXECUTION] Failed to open legs: ${execErr && execErr.message ? execErr.message : String(execErr)}`);
             }
         } else {
             console.log(`🟡 [ORDER_EXECUTION] Open not approved. Skipping live orders.`);
@@ -403,7 +403,7 @@ export async function tryOpenPosition(
                         volume: any?.position?.volume,
                     });
                 } catch (execErr) {
-                    console.log(`❌ [ORDER_EXECUTION] Failed to close legs: ${execErr?.message || execErr}`);
+                    console.log(`❌ [ORDER_EXECUTION] Failed to close legs: ${execErr && execErr.message ? execErr.message : String(execErr)}`);
                 }
             } else {
                 console.log(`🟡 [ORDER_EXECUTION] Close not approved. Skipping live orders.`);
