@@ -7,7 +7,17 @@ export const mexcSelectors = {
     // Token quantity input field inside order form
     tokenQuantityInput: "html.webp body div section._symbol__contractPage__dwlDC div.react-grid-layout._symbol__content__8PrIJ._symbol__verticalLayout__dO1KG.mx-grid-layout-wrapper div#orderForm.react-grid-item._symbol__gridLayoutOrderForm__YUj4C.react-draggable.cssTransforms.react-resizable section#mexc-web-inspection-futures-exchange-orderForm.handle_handleContainer__5hpMx._symbol__orderFormContentWrapper__rpcRx div.handle_handleWrapper__z38yY div#mexc-web-handle-content-wrapper-v div div#mexc_contract_v_open_position div.component_container__axBbD div.component_inputWrapper__LP4Dm div.component_numberInput__PF7Vf div.InputNumberHandle_inputNumberExtendV2Wrapper__Ns_8m div.InputNumberHandle_inputOuterWrapper__8w_l1 div.InputNumberHandle_inputWrapper__Kntgy.input-wrapper div.InputNumberExtend_wrapper__qxkpD.extend-wrapper input.ant-input",
 
-    // Placeholders – to be filled later
+    // Tabs toggles (standardized naming)
+    openToggleButton: "html.webp body div section._symbol__contractPage__dwlDC div.react-grid-layout._symbol__content__8PrIJ._symbol__verticalLayout__dO1KG.mx-grid-layout-wrapper div#orderForm.react-grid-item._symbol__gridLayoutOrderForm__YUj4C.react-draggable.cssTransforms.react-resizable section#mexc-web-inspection-futures-exchange-orderForm.handle_handleContainer__5hpMx._symbol__orderFormContentWrapper__rpcRx div.handle_tabs__v1Grn div.handle_vInner__aV1YW span.handle_active__Yy6UA",
+    closeToggleButton: "html.webp body div section._symbol__contractPage__dwlDC div.react-grid-layout._symbol__content__8PrIJ._symbol__verticalLayout__dO1KG.mx-grid-layout-wrapper div#orderForm.react-grid-item._symbol__gridLayoutOrderForm__YUj4C.react-draggable.cssTransforms.react-resizable section#mexc-web-inspection-futures-exchange-orderForm.handle_handleContainer__5hpMx._symbol__orderFormContentWrapper__rpcRx div.handle_tabs__v1Grn div.handle_vInner__aV1YW span.handle_active__Yy6UA",
+
+    // Action buttons (placeholders – provide CSS paths)
+    openLongButton: null,
+    openShortButton: null,
+    closeShortButton: null,
+    closeLongButton: null,
+
+    // Alternative actions if needed (bid/ask semantics)
     bidButton: null,
     askButton: null
 };

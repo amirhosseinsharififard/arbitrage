@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 import { launchBrowser, newPage } from "./core/browser.js";
 import { saveCookies, loadCookies } from "./core/cookies.js";
 import { loginMexc } from "./mexc Config/login.js";
-import { openMexcFutures, ensureMexcLoggedIn, fillTokenQuantity } from "./mexc Config/actions.js";
+import { openMexcFutures, ensureMexcLoggedIn, fillTokenQuantity, toggleOpenTab as toggleMexcOpenTab, toggleCloseTab as toggleMexcCloseTab } from "./mexc Config/actions.js";
 import { loginLbank } from "./lbank config/login.js";
 import config from "../Arbitrage Logic/config/config.js";
-import { openLbankFutures, ensureLbankLoggedIn, fillTokenQuantity as fillLbankTokenQuantity, toggleOpenTab, clickOpenLong, clickOpenShort, clickClosePosition, clickCloseShort, clickCloseLong } from "./lbank config/actions.js";
+import { openLbankFutures, ensureLbankLoggedIn, fillTokenQuantity as fillLbankTokenQuantity, toggleOpenTab, clickOpenLong, clickOpenShort, toggleCloseTab, clickCloseShort, clickCloseLong } from "./lbank config/actions.js";
 
 dotenv.config();
 
@@ -29,6 +29,9 @@ async function run() {
         const { browser, page } = await loginMexc({ headless: false });
         await openMexcFutures(page);
         await ensureMexcLoggedIn(page);
+        // toggles available for later use
+        // await toggleMexcOpenTab(page);
+        // await toggleMexcCloseTab(page);
         await fillTokenQuantity(page, tokenQuantity);
         console.log("Filled token quantity:", tokenQuantity);
         // placeholders for future: await clickBid(page) / await clickAsk(page)
@@ -47,7 +50,7 @@ async function run() {
         // placeholders to be used as needed:
         // await clickOpenLong(page);
         // await clickOpenShort(page);
-        // await clickClosePosition(page);
+        // await toggleCloseTab(page);
         // await clickCloseShort(page);
         // await clickCloseLong(page);
         await browser.close();

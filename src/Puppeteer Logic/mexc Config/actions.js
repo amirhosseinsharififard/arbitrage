@@ -23,10 +23,38 @@ export async function fillTokenQuantity(page, tokenQuantity) {
     await input.type(String(tokenQuantity), { delay: 20 });
 }
 
+export async function toggleOpenTab(page) {
+    await page.click(mexcSelectors.openToggleButton);
+}
+
+export async function toggleCloseTab(page) {
+    await page.click(mexcSelectors.closeToggleButton);
+}
+
 // Placeholders for future wiring once selectors provided
 export async function clickBid(page) {
     if (!mexcSelectors.bidButton) throw new Error("Bid button selector not set yet");
     await page.click(mexcSelectors.bidButton);
+}
+
+export async function clickOpenLong(page) {
+    if (!mexcSelectors.openLongButton) throw new Error("openLongButton selector not set yet");
+    await page.click(mexcSelectors.openLongButton);
+}
+
+export async function clickOpenShort(page) {
+    if (!mexcSelectors.openShortButton) throw new Error("openShortButton selector not set yet");
+    await page.click(mexcSelectors.openShortButton);
+}
+
+export async function clickCloseShort(page) {
+    if (!mexcSelectors.closeShortButton) throw new Error("closeShortButton selector not set yet");
+    await page.click(mexcSelectors.closeShortButton);
+}
+
+export async function clickCloseLong(page) {
+    if (!mexcSelectors.closeLongButton) throw new Error("closeLongButton selector not set yet");
+    await page.click(mexcSelectors.closeLongButton);
 }
 
 export async function clickAsk(page) {

@@ -33,8 +33,8 @@ export async function clickOpenShort(page) {
     await page.click(lbankSelectors.openShortButton);
 }
 
-export async function clickClosePosition(page) {
-    await page.click(lbankSelectors.closePositionButton);
+export async function toggleCloseTab(page) {
+    await page.click(lbankSelectors.closeToggleButton);
 }
 
 export async function clickCloseShort(page) {
