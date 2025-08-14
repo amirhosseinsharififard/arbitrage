@@ -80,14 +80,16 @@ class PriceService {
                 const requestRecorder = (await
                     import ('./requestRecorder.js')).default;
                 requestRecorder && requestRecorder.setEnabled && requestRecorder.setEnabled(true);
+                const bidsCount = (orderBook && Array.isArray(orderBook.bids)) ? orderBook.bids.length : 0;
+                const asksCount = (orderBook && Array.isArray(orderBook.asks)) ? orderBook.asks.length : 0;
                 requestRecorder && requestRecorder.recordRequestCycle && requestRecorder.recordRequestCycle({
                     request: { method: 'fetchOrderBook', url: `${exchange.id}:${symbol}`, headers: {}, body: null, exchangeId, symbol },
-                    response: { status: 200, headers: {}, body: { bids: orderBook.bids ? .length, asks: orderBook.asks ? .length }, exchangeId, symbol },
+                    response: { status: 200, headers: {}, body: { bids: bidsCount, asks: asksCount }, exchangeId, symbol },
                     startTime: start,
                     endTime: end
                 });
                 if (config.logSettings.printRequestsToConsole) {
-                    console.log(`[API][${exchangeId}] fetchOrderBook ${symbol} -> bids:${orderBook.bids?.length || 0} asks:${orderBook.asks?.length || 0}`);
+                    console.log(`[API][${exchangeId}] fetchOrderBook ${symbol} -> bids:${bidsCount} asks:${asksCount}`);
                 }
             } catch {}
 
