@@ -40,7 +40,7 @@ export { CalculationUtils, FormattingUtils, ValidationUtils }
 from './utils/index.js';
 
 // New services
-export { priceService, PriceService }
+export { ourbitPriceService, OurbitPriceService }
 from './services/index.js';
 
 // Error handling

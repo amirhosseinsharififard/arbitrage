@@ -191,6 +191,38 @@ class ExchangeManager {
     getExchangeIds() {
         return Object.keys(config.exchanges);
     }
+
+    /**
+     * Get price data from MEXC exchange
+     * 
+     * Fetches current bid/ask prices for a given symbol from MEXC futures.
+     * 
+     * @param {string} symbol - Trading symbol (e.g., 'GAIA/USDT:USDT' for futures)
+     * @returns {object} Price data with bid, ask, timestamp, etc.
+     * @throws {Error} If MEXC exchange not available or fetch fails
+     */
+    async getMexcPrice(symbol = 'GAIA/USDT:USDT') {
+        try {
+            const mexcExchange = this.getExchange('mexc');
+
+            // Ensure we're using the correct futures symbol format
+            const futuresSymbol = symbol.includes(':') ? symbol : `${symbol}:USDT`;
+
+            console.log(`📊 Fetching MEXC futures price for: ${futuresSymbol}`);
+            const ticker = await mexcExchange.fetchTicker(futuresSymbol);
+
+            return {
+                bid: ticker.bid,
+                ask: ticker.ask,
+                timestamp: ticker.timestamp,
+                exchangeId: 'mexc',
+                symbol: futuresSymbol
+            };
+        } catch (error) {
+            console.error(`❌ Failed to get MEXC futures price for ${symbol}: ${error.message}`);
+            throw error;
+        }
+    }
 }
 
 // Create singleton instance for use throughout the system

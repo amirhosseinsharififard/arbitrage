@@ -4,10 +4,10 @@
  */
 const config = {
     // Trading symbols configuration for each exchange
-    // Both exchanges trade the same symbol to enable arbitrage opportunities
+    // MEXC and Ourbit exchange configuration (LBank completely disabled)
     symbols: {
-        mexc: "DEBT/USDT:USDT", // MEXC exchange symbol (futures)
-        lbank: "DEBT/USDT:USDT", // LBank exchange symbol (futures)
+        ourbit: "GAIA/USDT", // Ourbit exchange symbol
+        mexc: "GAIA/USDT:USDT", // MEXC exchange symbol
     },
 
     // System timing and performance settings
@@ -30,8 +30,8 @@ const config = {
     // Exchange fee configuration (percentage of trade value)
     // Set to 0 for testing, adjust based on actual exchange fees
     feesPercent: {
-        mexc: 0, // MEXC trading fees (0.04 = 0.04%)
-        lbank: 0, // LBank trading fees (0.05 = 0.05%)
+        ourbit: 0, // Ourbit trading fees
+        mexc: 0, // MEXC trading fees
     },
 
     // Exchange initialization and connection settings
@@ -41,12 +41,28 @@ const config = {
             options: { defaultType: "future" }, // Use futures trading
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
+        }
+    },
+
+    // Ourbit Puppeteer configuration
+    ourbit: {
+        url: "https://futures.ourbit.com/fa-IR/exchange/GAIA_USDT?type=linear_swap",
+        updateInterval: 100, // Price update interval in milliseconds
+        selectors: {
+            bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span", // Buy price selector (used as bid)
+            askPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span" // Sell price selector (used as ask)
         },
-        lbank: {
-            id: "lbank", // Exchange identifier
-            options: { defaultType: "future" }, // Use futures trading
-            retryAttempts: 10, // Number of connection retry attempts
-            retryDelay: 1000 // Delay between retries in milliseconds
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
         }
     },
 
@@ -107,11 +123,11 @@ const config = {
     },
 
     // Trading strategy configuration
-    // Current logic trades only in LBANK(ask)->MEXC(bid) direction
+    // Current logic trades only in OURBIT(ask)->MEXC(bid) direction
     scenarios: {
         alireza: {
-            openThresholdPercent: 3.1, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: 2.5 // Close when current difference reaches +1%
+            openThresholdPercent: 3.1, // Minimum profit % to open OURBIT->MEXC position
+            closeAtPercent: 2.5 // Close when current difference reaches +2.5%
         }
     },
 

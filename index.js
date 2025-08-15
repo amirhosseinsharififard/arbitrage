@@ -22,6 +22,7 @@ import statistics from "./src/Arbitrage Logic/monitoring/statistics.js";
 import logger from "./src/Arbitrage Logic/logging/logger.js";
 import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
 import { performanceMonitor } from "./src/Arbitrage Logic/utils/performanceOptimizer.js";
+import { ourbitPriceService } from "./src/Arbitrage Logic/services/index.js";
 
 /**
  * Initialize the system on startup
@@ -102,7 +103,10 @@ async function startLoop(
         // Initialize the system components
         await initializeSystem();
 
-        // Initialize exchange instances for trading
+        // Initialize Ourbit price service (for Ourbit data)
+        await ourbitPriceService.initialize();
+
+        // Initialize exchange instances for trading (MEXC only, LBank disabled)
         await exchangeManager.initialize();
         const exchanges = exchangeManager.getAllExchanges();
 
@@ -112,6 +116,7 @@ async function startLoop(
         console.log(`💵 Trade volume: $${config.tradeVolumeUSD}`);
         console.log(`📊 Profit threshold: ${config.profitThresholdPercent}%`);
         console.log(`🔒 Close threshold: ${config.closeThresholdPercent}%`);
+        console.log(`🌐 Exchanges: MEXC + Ourbit `);
         console.log("=".repeat(60));
 
         // Initialize loop control variables
