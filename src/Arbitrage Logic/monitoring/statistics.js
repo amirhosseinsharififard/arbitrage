@@ -179,6 +179,11 @@ class Statistics {
      *   - worstTrade: Worst trade details
      */
     getCurrentSessionStats() {
+        // Ensure sessionData exists
+        if (!this.sessionData) {
+            this.resetSessionData();
+        }
+
         // Calculate win rate percentage
         const winRate = this.sessionData.totalTrades > 0 ?
             (this.sessionData.profitableTrades / this.sessionData.totalTrades) * 100 : 0;
@@ -191,19 +196,19 @@ class Statistics {
             totalTrades: this.sessionData.totalTrades,
             profitableTrades: this.sessionData.profitableTrades,
             losingTrades: this.sessionData.losingTrades,
-            winRate: winRate.toFixed(2),
-            totalProfit: this.sessionData.totalProfit.toFixed(2),
-            avgProfit: avgProfit.toFixed(2),
-            totalVolume: this.sessionData.totalVolume.toFixed(6),
-            totalFeesUSD: this.sessionData.totalFees.toFixed(2),
+            winRate: Number(winRate).toFixed(2),
+            totalProfit: Number(this.sessionData.totalProfit).toFixed(2),
+            avgProfit: Number(avgProfit).toFixed(2),
+            totalVolume: Number(this.sessionData.totalVolume).toFixed(6),
+            totalFeesUSD: Number(this.sessionData.totalFees).toFixed(2),
             openPositions: this.sessionData.openPositions,
-            currentInvestment: this.sessionData.currentInvestment.toFixed(2),
+            currentInvestment: Number(this.sessionData.currentInvestment).toFixed(2),
             bestTrade: {
-                profit: this.sessionData.bestTrade.profit.toFixed(2),
+                profit: Number(this.sessionData.bestTrade.profit).toFixed(2),
                 tradeNumber: this.sessionData.bestTrade.tradeNumber
             },
             worstTrade: {
-                profit: this.sessionData.worstTrade.profit.toFixed(2),
+                profit: Number(this.sessionData.worstTrade.profit).toFixed(2),
                 tradeNumber: this.sessionData.worstTrade.tradeNumber
             }
         };

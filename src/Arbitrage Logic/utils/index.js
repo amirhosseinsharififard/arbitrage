@@ -26,6 +26,7 @@ import * as ValidationUtils from './validation.js';
 
 // Import order book utilities
 import * as OrderbookUtils from './orderbook.js';
+import { computeSpreads } from './spreads.js';
 
 // Export all utility modules
 export {
@@ -33,7 +34,8 @@ export {
     FormattingUtils,
     CommonUtils,
     ValidationUtils,
-    OrderbookUtils
+    OrderbookUtils,
+    computeSpreads
 };
 
 // Export individual calculation functions for direct access

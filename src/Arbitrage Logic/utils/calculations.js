@@ -10,7 +10,11 @@
  * 
  * All calculations are optimized for financial precision and
  * handle edge cases gracefully.
+ * 
+ * Now enhanced with intelligent caching for repetitive calculations.
  */
+
+import calculationCache from "./calculationCache.js";
 
 /**
  * Calculate the percentage difference between two prices
@@ -40,13 +44,8 @@ export function calculatePriceDifference(buyPrice, sellPrice) {
         throw new Error('Prices must be positive numbers');
     }
 
-    // Calculate percentage difference
-    // Positive result means sellPrice > buyPrice (profitable)
-    // Negative result means sellPrice < buyPrice (loss)
-    const difference = sellPrice - buyPrice;
-    const percentage = (difference / buyPrice) * 100;
-
-    return percentage;
+    // Use cached calculation for better performance
+    return calculationCache.calculatePriceDifference(buyPrice, sellPrice);
 }
 
 /**
@@ -107,8 +106,8 @@ export function calculateTotalCost(basePrice, feePercentage, fixedCost = 0) {
         throw new Error('Base price must be positive and fee must be non-negative');
     }
 
-    // Calculate fee amount
-    const feeAmount = (basePrice * feePercentage) / 100;
+    // Use cached fee calculation for better performance
+    const feeAmount = calculationCache.calculateFee(basePrice, feePercentage);
 
     // Return total cost
     return basePrice + feeAmount + fixedCost;
@@ -138,9 +137,9 @@ export function calculateNetProfit(grossProfit, buyFeePercentage, sellFeePercent
         throw new Error('Trade amount must be positive');
     }
 
-    // Calculate total fees
-    const buyFees = (tradeAmount * buyFeePercentage) / 100;
-    const sellFees = (tradeAmount * sellFeePercentage) / 100;
+    // Use cached fee calculations for better performance
+    const buyFees = calculationCache.calculateFee(tradeAmount, buyFeePercentage);
+    const sellFees = calculationCache.calculateFee(tradeAmount, sellFeePercentage);
     const totalFees = buyFees + sellFees;
 
     // Return net profit
@@ -206,8 +205,8 @@ export function calculateOptimalTradeVolume(maxInvestment, assetPrice, available
         throw new Error('All parameters must be positive');
     }
 
-    // Calculate volume based on investment amount
-    const investmentBasedVolume = maxInvestment / assetPrice;
+    // Use cached volume calculation for better performance
+    const investmentBasedVolume = calculationCache.calculateVolume(maxInvestment, assetPrice);
 
     // Calculate maximum volume based on order book depth
     const maxOrderBookVolume = (availableVolume * maxVolumePercentage) / 100;

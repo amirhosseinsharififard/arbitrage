@@ -4,35 +4,34 @@
  */
 const config = {
     // Trading symbols configuration for each exchange
-    // Both exchanges trade the same symbol to enable arbitrage opportunities
+    // MEXC and Ourbit exchange configuration (LBank completely disabled)
     symbols: {
-        mexc: "DEBT/USDT:USDT", // MEXC exchange symbol (futures)
-        lbank: "DEBT/USDT:USDT", // LBank exchange symbol (futures)
+        ourbit: "GAIA/USDT", // Ourbit exchange symbol
+        mexc: "GAIA/USDT:USDT", // MEXC exchange symbol
     },
 
     // System timing and performance settings
-    intervalMs: 100, // Main loop interval in milliseconds (10 checks per second)
-    statusUpdateInterval: 1000, // How often to display status updates (every 10 iterations)
-    retryDelayMs: 5000, // Delay before retrying after errors (5 seconds)
+    intervalMs: 50, // Main loop interval in milliseconds (20 checks per second) - Increased speed
+    statusUpdateInterval: 2000, // How often to display status updates (every 40 iterations) - Reduced console spam
+    retryDelayMs: 2000, // Delay before retrying after errors (2 seconds) - Faster recovery
 
     // Trading thresholds and risk management
-    profitThresholdPercent: 2.5, // Minimum profit percentage to open a new position
-    closeThresholdPercent: -1.5, // Profit percentage threshold to close an open position
+    profitThresholdPercent: 3.1, // Minimum profit percentage to open a new position
+    closeThresholdPercent: 2.5, // Profit percentage threshold to close an open position
     tradeVolumeUSD: 200, // Total investment amount across both exchanges ($100 per side)
 
     // New: Token quantity-based trading configuration
-    tradingMode: "USD", // "USD" for dollar-based, "TOKEN" for token quantity-based
-    targetTokenQuantity: 10000, // Target number of tokens to trade when mode is "TOKEN"
-    maxTokenQuantity: 10000, // Maximum token quantity allowed for safety
-    minTokenQuantity: 100, // Minimum token quantity for validation
+    tradingMode: "TOKEN", // "USD" for dollar-based, "TOKEN" for token quantity-based
+    targetTokenQuantity: 5000, // Per-trade token batch size
+    maxTokenQuantity: 35000, // Total allowed tokens across open positions
 
-    maxTrades: 5, // Maximum number of trades (0 = unlimited)
+    maxTrades: 0, // Maximum number of trades (0 = unlimited)
 
     // Exchange fee configuration (percentage of trade value)
     // Set to 0 for testing, adjust based on actual exchange fees
     feesPercent: {
-        mexc: 0, // MEXC trading fees (0.04 = 0.04%)
-        lbank: 0, // LBank trading fees (0.05 = 0.05%)
+        ourbit: 0, // Ourbit trading fees
+        mexc: 0, // MEXC trading fees
     },
 
     // Exchange initialization and connection settings
@@ -42,20 +41,36 @@ const config = {
             options: { defaultType: "future" }, // Use futures trading
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
+        }
+    },
+
+    // Ourbit Puppeteer configuration
+    ourbit: {
+        url: "https://futures.ourbit.com/fa-IR/exchange/GAIA_USDT?type=linear_swap",
+        updateInterval: 100, // Price update interval in milliseconds
+        selectors: {
+            bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span", // Buy price selector (used as bid)
+            askPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span" // Sell price selector (used as ask)
         },
-        lbank: {
-            id: "lbank", // Exchange identifier
-            options: { defaultType: "future" }, // Use futures trading
-            retryAttempts: 10, // Number of connection retry attempts
-            retryDelay: 1000 // Delay between retries in milliseconds
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
         }
     },
 
     // Logging and monitoring configuration
     logSettings: {
-        maxRecentTrades: 1000, // Maximum number of recent trades to display
-        summaryUpdateInterval: 10, // How often to update summary statistics
-        enableDetailedLogging: true, // Enable verbose console output
+        maxRecentTrades: 500, // Maximum number of recent trades to display - Reduced memory usage
+        summaryUpdateInterval: 20, // How often to update summary statistics - Less frequent updates
+        enableDetailedLogging: false, // Enable verbose console output - Reduced console spam
         logFile: "trades.log", // Main trade log file path
         summaryFile: "session_summary.txt", // Session summary file path
         clearOnStartup: true, // Clear log files when system starts
@@ -66,7 +81,7 @@ const config = {
         requestLogFile: "requests.log", // Network request log file
         // Only log actual trade actions, exclude price data and errors
         loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"],
-        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR"]
+        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR", "PRICE_UPDATE"] // Exclude more noise
     },
 
     // Arbitrage validation and filtering settings
@@ -76,7 +91,7 @@ const config = {
         enableFeeCalculation: true, // Include fees in profit calculations
         enableThresholdFiltering: false, // Enable profit threshold filtering
         defaultThresholdPercent: 0.5, // Default threshold for profit logging
-        useOrderBookVolume: true // Use order book volumes to cap trade size
+        useOrderBookVolume: false // Use order book volumes to cap trade size
     },
 
     // Error handling and system resilience settings
@@ -108,11 +123,11 @@ const config = {
     },
 
     // Trading strategy configuration
-    // Current logic trades only in LBANK(ask)->MEXC(bid) direction
+    // Current logic trades only in OURBIT(ask)->MEXC(bid) direction
     scenarios: {
         alireza: {
-            openThresholdPercent: 0.5, // Minimum profit % to open LBANK->MEXC position
-            closeAtPercent: -1.5 // Close when profit reaches 1.5%
+            openThresholdPercent: 3.1, // Minimum profit % to open OURBIT->MEXC position
+            closeAtPercent: 2.5 // Close when current difference reaches +2.5%
         }
     },
 
