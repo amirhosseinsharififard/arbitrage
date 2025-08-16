@@ -4,10 +4,12 @@
  */
 const config = {
     // Trading symbols configuration for each exchange
-    // MEXC and Ourbit exchange configuration (LBank completely disabled)
+    // MEXC, Ourbit, XT, and KCEX exchange configuration
     symbols: {
         ourbit: "GAIA/USDT", // Ourbit exchange symbol
         mexc: "GAIA/USDT:USDT", // MEXC exchange symbol
+        xt: "GAIA/USDT", // XT exchange symbol
+        kcex: "BTC/USDT", // KCEX exchange symbol
     },
 
     // System timing and performance settings
@@ -32,6 +34,8 @@ const config = {
     feesPercent: {
         ourbit: 0, // Ourbit trading fees
         mexc: 0, // MEXC trading fees
+        xt: 0, // XT trading fees
+        kcex: 0, // KCEX trading fees
     },
 
     // Exchange initialization and connection settings
@@ -51,6 +55,50 @@ const config = {
         selectors: {
             bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span", // Buy price selector (used as bid)
             askPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span" // Sell price selector (used as ask)
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        }
+    },
+
+    // XT Puppeteer configuration
+    xt: {
+        url: "https://www.xt.com/trade/GAIA_USDT", // XT exchange URL for GAIA/USDT pair
+        updateInterval: 100, // Price update interval in milliseconds
+        selectors: {
+            bidPrice: "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[1]/div[3]/div/div[2]/div/div[3]/div[3]/div[1]/div[2]/div[1]/div", // Bid price selector
+            askPrice: "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[1]/div[3]/div/div[2]/div/div[3]/div[1]/div[10]/div[2]/div[1]/div" // Ask price selector
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        }
+    },
+
+    // KCEX Puppeteer configuration
+    kcex: {
+        url: "https://www.kcex.com/futures/exchange/BTC_USDT", // KCEX exchange URL for BTC/USDT futures pair
+        updateInterval: 100, // Price update interval in milliseconds
+        selectors: {
+            bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span", // Bid price selector
+            askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span" // Ask price selector
         },
         browser: {
             headless: true,

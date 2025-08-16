@@ -14,12 +14,14 @@
 import ourbitPriceService from './ourbitPriceService.js';
 import requestRecorder from './requestRecorder.js';
 import requestCapture from './requestCapture.js';
+import kcexPuppeteerService from '../Puppeteer Logic/kcexService.js';
 
 // Export all service modules
 export {
     ourbitPriceService,
     requestRecorder,
-    requestCapture
+    requestCapture,
+    kcexPuppeteerService
 };
 
 // Export individual services for direct access
@@ -29,3 +31,5 @@ export { default as RequestRecorder }
 from './requestRecorder.js';
 export { default as RequestCapture }
 from './requestCapture.js';
+export { default as KCEXPuppeteerService }
+from '../Puppeteer Logic/kcexService.js';

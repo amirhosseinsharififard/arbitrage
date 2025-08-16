@@ -1,6 +1,6 @@
 import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
-import { ourbitPriceService } from "./services/index.js";
+import { ourbitPriceService, kcexPuppeteerService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils, computeSpreads } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
@@ -71,7 +71,23 @@ export async function printBidAskPairs(symbols, exchanges) {
         };
     }
 
-    const tickKey = `${ourbitPrice && ourbitPrice.bid || 'n'}|${ourbitPrice && ourbitPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}`;
+    // Get KCEX prices from Puppeteer service
+    let kcexPrice = null;
+    try {
+        kcexPrice = await kcexPuppeteerService.extractPrices();
+    } catch (error) {
+        console.log(`⚠️ KCEX price fetch failed: ${error.message}`);
+        kcexPrice = {
+            bid: null,
+            ask: null,
+            timestamp: Date.now(),
+            exchangeId: 'kcex',
+            symbol: 'BTC/USDT',
+            error: error.message
+        };
+    }
+
+    const tickKey = `${ourbitPrice && ourbitPrice.bid || 'n'}|${ourbitPrice && ourbitPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}|${kcexPrice && kcexPrice.bid || 'n'}|${kcexPrice && kcexPrice.ask || 'n'}`;
     if (tickKey === lastTickKey) return;
     lastTickKey = tickKey;
 
@@ -113,6 +129,15 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('MEXC')}: Bid=${chalk.white(FormattingUtils.formatPrice(mexcPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(mexcPrice.ask))} | Δ=${mexcBidVsLbankAskAbs != null ? chalk.white(mexcBidVsLbankAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)})`);
     console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('OURBIT')}: Bid=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.ask))} | Δ=${lbankBidVsMexcAskAbs != null ? chalk.white(lbankBidVsMexcAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(lbankBidVsMexcAskPct)})`);
+    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('KCEX')}: Bid=${chalk.white(FormattingUtils.formatPrice(kcexPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(kcexPrice.ask))} | Symbol: ${chalk.cyan(kcexPrice.symbol)}`);
+
+    // Calculate KCEX arbitrage opportunities (if same symbol)
+    if (kcexPrice.bid && kcexPrice.ask && ourbitPrice.bid && ourbitPrice.ask) {
+        const kcexToOurbitProfit = CalculationUtils.calculatePriceDifference(kcexPrice.ask, ourbitPrice.bid);
+        const ourbitToKcexProfit = CalculationUtils.calculatePriceDifference(ourbitPrice.ask, kcexPrice.bid);
+
+        console.log(`${FormattingUtils.label('KCEX Arbitrage')} KCEX(ask)->OURBIT(bid): ${FormattingUtils.formatPercentageColored(kcexToOurbitProfit)} | OURBIT(ask)->KCEX(bid): ${FormattingUtils.formatPercentageColored(ourbitToKcexProfit)}`);
+    }
 
     if (ourbitOb) {
         const ourbitBestBid = (ourbitOb && Array.isArray(ourbitOb.bids) && ourbitOb.bids[0]) ? { price: ourbitOb.bids[0][0], amount: ourbitOb.bids[0][1] } :
