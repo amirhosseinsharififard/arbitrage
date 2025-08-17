@@ -3,8 +3,7 @@
  * 
  * This module provides access to:
  * 1. Ourbit Price Service - Real-time price data management via Puppeteer
- * 2. Request Recorder - Network request logging and monitoring
- * 3. Request Capture - API request/response interception
+ * 2. KCEX/XT Puppeteer integrations
  * 
  * All services are organized by functionality and exported
  * for easy access throughout the system.
@@ -12,28 +11,16 @@
 
 // Import service modules
 import ourbitPriceService from './ourbitPriceService.js';
-import requestRecorder from './requestRecorder.js';
-import requestCapture from './requestCapture.js';
-import kcexPuppeteerService from '../../Puppeteer Logic/kcexService.js';
-import xtPuppeteerService from '../../Puppeteer Logic/xtService.js';
+import kcexPuppeteerService from '../../puppeteer/kcexService.js';
+import xtPuppeteerService from '../../puppeteer/xtService.js';
 
 // Export all service modules
-export {
-    ourbitPriceService,
-    requestRecorder,
-    requestCapture,
-    kcexPuppeteerService,
-    xtPuppeteerService
-};
+export { ourbitPriceService, kcexPuppeteerService, xtPuppeteerService };
 
-// Export individual services for direct access
+// Export individual services for direct access (named)
 export { default as OurbitPriceService }
 from './ourbitPriceService.js';
-export { default as RequestRecorder }
-from './requestRecorder.js';
-export { default as RequestCapture }
-from './requestCapture.js';
 export { default as KCEXPuppeteerService }
-from '../../Puppeteer Logic/kcexService.js';
+from '../../puppeteer/kcexService.js';
 export { default as XTPuppeteerService }
-from '../../Puppeteer Logic/xtService.js';
+from '../../puppeteer/xtService.js';

@@ -1,28 +1,14 @@
 {
-    "name": "arbitrage-alireza-mosusavi",
-    "module": "index.js",
+    "name": "ccxt-arbitrage-bot",
+    "version": "1.0.0",
+    "main": "index.js",
     "type": "module",
     "private": true,
     "scripts": {
-        "build": "babel src --out-dir dis",
+        "start": "node index.js",
         "puppeteer": "node \"./src/Puppeteer Logic/index.js\"",
-        "test-ourbit": "node test_ourbit_puppeteer.js",
-        "test-changes": "node test_price_changes.js"
-    },
-    "bin": "index.js",
-    "devDependencies": {
-        "@babel/cli": "^7.28.0",
-        "@babel/core": "^7.28.0",
-        "@babel/preset-env": "^7.28.0",
-        "@types/bun": "latest",
-        "@types/jest": "^30.0.0",
-        "@types/ws": "^8.18.1",
-        "jest": "^30.0.5",
-        "ts-jest": "^29.4.1",
-        "typescript": "^5.9.2"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
+        "puppeteer:xt": "node test_xt_puppeteer.js",
+        "puppeteer:kcex": "node test_kcex_puppeteer.js"
     },
     "dependencies": {
         "axios": "^1.11.0",
@@ -32,10 +18,12 @@
         "decimal.js": "^10.6.0",
         "dotenv": "^17.2.1",
         "exceljs": "^4.4.0",
-        "fs": "^0.0.1-security",
         "jalaali-js": "^1.2.8",
         "puppeteer": "^24.16.0",
         "puppeteer-core": "^24.16.0",
         "ws": "^8.18.3"
+    },
+    "engines": {
+        "node": ">=18"
     }
 }

@@ -13,7 +13,7 @@
 
 import ccxt from "ccxt";
 import config from "../config/config.js";
-import { retryWrapper } from "../error/errorBoundory.js";
+import { retryWrapper } from "../error/errorBoundary.js";
 
 /**
  * Main Exchange Manager class for handling all exchange operations

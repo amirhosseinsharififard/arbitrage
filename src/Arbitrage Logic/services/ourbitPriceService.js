@@ -12,7 +12,7 @@
  * - Unified price data interface
  */
 
-import ourbitPuppeteerService from '../../Puppeteer Logic/index.js';
+import ourbitPuppeteerService from '../../puppeteer/index.js';
 import config from '../config/config.js';
 import { FormattingUtils } from '../utils/index.js';
 

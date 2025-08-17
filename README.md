@@ -181,30 +181,26 @@ npm install
 npm start
 ```
 
+### **Puppeteer Tests**
+```bash
+npm run puppeteer:xt
+npm run puppeteer:kcex
+```
+
 ## 📁 Project Structure
 
 ```
-src/
-├── arbitrage_bot/
-│   └── arbitrage.js          # Core arbitrage logic and position management
-├── config/
-│   └── config.js             # Centralized configuration
-├── exchanges/
-│   └── exchangeManager.js    # Exchange connection management
-├── logging/
-│   └── logger.js             # Comprehensive logging system
-├── monitoring/
-│   └── statistics.js         # Performance tracking and statistics
-├── services/
-│   ├── priceService.js       # Real-time price data management
-│   ├── requestRecorder.js    # Network request monitoring
-│   └── requestCapture.js     # Request/response capture
-├── utils/
-│   ├── calculations.js       # Mathematical utilities
-│   ├── formatting.js         # Data formatting functions
-│   ├── validation.js         # Input validation
-│   └── orderbook.js          # Order book analysis
-└── prices.js                 # Main price monitoring and arbitrage detection
+src/arbitrage/
+├── arbitrage/                # Arbitrage computations
+├── arbitrage_bot/            # Position lifecycle
+├── config/                   # Centralized configuration
+├── error/                    # Retry helpers
+├── exchanges/                # CCXT exchange manager
+├── logging/                  # Logger
+├── monitoring/               # Statistics
+├── services/                 # Ourbit/KCEX/XT services
+├── utils/                    # Calculations, formatting, spreads, perf
+└── prices.js                 # Price monitor and routing
 ```
 
 ## 🔒 Risk Management

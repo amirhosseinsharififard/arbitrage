@@ -8,7 +8,7 @@
  * 4. Handle errors gracefully
  */
 
-import xtPuppeteerService from './src/Puppeteer Logic/xtService.js';
+import xtPuppeteerService from './src/puppeteer/xtService.js';
 
 async function testXTPuppeteer() {
     console.log('🧪 Testing XT Puppeteer integration...');

@@ -14,7 +14,7 @@ import logger from "../logging/logger.js";
 import statistics from "../monitoring/statistics.js";
 import { CalculationUtils, FormattingUtils, computeSpreads } from "../utils/index.js";
 import chalk from "chalk";
-import { ourbitPriceService } from "../services/index.js";
+// ourbitPriceService not used directly in this module
 import exchangeManager from "../exchanges/exchangeManager.js";
 import fs from "fs";
 import path from "path";

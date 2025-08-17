@@ -4,7 +4,7 @@
 This guide explains how to configure the XPath selectors for extracting bid and ask prices from the Ourbit exchange website.
 
 ## Current Configuration
-The system is now configured to extract Ourbit prices using XPath selectors defined in `src/Arbitrage Logic/config/config.js`:
+The system is now configured to extract Ourbit prices using XPath selectors defined in `src/arbitrage/config/config.js`:
 
 ```javascript
 ourbit: {
@@ -31,7 +31,7 @@ ourbit: {
 4. Repeat the same process for the ask price element
 
 ### Step 3: Update Configuration
-1. Open `src/Arbitrage Logic/config/config.js`
+1. Open `src/arbitrage/config/config.js`
 2. Find the `ourbit.selectors` section
 3. Replace the existing selectors with your new ones:
 
@@ -90,7 +90,7 @@ const element = document.querySelector('.price-bid'); // Example CSS selector
 
 ## Files Modified
 
-1. **`src/Arbitrage Logic/config/config.js`**: Added Ourbit configuration section
+1. **`src/arbitrage/config/config.js`**: Added Ourbit configuration section
 2. **`src/Puppeteer Logic/index.js`**: Updated to use config-based selectors
 3. **`test_ourbit_selectors.js`**: Test script for validating selectors
 4. **`config.example.js`**: Example configuration file

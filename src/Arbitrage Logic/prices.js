@@ -1,52 +1,16 @@
-import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
+import { tryClosePosition, tryOpenPosition, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
 import { ourbitPriceService, kcexPuppeteerService, xtPuppeteerService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils, computeSpreads } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
 
-// Cache for storing last profit calculations to avoid duplicate logging
-const lastProfits = new Map();
+// Deduplication caches for prints to reduce console noise
 let lastTickKey = null;
 let lastPriceData = null;
-// Track last printed values per pair-direction to avoid spam
 const lastPairPrint = new Map(); // key: "A->B", value: { left: askPrice, right: bidPrice }
 
-async function logPositiveProfit(
-    label,
-    bidPrice,
-    askPrice,
-    feeBuyPercent,
-    feeSellPercent,
-    thresholdPercent = config.arbitrage.defaultThresholdPercent
-) {
-    if (bidPrice == null || askPrice == null) return;
-
-    const grossProfitPercent = CalculationUtils.calculatePriceDifference(bidPrice, askPrice);
-    const totalFeesPercent = feeBuyPercent + feeSellPercent;
-    const netProfitPercent = grossProfitPercent - totalFeesPercent;
-
-    if (config.arbitrage.enableThresholdFiltering && (-netProfitPercent) < thresholdPercent) return;
-
-
-}
-
-async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
-    const key = `${buy}->${sell}`;
-    const last = lastProfits.get(key);
-
-    if (!last || last.buyPrice !== buyPrice || last.sellPrice !== sellPrice) {
-        await logPositiveProfit(
-            `BUY=> ${buy} & SELL=> ${sell}`,
-            buyPrice,
-            sellPrice,
-            config.feesPercent[buy] || 0,
-            config.feesPercent[sell] || 0,
-            config.profitThresholdPercent
-        );
-        lastProfits.set(key, { buyPrice, sellPrice });
-    }
-}
+// Removed unused profit logging helpers to simplify output
 
 export async function printBidAskPairs(symbols, exchanges) {
     const prices = await ourbitPriceService.getPricesFromExchanges(exchanges, symbols);
@@ -189,7 +153,7 @@ export async function printBidAskPairs(symbols, exchanges) {
         }
     }
 
-    if (ourbitOb) {
+    if (ourbitOb && config.display.conciseOutput) {
         const ourbitBestBid = (ourbitOb && Array.isArray(ourbitOb.bids) && ourbitOb.bids[0]) ? { price: ourbitOb.bids[0][0], amount: ourbitOb.bids[0][1] } :
             null;
         const ourbitBestAsk = (ourbitOb && Array.isArray(ourbitOb.asks) && ourbitOb.asks[0]) ? { price: ourbitOb.asks[0][0], amount: ourbitOb.asks[0][1] } :

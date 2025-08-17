@@ -285,7 +285,7 @@ class PerformanceMonitor {
     printStats() {
         const stats = this.getStats();
         console.log("\n📊 Performance Statistics:");
-        console.log("=" * 50);
+        console.log("=".repeat(50));
 
         for (const [operation, data] of Object.entries(stats.operations)) {
             console.log(`${operation}:`);

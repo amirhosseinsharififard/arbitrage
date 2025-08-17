@@ -14,14 +14,14 @@
 
 import { printBidAskPairs } from "./src/Arbitrage Logic/prices.js";
 import config from "./src/Arbitrage Logic/config/config.js";
-import { retryWrapper } from "./src/Arbitrage Logic/error/errorBoundory.js";
+import { retryWrapper } from "./src/Arbitrage Logic/error/errorBoundary.js";
 import exchangeManager from "./src/Arbitrage Logic/exchanges/exchangeManager.js";
 import exitHandler from "./src/Arbitrage Logic/system/exitHandler.js";
 import { getTradingStatus, restoreOpenPositionsFromLog } from "./src/Arbitrage Logic/arbitrage_bot/arbitrage.js";
 import statistics from "./src/Arbitrage Logic/monitoring/statistics.js";
 import logger from "./src/Arbitrage Logic/logging/logger.js";
 import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
-import { performanceMonitor } from "./src/Arbitrage Logic/utils/performanceOptimizer.js";
+import "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 import { ourbitPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
 
 /**
@@ -48,8 +48,7 @@ async function initializeSystem() {
         // Restore open positions from trades.log file
         restoreOpenPositionsFromLog();
 
-        // Start performance monitoring
-        console.log("🚀 Performance monitoring started");
+        // Performance monitoring is initialized by side-effect import
 
         console.log("✅ System initialization completed!");
     } catch (error) {

@@ -45,7 +45,7 @@ from './services/index.js';
 
 // Error handling
 export { retryWrapper }
-from './error/errorBoundory.js';
+from './error/errorBoundary.js';
 
 // Prices and market data
 export { printBidAskPairs, getPrice }

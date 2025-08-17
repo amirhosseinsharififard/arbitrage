@@ -2,7 +2,7 @@
  * Test script for KCEX Puppeteer integration
  */
 
-import kcexPuppeteerService from './src/Puppeteer Logic/kcexService.js';
+import kcexPuppeteerService from './src/puppeteer/kcexService.js';
 
 async function testKCEXPuppeteer() {
     console.log('🧪 Testing KCEX Puppeteer integration...');
