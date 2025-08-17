@@ -60,12 +60,15 @@ class XTPuppeteerService {
             // Set viewport and user agent
             await this.page.setViewport({ width: 1920, height: 1080 });
             await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+            // Increase default timeouts to handle heavy pages and CF challenges
+            await this.page.setDefaultNavigationTimeout(120000);
+            await this.page.setDefaultTimeout(120000);
 
             // Navigate to XT exchange
             console.log(`🌐 Navigating to XT: ${this.url}`);
             await this.page.goto(this.url, {
-                waitUntil: 'networkidle2',
-                timeout: 30000
+                waitUntil: 'domcontentloaded',
+                timeout: 120000
             });
 
             // Wait for page to load completely

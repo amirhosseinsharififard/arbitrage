@@ -72,11 +72,11 @@ const config = {
 
     // XT Puppeteer configuration
     xt: {
-        url: "https://www.xt.com/trade/GAIA_USDT", // XT exchange URL for GAIA/USDT pair
+        url: "https://www.xt.com/en/futures/trade/eth_usdt", // XT exchange URL for GAIA/USDT pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
-            bidPrice: "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[1]/div[3]/div/div[2]/div/div[3]/div[3]/div[1]/div[2]/div[1]/div", // Bid price selector
-            askPrice: "/html/body/div[1]/div/div[2]/div[2]/div[1]/div[1]/div[3]/div/div[2]/div/div[3]/div[1]/div[10]/div[2]/div[1]/div" // Ask price selector
+            bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]", // Bid price selector
+            askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]" // Ask price selector
         },
         browser: {
             headless: true,
