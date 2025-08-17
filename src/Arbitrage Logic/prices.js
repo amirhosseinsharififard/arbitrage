@@ -52,10 +52,11 @@ export async function printBidAskPairs(symbols, exchanges) {
     const prices = await ourbitPriceService.getPricesFromExchanges(exchanges, symbols);
     const ourbitPrice = prices.ourbit;
 
-    // Get MEXC prices from exchange manager (futures)
+    // Get MEXC prices from exchange manager (futures) - dynamic symbol
     let mexcPrice = null;
     try {
-        mexcPrice = await exchangeManager.getMexcPrice('GAIA/USDT:USDT');
+        const mexcSymbol = (symbols && symbols.mexc) || (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT';
+        mexcPrice = await exchangeManager.getMexcPrice(mexcSymbol);
     } catch (error) {
         console.log(`⚠️ MEXC futures price fetch failed: ${error.message}`);
         mexcPrice = {
@@ -63,7 +64,7 @@ export async function printBidAskPairs(symbols, exchanges) {
             ask: null,
             timestamp: Date.now(),
             exchangeId: 'mexc',
-            symbol: 'GAIA/USDT:USDT',
+            symbol: (symbols && symbols.mexc) || (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT',
             error: error.message
         };
     }
@@ -112,7 +113,8 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     let ourbitOb;
     try {
-        ourbitOb = await ourbitPriceService.getOrderBook('ourbit', 'GAIA/USDT');
+        const ourbitSymbol = symbols.ourbit || (config.symbols && config.symbols.ourbit);
+        ourbitOb = await ourbitPriceService.getOrderBook('ourbit', ourbitSymbol);
     } catch (error) {
         console.log(`⚠️ Ourbit order book fetch failed, using basic price data`);
     }
@@ -204,7 +206,8 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Position opening logic (using Ourbit and MEXC data)
     if (lbankToMexcProfit >= config.profitThresholdPercent) {
         console.log(`${chalk.green('🎯')} Opening OURBIT(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.green('(Profitable!)')}`);
-        await tryOpenPosition('GAIA/USDT', "ourbit", "mexc", ourbitPrice.ask, mexcPrice.bid);
+        const openSymbol = symbols?.ourbit || (config.symbols && config.symbols.ourbit);
+        await tryOpenPosition(openSymbol, "ourbit", "mexc", ourbitPrice.ask, mexcPrice.bid);
     } else {
         console.log(`${chalk.yellow('⏳')} No OURBIT->MEXC opp: ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.gray(`(Threshold: ${config.profitThresholdPercent}%)`)}`);
         console.log(`${chalk.blue('ℹ️ ')} MEXC->OURBIT: ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)} ${chalk.gray('(not used)')}`);
@@ -215,7 +218,8 @@ export async function printBidAskPairs(symbols, exchanges) {
         const closeThreshold = Math.abs(Number(config.scenarios.alireza.closeAtPercent));
         if (mexcAskVsLbankBidPct != null && mexcAskVsLbankBidPct <= closeThreshold) {
             console.log(`🎯 Closing eligible positions: mexcAskVsOurbitBidPct (${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}) >= ${FormattingUtils.formatPercentage(closeThreshold)}`);
-            await tryClosePosition('GAIA/USDT', ourbitPrice.bid, mexcPrice.ask);
+            const closeSymbol = symbols?.ourbit || (config.symbols && config.symbols.ourbit);
+            await tryClosePosition(closeSymbol, ourbitPrice.bid, mexcPrice.ask);
         } else {
             console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} (Close threshold: ${FormattingUtils.formatPercentage(closeThreshold)})`);
         }

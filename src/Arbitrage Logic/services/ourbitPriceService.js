@@ -117,7 +117,8 @@ class OurbitPriceService {
                     }
                 }
 
-                this.cachePrice('ourbit', 'GAIA/USDT', priceData);
+                const symbol = (config.symbols && config.symbols.ourbit) || 'ETH/USDT';
+                this.cachePrice('ourbit', symbol, priceData);
             }
 
         } catch (error) {
@@ -128,7 +129,7 @@ class OurbitPriceService {
     /**
      * Get current price for Ourbit
      */
-    async getPrice(exchangeId = 'ourbit', symbol = 'GAIA/USDT') {
+    async getPrice(exchangeId = 'ourbit', symbol = ((config.symbols && config.symbols.ourbit) || 'ETH/USDT')) {
         try {
             if (!this.isInitialized) {
                 throw new Error('Ourbit price service not initialized');
@@ -180,7 +181,7 @@ class OurbitPriceService {
     async getPricesFromExchanges(exchanges, symbols) {
         try {
             // Get Ourbit price
-            const ourbitPrice = await this.getPrice('ourbit', 'GAIA/USDT');
+            const ourbitPrice = await this.getPrice('ourbit', ((config.symbols && config.symbols.ourbit) || 'ETH/USDT'));
 
             // Return Ourbit and MEXC price data (LBank completely disabled)
             return {
@@ -205,7 +206,7 @@ class OurbitPriceService {
                     ask: null,
                     timestamp: Date.now(),
                     exchangeId: 'ourbit',
-                    symbol: 'GAIA/USDT',
+                    symbol: ((config.symbols && config.symbols.ourbit) || 'ETH/USDT'),
                     error: error.message
                 },
                 mexc: {

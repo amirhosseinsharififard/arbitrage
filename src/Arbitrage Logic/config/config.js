@@ -9,7 +9,7 @@ const config = {
         ourbit: "ETH/USDT", // Ourbit exchange symbol
         mexc: "ETH/USDT:USDT", // MEXC exchange symbol
         xt: "ETH/USDT", // XT exchange symbol
-        kcex: "BTC/USDT", // KCEX exchange symbol
+        kcex: "ETH/USDT", // KCEX exchange symbol
     },
 
     // System timing and performance settings

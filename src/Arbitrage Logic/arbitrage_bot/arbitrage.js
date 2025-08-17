@@ -16,6 +16,8 @@ import { CalculationUtils, FormattingUtils, computeSpreads } from "../utils/inde
 import chalk from "chalk";
 import { ourbitPriceService } from "../services/index.js";
 import exchangeManager from "../exchanges/exchangeManager.js";
+import fs from "fs";
+import path from "path";
 
 /**
  * Global storage for open arbitrage positions
@@ -609,8 +611,6 @@ export async function tryContinueTokenQuantityTrading(
  */
 export function restoreOpenPositionsFromLog() {
     try {
-        const fs = require('fs');
-        const path = require('path');
         const logFile = path.join(process.cwd(), 'trades.log');
         
         if (!fs.existsSync(logFile)) {

@@ -201,12 +201,13 @@ class ExchangeManager {
      * @returns {object} Price data with bid, ask, timestamp, etc.
      * @throws {Error} If MEXC exchange not available or fetch fails
      */
-    async getMexcPrice(symbol = 'GAIA/USDT:USDT') {
+    async getMexcPrice(symbol = (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT') {
         try {
             const mexcExchange = this.getExchange('mexc');
 
             // Ensure we're using the correct futures symbol format
-            const futuresSymbol = symbol.includes(':') ? symbol : `${symbol}:USDT`;
+            const resolvedSymbol = symbol || ((config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT');
+            const futuresSymbol = resolvedSymbol.includes(':') ? resolvedSymbol : `${resolvedSymbol}:USDT`;
 
             // Suppress noisy fetching logs for concise output
             const ticker = await mexcExchange.fetchTicker(futuresSymbol);
