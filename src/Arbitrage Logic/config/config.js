@@ -6,9 +6,9 @@ const config = {
     // Trading symbols configuration for each exchange
     // MEXC, Ourbit, XT, and KCEX exchange configuration
     symbols: {
-        ourbit: "GAIA/USDT", // Ourbit exchange symbol
-        mexc: "GAIA/USDT:USDT", // MEXC exchange symbol
-        xt: "GAIA/USDT", // XT exchange symbol
+        ourbit: "ETH/USDT", // Ourbit exchange symbol
+        mexc: "ETH/USDT:USDT", // MEXC exchange symbol
+        xt: "ETH/USDT", // XT exchange symbol
         kcex: "BTC/USDT", // KCEX exchange symbol
     },
 
@@ -50,7 +50,8 @@ const config = {
 
     // Ourbit Puppeteer configuration
     ourbit: {
-        url: "https://futures.ourbit.com/fa-IR/exchange/GAIA_USDT?type=linear_swap",
+        enabled: true, // Toggle to enable/disable Ourbit Puppeteer data collection
+        url: "https://futures.ourbit.com/fa-IR/exchange/ETH_USDT?type=linear_swap",
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span", // Buy price selector (used as bid)
@@ -72,7 +73,8 @@ const config = {
 
     // XT Puppeteer configuration
     xt: {
-        url: "https://www.xt.com/en/futures/trade/eth_usdt", // XT exchange URL for GAIA/USDT pair
+        enabled: true, // Toggle to enable/disable XT Puppeteer data collection
+        url: "https://www.xt.com/en/futures/trade/eth_usdt", // XT exchange URL for ETH/USDT pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]", // Bid price selector
@@ -94,7 +96,8 @@ const config = {
 
     // KCEX Puppeteer configuration
     kcex: {
-        url: "https://www.kcex.com/futures/exchange/BTC_USDT", // KCEX exchange URL for BTC/USDT futures pair
+        enabled: true, // Toggle to enable/disable KCEX Puppeteer data collection
+        url: "https://www.kcex.com/futures/exchange/ETH_USDT", // KCEX exchange URL for BTC/USDT futures pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span", // Bid price selector
@@ -167,7 +170,8 @@ const config = {
         },
         enableEmojis: true, // Use emojis in console output
         enableColor: true, // Enable colored console output
-        separatorLength: 60 // Length of visual separators
+        separatorLength: 60, // Length of visual separators
+        conciseOutput: true // If true, only pairwise arbitrage and depth lines are printed
     },
 
     // Trading strategy configuration

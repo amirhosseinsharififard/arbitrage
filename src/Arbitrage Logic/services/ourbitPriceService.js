@@ -47,6 +47,11 @@ class OurbitPriceService {
     async initialize() {
         try {
             console.log('🚀 Initializing Ourbit price service...');
+            if (!config.ourbit.enabled) {
+                console.log('⚠️ Ourbit service disabled by config');
+                this.isInitialized = false;
+                return false;
+            }
 
             // Initialize Puppeteer service
             const success = await ourbitPuppeteerService.initialize();
@@ -72,6 +77,10 @@ class OurbitPriceService {
      */
     async startPriceMonitoring() {
         try {
+            if (!config.ourbit.enabled) {
+                console.log('⚠️ Ourbit monitoring skipped (disabled)');
+                return;
+            }
             // Start Puppeteer price monitoring
             ourbitPuppeteerService.startPriceMonitoring();
 
@@ -92,6 +101,7 @@ class OurbitPriceService {
      */
     async updatePriceCache() {
         try {
+            if (!config.ourbit.enabled) return;
             const priceData = ourbitPuppeteerService.getCurrentPrices();
 
             if (priceData && (priceData.bid || priceData.ask)) {
@@ -102,9 +112,9 @@ class OurbitPriceService {
                     // Update previous prices
                     this.previousPrices.bid = priceData.bid;
                     this.previousPrices.ask = priceData.ask;
-
-                    // Log price change
-                    console.log(`${FormattingUtils.label('OURBIT')} Price changed: Bid=${FormattingUtils.formatPrice(priceData.bid)} | Ask=${FormattingUtils.formatPrice(priceData.ask)}`);
+                    if (!(config.display && config.display.conciseOutput) && (config.logSettings && config.logSettings.enableDetailedLogging)) {
+                        console.log(`${FormattingUtils.label('OURBIT')} Price changed: Bid=${FormattingUtils.formatPrice(priceData.bid)} | Ask=${FormattingUtils.formatPrice(priceData.ask)}`);
+                    }
                 }
 
                 this.cachePrice('ourbit', 'GAIA/USDT', priceData);
@@ -122,6 +132,9 @@ class OurbitPriceService {
         try {
             if (!this.isInitialized) {
                 throw new Error('Ourbit price service not initialized');
+            }
+            if (!config.ourbit.enabled) {
+                return { bid: null, ask: null, timestamp: Date.now(), exchangeId, symbol, error: null };
             }
 
             // Get cached price first
@@ -212,6 +225,9 @@ class OurbitPriceService {
      */
     async getOrderBook(exchangeId = 'ourbit', symbol = 'GAIA/USDT') {
         try {
+            if (!config.ourbit.enabled) {
+                return { bids: [], asks: [], timestamp: Date.now(), exchangeId, symbol, error: null };
+            }
             const priceData = await this.getPrice(exchangeId, symbol);
 
             if (!priceData.bid || !priceData.ask) {
@@ -405,6 +421,7 @@ class OurbitPriceService {
      * Check if service is healthy
      */
     isHealthy() {
+        if (!config.ourbit.enabled) return true;
         return this.isInitialized && ourbitPuppeteerService.isHealthy();
     }
 }

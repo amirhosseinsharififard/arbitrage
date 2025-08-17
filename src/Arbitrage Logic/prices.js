@@ -1,6 +1,6 @@
 import { tryClosePosition, tryOpenPosition, openPositions, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
-import { ourbitPriceService, kcexPuppeteerService } from "./services/index.js";
+import { ourbitPriceService, kcexPuppeteerService, xtPuppeteerService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils, computeSpreads } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
@@ -9,6 +9,8 @@ import exchangeManager from "./exchanges/exchangeManager.js";
 const lastProfits = new Map();
 let lastTickKey = null;
 let lastPriceData = null;
+// Track last printed values per pair-direction to avoid spam
+const lastPairPrint = new Map(); // key: "A->B", value: { left: askPrice, right: bidPrice }
 
 async function logPositiveProfit(
     label,
@@ -26,12 +28,7 @@ async function logPositiveProfit(
 
     if (config.arbitrage.enableThresholdFiltering && (-netProfitPercent) < thresholdPercent) return;
 
-    console.log(
-        `${label}: Bid= ${FormattingUtils.formatPrice(bidPrice)}, Ask= ${FormattingUtils.formatPrice(askPrice)}, ` +
-        `Gross Profit: ${FormattingUtils.formatPercentage(grossProfitPercent)}, ` +
-        `Fees: ${FormattingUtils.formatPercentage(totalFeesPercent)}, ` +
-        `Net Profit After Fees: ${FormattingUtils.formatPercentage(netProfitPercent)}`
-    );
+
 }
 
 async function conditionalLogProfit(buy, buyPrice, sell, sellPrice) {
@@ -87,7 +84,20 @@ export async function printBidAskPairs(symbols, exchanges) {
         };
     }
 
-    const tickKey = `${ourbitPrice && ourbitPrice.bid || 'n'}|${ourbitPrice && ourbitPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}|${kcexPrice && kcexPrice.bid || 'n'}|${kcexPrice && kcexPrice.ask || 'n'}`;
+    // Get XT prices from Puppeteer service (if enabled)
+    let xtPrice = { bid: null, ask: null, exchangeId: 'xt', symbol: symbols.xt };
+    try {
+        if (config.xt.enabled) {
+            if (!xtPuppeteerService.browser || !xtPuppeteerService.page) {
+                await xtPuppeteerService.initialize();
+            }
+            xtPrice = await xtPuppeteerService.extractPrices();
+        }
+    } catch (error) {
+        console.log(`⚠️ XT price fetch failed: ${error.message}`);
+    }
+
+    const tickKey = `${ourbitPrice && ourbitPrice.bid || 'n'}|${ourbitPrice && ourbitPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}|${kcexPrice && kcexPrice.bid || 'n'}|${kcexPrice && kcexPrice.ask || 'n'}|${xtPrice && xtPrice.bid || 'n'}|${xtPrice && xtPrice.ask || 'n'}`;
     if (tickKey === lastTickKey) return;
     lastTickKey = tickKey;
 
@@ -118,25 +128,63 @@ export async function printBidAskPairs(symbols, exchanges) {
         mexcBidVsLbankAskAbs,
         lbankBidVsMexcAskAbs
     } = computeSpreads({
-        mexcBid: mexcPrice.bid, // MEXC bid from exchange manager
-        mexcAsk: mexcPrice.ask, // MEXC ask from exchange manager
-        lbankBid: ourbitPrice.bid, // Using Ourbit bid as LBank replacement
-        lbankAsk: ourbitPrice.ask // Using Ourbit ask as LBank replacement
+        mexcBid: mexcPrice.bid,
+        mexcAsk: mexcPrice.ask,
+        lbankBid: ourbitPrice.bid,
+        lbankAsk: ourbitPrice.ask
     });
 
-    console.log(`${FormattingUtils.label('STATUS')} Open: ${chalk.yellow(status.openPositionsCount)} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)} | Trades: ${chalk.yellow(status.totalTrades)} | Invested: ${chalk.yellow(FormattingUtils.formatCurrency(status.totalInvestment))} | Tokens: ${chalk.yellow(FormattingUtils.formatVolume(status.totalOpenTokens ?? 0))}`);
-    console.log(`${FormattingUtils.label('Arbitrage')} OURBIT(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} | MEXC(ask)->OURBIT(bid): ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)}`);
+    if (config.logSettings.enableDetailedLogging) {
+        console.log(`${FormattingUtils.label('STATUS')} Open: ${chalk.yellow(status.openPositionsCount)} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)} | Trades: ${chalk.yellow(status.totalTrades)} | Invested: ${chalk.yellow(FormattingUtils.formatCurrency(status.totalInvestment))} | Tokens: ${chalk.yellow(FormattingUtils.formatVolume(status.totalOpenTokens ?? 0))}`);
+        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('MEXC')}: Bid=${chalk.white(FormattingUtils.formatPrice(mexcPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(mexcPrice.ask))} | Δ=${mexcBidVsLbankAskAbs != null ? chalk.white(mexcBidVsLbankAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)})`);
+        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('OURBIT')}: Bid=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.ask))} | Δ=${lbankBidVsMexcAskAbs != null ? chalk.white(lbankBidVsMexcAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(lbankBidVsMexcAskPct)})`);
+        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('KCEX')}: Bid=${chalk.white(FormattingUtils.formatPrice(kcexPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(kcexPrice.ask))}`);
+        if (config.xt.enabled) console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('XT')}: Bid=${chalk.white(FormattingUtils.formatPrice(xtPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(xtPrice.ask))}`);
+    }
 
-    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('MEXC')}: Bid=${chalk.white(FormattingUtils.formatPrice(mexcPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(mexcPrice.ask))} | Δ=${mexcBidVsLbankAskAbs != null ? chalk.white(mexcBidVsLbankAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)})`);
-    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('OURBIT')}: Bid=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(ourbitPrice.ask))} | Δ=${lbankBidVsMexcAskAbs != null ? chalk.white(lbankBidVsMexcAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(lbankBidVsMexcAskPct)})`);
-    console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('KCEX')}: Bid=${chalk.white(FormattingUtils.formatPrice(kcexPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(kcexPrice.ask))} | Symbol: ${chalk.cyan(kcexPrice.symbol)}`);
+    // Only show concise pairwise arbitrage outputs for enabled exchanges
+    const enabledExchanges = [];
+    const mexcEnabled = !(config && config.mexc && config.mexc.enabled === false);
+    if (mexcEnabled) enabledExchanges.push({ id: 'mexc', bid: mexcPrice.bid, ask: mexcPrice.ask });
+    if (config.ourbit.enabled) enabledExchanges.push({ id: 'ourbit', bid: ourbitPrice.bid, ask: ourbitPrice.ask });
+    if (config.kcex.enabled) enabledExchanges.push({ id: 'kcex', bid: kcexPrice.bid, ask: kcexPrice.ask });
+    if (config.xt.enabled) enabledExchanges.push({ id: 'xt', bid: xtPrice.bid, ask: xtPrice.ask });
 
-    // Calculate KCEX arbitrage opportunities (if same symbol)
-    if (kcexPrice.bid && kcexPrice.ask && ourbitPrice.bid && ourbitPrice.ask) {
-        const kcexToOurbitProfit = CalculationUtils.calculatePriceDifference(kcexPrice.ask, ourbitPrice.bid);
-        const ourbitToKcexProfit = CalculationUtils.calculatePriceDifference(ourbitPrice.ask, kcexPrice.bid);
-
-        console.log(`${FormattingUtils.label('KCEX Arbitrage')} KCEX(ask)->OURBIT(bid): ${FormattingUtils.formatPercentageColored(kcexToOurbitProfit)} | OURBIT(ask)->KCEX(bid): ${FormattingUtils.formatPercentageColored(ourbitToKcexProfit)}`);
+    // Only print a single pair structure: [PAIR] A ask=... | B bid=... => pct
+    // And only when BOTH values changed since last print for that direction
+    for (let i = 0; i < enabledExchanges.length; i++) {
+        for (let j = i + 1; j < enabledExchanges.length; j++) {
+            const a = enabledExchanges[i];
+            const b = enabledExchanges[j];
+            let printedAny = false;
+            // A ask -> B bid
+            if (a.ask != null && b.bid != null) {
+                const keyAB = `${a.id}->${b.id}`;
+                const lastAB = lastPairPrint.get(keyAB);
+                const bothChangedAB = lastAB ? (lastAB.left !== a.ask && lastAB.right !== b.bid) : true;
+                if (bothChangedAB) {
+                    const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
+                    console.log(`${a.id.toUpperCase()} ask=${FormattingUtils.formatPrice(a.ask)} | ${b.id.toUpperCase()} bid=${FormattingUtils.formatPrice(b.bid)} => ${FormattingUtils.formatPercentageColored(aToB)} ${aToB >= config.profitThresholdPercent ? chalk.green('(OPEN POSITION)') : ''}`);
+                    lastPairPrint.set(keyAB, { left: a.ask, right: b.bid });
+                    printedAny = true;
+                }
+            }
+            // B ask -> A bid
+            if (b.ask != null && a.bid != null) {
+                const keyBA = `${b.id}->${a.id}`;
+                const lastBA = lastPairPrint.get(keyBA);
+                const bothChangedBA = lastBA ? (lastBA.left !== b.ask && lastBA.right !== a.bid) : true;
+                if (bothChangedBA) {
+                    const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
+                    console.log(`${b.id.toUpperCase()} ask=${FormattingUtils.formatPrice(b.ask)} | ${a.id.toUpperCase()} bid=${FormattingUtils.formatPrice(a.bid)} => ${FormattingUtils.formatPercentageColored(bToA)} ${bToA >= config.profitThresholdPercent ? chalk.green('(OPEN POSITION)') : ''}`);
+                    lastPairPrint.set(keyBA, { left: b.ask, right: a.bid });
+                    printedAny = true;
+                }
+            }
+            if (printedAny && config.display && config.display.conciseOutput) {
+                console.log(FormattingUtils.createSeparator());
+            }
+        }
     }
 
     if (ourbitOb) {
@@ -145,10 +193,13 @@ export async function printBidAskPairs(symbols, exchanges) {
         const ourbitBestAsk = (ourbitOb && Array.isArray(ourbitOb.asks) && ourbitOb.asks[0]) ? { price: ourbitOb.asks[0][0], amount: ourbitOb.asks[0][1] } :
             null;
 
+        // Print only depth line if conciseOutput is enabled
         console.log(`${FormattingUtils.label('DEPTH')} ${FormattingUtils.colorExchange('OURBIT')}: bestBid=${ourbitBestBid ? `${FormattingUtils.formatPrice(ourbitBestBid.price)} x ${ourbitBestBid.amount}` : chalk.yellow('n/a')} bestAsk=${ourbitBestAsk ? `${FormattingUtils.formatPrice(ourbitBestAsk.price)} x ${ourbitBestAsk.amount}` : chalk.yellow('n/a')}`);
     }
 
-    console.log(FormattingUtils.createSeparator());
+    if (!config.display?.conciseOutput) {
+        console.log(FormattingUtils.createSeparator());
+    }
 
     // Position opening logic (using Ourbit and MEXC data)
     if (lbankToMexcProfit >= config.profitThresholdPercent) {
@@ -170,7 +221,7 @@ export async function printBidAskPairs(symbols, exchanges) {
         }
     }
 
-    if (config.logSettings.printStatusToConsole) {
+    if (config.logSettings.printStatusToConsole && !config.display?.conciseOutput) {
         console.log(`${FormattingUtils.label(new Date().toLocaleTimeString())} ${status.openPositionsCount > 0 ? chalk.yellow(`${status.openPositionsCount} open`) : chalk.gray('No Position')} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)}`);
         if (status.openPositionsCount > 0) console.log(FormattingUtils.createSeparator());
     }

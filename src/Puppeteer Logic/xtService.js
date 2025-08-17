@@ -49,6 +49,10 @@ class XTPuppeteerService {
      */
     async initialize() {
         try {
+            if (!config.xt.enabled) {
+                console.log('⚠️ XT Puppeteer service disabled by config');
+                return false;
+            }
             console.log('🚀 Initializing XT Puppeteer service...');
 
             // Launch browser with settings from config
@@ -91,6 +95,9 @@ class XTPuppeteerService {
         try {
             if (!this.page) {
                 throw new Error('Page not initialized');
+            }
+            if (!config.xt.enabled) {
+                return {...this.priceData, bid: null, ask: null, error: null };
             }
 
             // Extract bid price
@@ -159,6 +166,10 @@ class XTPuppeteerService {
             console.log('⚠️ Price monitoring already running');
             return;
         }
+        if (!config.xt.enabled) {
+            console.log('⚠️ XT monitoring skipped (disabled)');
+            return;
+        }
 
         this.isRunning = true;
         console.log(`🔄 Starting XT price monitoring (${this.updateInterval}ms interval)`);
@@ -216,6 +227,7 @@ class XTPuppeteerService {
      * Check if service is healthy
      */
     isHealthy() {
+        if (!config.xt.enabled) return true;
         return this.browser && this.page && !this.priceData.error;
     }
 }

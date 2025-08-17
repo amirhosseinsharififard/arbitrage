@@ -208,7 +208,7 @@ class ExchangeManager {
             // Ensure we're using the correct futures symbol format
             const futuresSymbol = symbol.includes(':') ? symbol : `${symbol}:USDT`;
 
-            console.log(`📊 Fetching MEXC futures price for: ${futuresSymbol}`);
+            // Suppress noisy fetching logs for concise output
             const ticker = await mexcExchange.fetchTicker(futuresSymbol);
 
             return {
