@@ -6,10 +6,10 @@ const config = {
     // Trading symbols configuration for each exchange
     // MEXC, LBank, Ourbit, XT, and KCEX exchange configuration
     symbols: {
-        ourbit: "DAM/USDT", // Ourbit exchange symbol
-        mexc: "ALU/USDT:USDT", // MEXC exchange symbol
-        lbank: "ALU/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
-        xt: "ALU/USDT", // XT exchange symbol
+        ourbit: "ETH/USDT", // Ourbit exchange symbol
+        mexc: "ETH/USDT:USDT", // MEXC exchange symbol
+        lbank: "ETH/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
+        xt: "ETH/USDT", // XT exchange symbol
         kcex: "ETH/USDT", // KCEX exchange symbol
     },
 
@@ -44,7 +44,7 @@ const config = {
     exchanges: {
         mexc: {
             id: "mexc", // Exchange identifier
-            enabled: false, // Toggle to enable/disable MEXC exchange
+            enabled: true, // Toggle to enable/disable MEXC exchange
             options: { defaultType: "future" }, // Use futures trading
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
@@ -52,7 +52,7 @@ const config = {
         lbank: {
             id: "lbank", // Exchange identifier
             enabled: true, // Toggle to enable/disable LBank exchange
-            options: { defaultType: "spot" }, // Use spot trading for LBank
+            options: { defaultType: "future" }, // Use spot trading for LBank
             retryAttempts: 10, // Number of connection retry attempts
             retryDelay: 1000 // Delay between retries in milliseconds
         }
@@ -60,8 +60,8 @@ const config = {
 
     // Ourbit Puppeteer configuration
     ourbit: {
-        enabled: false, // Toggle to enable/disable Ourbit Puppeteer data collection
-        url: "https://futures.ourbit.com/fa-IR/exchange/DAM_USDT?type=linear_swap",
+        enabled: true, // Toggle to enable/disable Ourbit Puppeteer data collection
+        url: "https://futures.ourbit.com/fa-IR/exchange/ETH_USDT?type=linear_swap",
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span", // Buy price selector (used as bid)
@@ -84,7 +84,7 @@ const config = {
     // XT Puppeteer configuration
     xt: {
         enabled: true, // Toggle to enable/disable XT Puppeteer data collection
-        url: "https://www.xt.com/en/futures/trade/ALU_usdt", // XT exchange URL for ETH/USDT pair
+        url: "https://www.xt.com/en/futures/trade/ETH_usdt", // XT exchange URL for ETH/USDT pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]", // Bid price selector
@@ -106,7 +106,7 @@ const config = {
 
     // KCEX Puppeteer configuration
     kcex: {
-        enabled: false, // Toggle to enable/disable KCEX Puppeteer data collection
+        enabled: true, // Toggle to enable/disable KCEX Puppeteer data collection
         url: "https://www.kcex.com/futures/exchange/ETH_USDT", // KCEX exchange URL for BTC/USDT futures pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {

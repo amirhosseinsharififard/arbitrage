@@ -1,14 +1,10 @@
-import { tryClosePosition, tryOpenPosition, getTradingStatus } from "./arbitrage_bot/arbitrage.js";
 import config from "./config/config.js";
 import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService } from "./services/index.js";
-import { CalculationUtils, FormattingUtils, computeSpreads } from "./utils/index.js";
+import { CalculationUtils, FormattingUtils } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
 
-// Deduplication caches for prints to reduce console noise
-let lastTickKey = null;
-let lastPriceData = null;
-const lastPairPrint = new Map(); // key: "A->B", value: { left: askPrice, right: bidPrice }
+
 
 // Track if error messages have been shown to avoid repetition
 let errorMessagesShown = {
@@ -26,6 +22,9 @@ let previousData = {
     xt: null
 };
 
+// Track previous comparison results to avoid duplicate logs
+let previousComparisons = new Map();
+
 // Function to check if data is new (different from previous)
 function isNewData(exchangeId, newData) {
     const prev = previousData[exchangeId];
@@ -34,6 +33,18 @@ function isNewData(exchangeId, newData) {
     // Compare bid and ask prices
     if (newData.bid !== prev.bid || newData.ask !== prev.ask) {
         previousData[exchangeId] = { ...newData };
+        return true;
+    }
+    return false;
+}
+
+// Function to check if comparison result is new
+function isNewComparison(exchangeA, exchangeB, result) {
+    const key = `${exchangeA}-${exchangeB}`;
+    const prev = previousComparisons.get(key);
+    
+    if (!prev || Math.abs(prev - result) > 0.001) {
+        previousComparisons.set(key, result);
         return true;
     }
     return false;
@@ -175,55 +186,9 @@ export async function printBidAskPairs(symbols, exchanges) {
         }
     }
 
-    const tickKey = `${lbankPrice && lbankPrice.bid || 'n'}|${lbankPrice && lbankPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}|${kcexPrice && kcexPrice.bid || 'n'}|${kcexPrice && kcexPrice.ask || 'n'}|${xtPrice && xtPrice.bid || 'n'}|${xtPrice && xtPrice.ask || 'n'}`;
-    if (tickKey === lastTickKey) return;
-    lastTickKey = tickKey;
 
-    // Check if prices have actually changed significantly
-    const priceChanged = !lastPriceData ||
-        Math.abs((lbankPrice && lbankPrice.bid || 0) - (lastPriceData && lastPriceData.bid || 0)) > 0.000001 ||
-        Math.abs((lbankPrice && lbankPrice.ask || 0) - (lastPriceData && lastPriceData.ask || 0)) > 0.000001;
 
-    if (!priceChanged) return;
 
-    lastPriceData = { bid: lbankPrice && lbankPrice.bid, ask: lbankPrice && lbankPrice.ask };
-
-    let lbankOb;
-    try {
-        const lbankSymbol = symbols.lbank || (config.symbols && config.symbols.lbank);
-        const lbankExchange = exchangeManager.getExchange('lbank');
-        lbankOb = await lbankExchange.fetchOrderBook(lbankSymbol);
-    } catch (error) {
-        if (!errorMessagesShown.lbank) {
-            console.log(`⚠️ LBank order book fetch failed, using basic price data`);
-            errorMessagesShown.lbank = true;
-        }
-    }
-
-    const status = getTradingStatus();
-
-    const {
-        lbankToMexcProfit,
-        mexcToLbankProfit,
-        mexcBidVsLbankAskPct,
-        lbankBidVsMexcAskPct,
-        mexcAskVsLbankBidPct,
-        mexcBidVsLbankAskAbs,
-        lbankBidVsMexcAskAbs
-    } = computeSpreads({
-        mexcBid: mexcPrice.bid,
-        mexcAsk: mexcPrice.ask,
-        lbankBid: lbankPrice.bid,
-        lbankAsk: lbankPrice.ask
-    });
-
-    if (config.logSettings.enableDetailedLogging) {
-        console.log(`${FormattingUtils.label('STATUS')} Open: ${chalk.yellow(status.openPositionsCount)} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)} | Trades: ${chalk.yellow(status.totalTrades)} | Invested: ${chalk.yellow(FormattingUtils.formatCurrency(status.totalInvestment))} | Tokens: ${chalk.yellow(FormattingUtils.formatVolume(status.totalOpenTokens ?? 0))}`);
-        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('MEXC')}: Bid=${chalk.white(FormattingUtils.formatPrice(mexcPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(mexcPrice.ask))} | Δ=${mexcBidVsLbankAskAbs != null ? chalk.white(mexcBidVsLbankAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(mexcBidVsLbankAskPct)})`);
-        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('LBANK')}: Bid=${chalk.white(FormattingUtils.formatPrice(lbankPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(lbankPrice.ask))} | Δ=${lbankBidVsMexcAskAbs != null ? chalk.white(lbankBidVsMexcAskAbs.toFixed(6)) : chalk.yellow('n/a')} (${FormattingUtils.formatPercentageColored(lbankBidVsMexcAskPct)})`);
-        console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('KCEX')}: Bid=${chalk.white(FormattingUtils.formatPrice(kcexPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(kcexPrice.ask))}`);
-        if (config.xt.enabled) console.log(`${FormattingUtils.label('PRICES')} ${FormattingUtils.colorExchange('XT')}: Bid=${chalk.white(FormattingUtils.formatPrice(xtPrice.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(xtPrice.ask))}`);
-    }
 
     // Only show concise pairwise arbitrage outputs for enabled exchanges
     const enabledExchanges = [];
@@ -236,70 +201,52 @@ export async function printBidAskPairs(symbols, exchanges) {
     if (config.kcex.enabled) enabledExchanges.push({ id: 'kcex', bid: kcexPrice.bid, ask: kcexPrice.ask });
     if (config.xt.enabled) enabledExchanges.push({ id: 'xt', bid: xtPrice.bid, ask: xtPrice.ask });
 
-    // Only print arbitrage opportunities when they meet the threshold and are profitable
+    // Check if any exchange data has changed
+    let hasDataChanged = false;
+    for (const exchange of enabledExchanges) {
+        if (isNewData(exchange.id, { bid: exchange.bid, ask: exchange.ask })) {
+            hasDataChanged = true;
+            break;
+        }
+    }
+
+    // Only proceed if data has changed
+    if (!hasDataChanged) return;
+
+    // Compare all exchange pairs and show percentages
     for (let i = 0; i < enabledExchanges.length; i++) {
         for (let j = i + 1; j < enabledExchanges.length; j++) {
             const a = enabledExchanges[i];
             const b = enabledExchanges[j];
             
+            let hasComparisonChanged = false;
+            
             // A ask -> B bid
             if (a.ask != null && b.bid != null) {
                 const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
-                if (aToB >= config.profitThresholdPercent) {
-                    console.log(`${a.id.toUpperCase()} ask=${FormattingUtils.formatPrice(a.ask)} | ${b.id.toUpperCase()} bid=${FormattingUtils.formatPrice(b.bid)} => ${FormattingUtils.formatPercentageColored(aToB)} ${chalk.green('(PROFITABLE!)')}`);
+                if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aToB)) {
+                    console.log(`Bid ${a.id.toUpperCase()} and Ask ${b.id.toUpperCase()} => ${FormattingUtils.formatPercentageColored(aToB)}`);
+                    hasComparisonChanged = true;
                 }
             }
             
             // B ask -> A bid
             if (b.ask != null && a.bid != null) {
                 const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
-                if (bToA >= config.profitThresholdPercent) {
-                    console.log(`${b.id.toUpperCase()} ask=${FormattingUtils.formatPrice(b.ask)} | ${a.id.toUpperCase()} bid=${FormattingUtils.formatPrice(a.bid)} => ${FormattingUtils.formatPercentageColored(bToA)} ${chalk.green('(PROFITABLE!)')}`);
+                if (isNewComparison(`${b.id}-ask-${a.id}-bid`, bToA)) {
+                    console.log(`Bid ${b.id.toUpperCase()} and Ask ${a.id.toUpperCase()} => ${FormattingUtils.formatPercentageColored(bToA)}`);
+                    hasComparisonChanged = true;
                 }
+            }
+            
+            // Add divider if any comparison changed for this pair
+            if (hasComparisonChanged) {
+                console.log("=".repeat(60));
             }
         }
     }
 
-    if (lbankOb && config.display.conciseOutput) {
-        const lbankBestBid = (lbankOb && Array.isArray(lbankOb.bids) && lbankOb.bids[0]) ? { price: lbankOb.bids[0][0], amount: lbankOb.bids[0][1] } :
-            null;
-        const lbankBestAsk = (lbankOb && Array.isArray(lbankOb.asks) && lbankOb.asks[0]) ? { price: lbankOb.asks[0][0], amount: lbankOb.asks[0][1] } :
-            null;
 
-        // Print only depth line if conciseOutput is enabled
-        console.log(`${FormattingUtils.label('DEPTH')} ${FormattingUtils.colorExchange('LBANK')}: bestBid=${lbankBestBid ? `${FormattingUtils.formatPrice(lbankBestBid.price)} x ${lbankBestBid.amount}` : chalk.yellow('n/a')} bestAsk=${lbankBestAsk ? `${FormattingUtils.formatPrice(lbankBestAsk.price)} x ${lbankBestAsk.amount}` : chalk.yellow('n/a')}`);
-    }
-
-    if (!config.display?.conciseOutput) {
-        console.log(FormattingUtils.createSeparator());
-    }
-
-    // Position opening logic (using LBank and MEXC data)
-    if (lbankToMexcProfit >= config.profitThresholdPercent) {
-        console.log(`${chalk.green('🎯')} Opening LBANK(ask)->MEXC(bid): ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.green('(Profitable!)')}`);
-        const openSymbol = symbols?.lbank || (config.symbols && config.symbols.lbank);
-        await tryOpenPosition(openSymbol, "lbank", "mexc", lbankPrice.ask, mexcPrice.bid);
-    } else {
-        console.log(`${chalk.yellow('⏳')} No LBANK->MEXC opp: ${FormattingUtils.formatPercentageColored(lbankToMexcProfit)} ${chalk.gray(`(Threshold: ${config.profitThresholdPercent}%)`)}`);
-        console.log(`${chalk.blue('ℹ️ ')} MEXC->LBANK: ${FormattingUtils.formatPercentageColored(mexcToLbankProfit)} ${chalk.gray('(not used)')}`);
-    }
-
-    // Position closing logic (using LBank and MEXC data)
-    if (status.openPositionsCount > 0) {
-        const closeThreshold = Math.abs(Number(config.scenarios.alireza.closeAtPercent));
-        if (mexcAskVsLbankBidPct != null && mexcAskVsLbankBidPct <= closeThreshold) {
-            console.log(`🎯 Closing eligible positions: mexcAskVsLbankBidPct (${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)}) >= ${FormattingUtils.formatPercentage(closeThreshold)}`);
-            const closeSymbol = symbols?.lbank || (config.symbols && config.symbols.lbank);
-            await tryClosePosition(closeSymbol, lbankPrice.bid, mexcPrice.ask);
-        } else {
-            console.log(`📊 Positions open: Current P&L estimate: ${FormattingUtils.formatPercentage(mexcAskVsLbankBidPct)} (Close threshold: ${FormattingUtils.formatPercentage(closeThreshold)})`);
-        }
-    }
-
-    if (config.logSettings.printStatusToConsole && !config.display?.conciseOutput) {
-        console.log(`${FormattingUtils.label(new Date().toLocaleTimeString())} ${status.openPositionsCount > 0 ? chalk.yellow(`${status.openPositionsCount} open`) : chalk.gray('No Position')} | P&L: ${FormattingUtils.formatCurrencyColored(status.totalProfit)}`);
-        if (status.openPositionsCount > 0) console.log(FormattingUtils.createSeparator());
-    }
 }
 
 // Re-export for backward compatibility
