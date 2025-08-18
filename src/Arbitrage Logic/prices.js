@@ -3,6 +3,7 @@ import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreene
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
+import logUpdate from "log-update";
 
 
 
@@ -26,6 +27,9 @@ let previousData = {
 
 // Track previous comparison results to avoid duplicate logs
 let previousComparisons = new Map();
+
+// Store current log content for real-time updates
+let currentLogContent = '';
 
 // Function to check if data is new (different from previous)
 function isNewData(exchangeId, newData) {
@@ -239,14 +243,12 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Only proceed if data has changed
     if (!hasDataChanged) return;
 
-    // Show symbols for all exchanges (except DEX) - DISABLED
-    // console.log("📋 Exchange Symbols:");
-    // for (const exchange of enabledExchanges) {
-    //     if (!exchange.isDEX) {
-    //         console.log(`   ${exchange.id.toUpperCase()}: ${exchange.symbol || 'N/A'}`);
-    //     }
-    // }
-    // console.log("=".repeat(60));
+    // Build log content for real-time updates
+    let logLines = [];
+    
+    // Add timestamp
+    logLines.push(`🕐 ${new Date().toLocaleTimeString()}`);
+    logLines.push('');
 
     // Compare all exchange pairs and show percentages
     for (let i = 0; i < enabledExchanges.length; i++) {
@@ -266,7 +268,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (a.bid != null && b.ask != null) {
                     const aBidToBAsk = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
                     if (isNewComparison(`${a.id}-bid-${b.id}-ask`, aBidToBAsk)) {
-                        console.log(`🟢 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> DEX ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
+                        logLines.push(`🟢 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> DEX ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
                         hasComparisonChanged = true;
                     }
                 }
@@ -278,7 +280,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (a.bid != null && b.bid != null) {
                     const aBidToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.bid);
                     if (isNewComparison(`${a.id}-bid-${b.id}-bid`, aBidToBBid)) {
-                        console.log(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
+                        logLines.push(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
                         hasComparisonChanged = true;
                         dexComparisons++;
                     }
@@ -288,7 +290,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (a.ask != null && b.bid != null) {
                     const aAskToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.ask);
                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
-                        console.log(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Ask:$${a.ask}) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
+                        logLines.push(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Ask:$${a.ask}) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
                         hasComparisonChanged = true;
                         dexComparisons++;
                     }
@@ -296,7 +298,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 
                 // Add divider between DEX comparisons if both were shown
                 if (dexComparisons >= 2) {
-                    console.log("=".repeat(60));
+                    logLines.push("=".repeat(60));
                 }
             } else {
                 // Both are regular exchanges - normal arbitrage comparison
@@ -304,7 +306,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (a.ask != null && b.bid != null) {
                     const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aToB)) {
-                        console.log(`📈 ${a.id.toUpperCase()}(Ask:$${a.ask}) -> ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aToB)}`);
+                        logLines.push(`📈 ${a.id.toUpperCase()}(Ask:$${a.ask}) -> ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aToB)}`);
                         hasComparisonChanged = true;
                     }
                 }
@@ -313,18 +315,17 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (b.ask != null && a.bid != null) {
                     const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
                     if (isNewComparison(`${b.id}-ask-${a.id}-bid`, bToA)) {
-                        console.log(`📈 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(bToA)}`);
+                        logLines.push(`📈 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(bToA)}`);
                         hasComparisonChanged = true;
                     }
                 }
             }
-            
-            // Add divider if any comparison changed for this pair - DISABLED
-            // if (hasComparisonChanged) {
-            //     console.log("=".repeat(60));
-            // }
         }
     }
+    
+    // Update the log content and display it
+    currentLogContent = logLines.join('\n');
+    logUpdate(currentLogContent);
 
 
 }
