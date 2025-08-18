@@ -1,5 +1,5 @@
 import config from "./config/config.js";
-import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService } from "./services/index.js";
+import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
@@ -11,7 +11,8 @@ let errorMessagesShown = {
     mexc: false,
     kcex: false,
     xt: false,
-    lbank: false
+    lbank: false,
+    dexscreener: false
 };
 
 // Track previous data to only show new data
@@ -19,7 +20,8 @@ let previousData = {
     lbank: null,
     mexc: null,
     kcex: null,
-    xt: null
+    xt: null,
+    dexscreener: null
 };
 
 // Track previous comparison results to avoid duplicate logs
@@ -30,10 +32,18 @@ function isNewData(exchangeId, newData) {
     const prev = previousData[exchangeId];
     if (!prev) return true;
     
-    // Compare bid and ask prices
-    if (newData.bid !== prev.bid || newData.ask !== prev.ask) {
-        previousData[exchangeId] = { ...newData };
-        return true;
+    // For DEX exchanges, only compare bid prices
+    if (newData.isDEX) {
+        if (newData.bid !== prev.bid) {
+            previousData[exchangeId] = { ...newData };
+            return true;
+        }
+    } else {
+        // For regular exchanges, compare both bid and ask prices
+        if (newData.bid !== prev.bid || newData.ask !== prev.ask) {
+            previousData[exchangeId] = { ...newData };
+            return true;
+        }
     }
     return false;
 }
@@ -57,7 +67,17 @@ function logExchangeData(exchangeId, data, isEnabled = true) {
     // Add divider to separate new data from old data
     console.log("=".repeat(60));
     
-    if (data && data.bid !== null && data.ask !== null) {
+    if (data && data.isDEX) {
+        // DEX exchange - only bid price available
+        if (data.bid !== null) {
+            console.log(`🟢 ${exchangeId.toUpperCase()} (DEX): Bid=${chalk.white(FormattingUtils.formatPrice(data.bid))} | Ask=N/A (DEX) | Time=${new Date().toLocaleTimeString()}`);
+        } else if (data.error) {
+            console.log(`❌ ${exchangeId.toUpperCase()} (DEX): Error - ${data.error}`);
+        } else {
+            console.log(`⚠️ ${exchangeId.toUpperCase()} (DEX): No bid data available`);
+        }
+    } else if (data && data.bid !== null && data.ask !== null) {
+        // Regular exchange - both bid and ask prices
         console.log(`📊 ${exchangeId.toUpperCase()}: Bid=${chalk.white(FormattingUtils.formatPrice(data.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(data.ask))} | Time=${new Date().toLocaleTimeString()}`);
     } else if (data && data.error) {
         console.log(`❌ ${exchangeId.toUpperCase()}: Error - ${data.error}`);
@@ -186,6 +206,27 @@ export async function printBidAskPairs(symbols, exchanges) {
         }
     }
 
+    // Get DexScreener+ prices from Puppeteer service (DEX - bid only)
+    let dexscreenerPrice = { bid: null, ask: null, exchangeId: 'dexscreener', symbol: symbols.dexscreener, isDEX: true };
+    try {
+        if (config.dexscreener.enabled) {
+            if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
+                await dexscreenerPuppeteerService.initialize();
+            }
+            dexscreenerPrice = await dexscreenerPuppeteerService.extractPrices();
+            
+            // Log DexScreener+ data if enabled and new
+            if (isNewData('dexscreener', dexscreenerPrice)) {
+                logExchangeData('dexscreener', dexscreenerPrice, config.dexscreener.enabled);
+            }
+        }
+    } catch (error) {
+        if (!errorMessagesShown.dexscreener) {
+            console.log(`⚠️ DexScreener+ price fetch failed: ${error.message}`);
+            errorMessagesShown.dexscreener = true;
+        }
+    }
+
 
 
 
@@ -193,18 +234,19 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Only show concise pairwise arbitrage outputs for enabled exchanges
     const enabledExchanges = [];
     if (config.exchanges.mexc && config.exchanges.mexc.enabled !== false) {
-        enabledExchanges.push({ id: 'mexc', bid: mexcPrice.bid, ask: mexcPrice.ask });
+        enabledExchanges.push({ id: 'mexc', bid: mexcPrice.bid, ask: mexcPrice.ask, symbol: mexcPrice.symbol });
     }
     if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) {
-        enabledExchanges.push({ id: 'lbank', bid: lbankPrice.bid, ask: lbankPrice.ask });
+        enabledExchanges.push({ id: 'lbank', bid: lbankPrice.bid, ask: lbankPrice.ask, symbol: lbankPrice.symbol });
     }
-    if (config.kcex.enabled) enabledExchanges.push({ id: 'kcex', bid: kcexPrice.bid, ask: kcexPrice.ask });
-    if (config.xt.enabled) enabledExchanges.push({ id: 'xt', bid: xtPrice.bid, ask: xtPrice.ask });
+    if (config.kcex.enabled) enabledExchanges.push({ id: 'kcex', bid: kcexPrice.bid, ask: kcexPrice.ask, symbol: kcexPrice.symbol });
+    if (config.xt.enabled) enabledExchanges.push({ id: 'xt', bid: xtPrice.bid, ask: xtPrice.ask, symbol: xtPrice.symbol });
+    if (config.dexscreener.enabled) enabledExchanges.push({ id: 'dexscreener', bid: dexscreenerPrice.bid, ask: dexscreenerPrice.ask, symbol: dexscreenerPrice.symbol, isDEX: true });
 
     // Check if any exchange data has changed
     let hasDataChanged = false;
     for (const exchange of enabledExchanges) {
-        if (isNewData(exchange.id, { bid: exchange.bid, ask: exchange.ask })) {
+        if (isNewData(exchange.id, { bid: exchange.bid, ask: exchange.ask, isDEX: exchange.isDEX })) {
             hasDataChanged = true;
             break;
         }
@@ -212,6 +254,15 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     // Only proceed if data has changed
     if (!hasDataChanged) return;
+
+    // Show symbols for all exchanges (except DEX)
+    console.log("📋 Exchange Symbols:");
+    for (const exchange of enabledExchanges) {
+        if (!exchange.isDEX) {
+            console.log(`   ${exchange.id.toUpperCase()}: ${exchange.symbol || 'N/A'}`);
+        }
+    }
+    console.log("=".repeat(60));
 
     // Compare all exchange pairs and show percentages
     for (let i = 0; i < enabledExchanges.length; i++) {
@@ -221,21 +272,48 @@ export async function printBidAskPairs(symbols, exchanges) {
             
             let hasComparisonChanged = false;
             
-            // A ask -> B bid
-            if (a.ask != null && b.bid != null) {
-                const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
-                if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aToB)) {
-                    console.log(`Bid ${a.id.toUpperCase()} and Ask ${b.id.toUpperCase()} => ${FormattingUtils.formatPercentageColored(aToB)}`);
-                    hasComparisonChanged = true;
+            // Handle DEX exchanges (bid-only)
+            if (a.isDEX && b.isDEX) {
+                // Both are DEX - skip comparison as they only have bid prices
+                continue;
+            } else if (a.isDEX) {
+                // A is DEX (bid-only), B is regular exchange
+                // Compare A bid with B ask (sell on A, buy on B)
+                if (a.bid != null && b.ask != null) {
+                    const aBidToBAsk = CalculationUtils.calculatePriceDifference(a.bid, b.ask);
+                    if (isNewComparison(`${a.id}-bid-${b.id}-ask`, aBidToBAsk)) {
+                        console.log(`🟢 DEX ${a.id.toUpperCase()}(Bid) -> ${b.id.toUpperCase()}(Ask) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
+                        hasComparisonChanged = true;
+                    }
                 }
-            }
-            
-            // B ask -> A bid
-            if (b.ask != null && a.bid != null) {
-                const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
-                if (isNewComparison(`${b.id}-ask-${a.id}-bid`, bToA)) {
-                    console.log(`Bid ${b.id.toUpperCase()} and Ask ${a.id.toUpperCase()} => ${FormattingUtils.formatPercentageColored(bToA)}`);
-                    hasComparisonChanged = true;
+            } else if (b.isDEX) {
+                // B is DEX (bid-only), A is regular exchange
+                // Compare A ask with B bid (sell on A, buy on B)
+                if (a.ask != null && b.bid != null) {
+                    const aAskToBBid = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
+                    if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
+                        console.log(`🟢 ${a.id.toUpperCase()}(Ask) -> DEX ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
+                        hasComparisonChanged = true;
+                    }
+                }
+            } else {
+                // Both are regular exchanges - normal arbitrage comparison
+                // A ask -> B bid
+                if (a.ask != null && b.bid != null) {
+                    const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
+                    if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aToB)) {
+                        console.log(`📈 ${a.id.toUpperCase()}(Ask) -> ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aToB)}`);
+                        hasComparisonChanged = true;
+                    }
+                }
+                
+                // B ask -> A bid
+                if (b.ask != null && a.bid != null) {
+                    const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
+                    if (isNewComparison(`${b.id}-ask-${a.id}-bid`, bToA)) {
+                        console.log(`📈 ${b.id.toUpperCase()}(Ask) -> ${a.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(bToA)}`);
+                        hasComparisonChanged = true;
+                    }
                 }
             }
             

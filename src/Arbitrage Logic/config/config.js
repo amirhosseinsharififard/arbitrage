@@ -4,13 +4,14 @@
  */
 const config = {
     // Trading symbols configuration for each exchange
-    // MEXC, LBank, Ourbit, XT, and KCEX exchange configuration
+    // MEXC, LBank, Ourbit, XT, KCEX, and DexScreener+ exchange configuration
     symbols: {
         ourbit: "ETH/USDT", // Ourbit exchange symbol
         mexc: "ETH/USDT:USDT", // MEXC exchange symbol
         lbank: "ETH/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
         xt: "ETH/USDT", // XT exchange symbol
         kcex: "ETH/USDT", // KCEX exchange symbol
+        dexscreener: "ETH/USDT", // DexScreener+ exchange symbol
     },
 
     // System timing and performance settings
@@ -38,6 +39,7 @@ const config = {
         lbank: 0, // LBank trading fees
         xt: 0, // XT trading fees
         kcex: 0, // KCEX trading fees
+        dexscreener: 0, // DexScreener+ trading fees (DEX)
     },
 
     // Exchange initialization and connection settings
@@ -125,6 +127,30 @@ const config = {
                 '--disable-gpu'
             ]
         }
+    },
+
+    // DexScreener+ Puppeteer configuration (DEX - bid only)
+    dexscreener: {
+        enabled: true, // Toggle to enable/disable DexScreener+ Puppeteer data collection
+        url: "https://dexscreener.com/base/0x932a6d413c61f2ef151cc0c9089efbe28af5f359", // DexScreener URL
+        updateInterval: 100, // Price update interval in milliseconds
+        selectors: {
+            bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div", // Bid price selector (DEX only has bid)
+            askPrice: null // DexScreener is DEX - no ask price available
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        },
+        isDEX: true // Flag to indicate this is a DEX (bid-only exchange)
     },
 
     // Logging and monitoring configuration
