@@ -3,7 +3,8 @@
  * 
  * This module provides access to:
  * 1. Ourbit Price Service - Real-time price data management via Puppeteer
- * 2. KCEX/XT Puppeteer integrations
+ * 2. LBank Price Service - Real-time price data management via CCXT
+ * 3. KCEX/XT Puppeteer integrations
  * 
  * All services are organized by functionality and exported
  * for easy access throughout the system.
@@ -11,15 +12,18 @@
 
 // Import service modules
 import ourbitPriceService from './ourbitPriceService.js';
+import lbankPriceService from './lbankPriceService.js';
 import kcexPuppeteerService from '../../puppeteer/kcexService.js';
 import xtPuppeteerService from '../../puppeteer/xtService.js';
 
 // Export all service modules
-export { ourbitPriceService, kcexPuppeteerService, xtPuppeteerService };
+export { ourbitPriceService, lbankPriceService, kcexPuppeteerService, xtPuppeteerService };
 
 // Export individual services for direct access (named)
 export { default as OurbitPriceService }
 from './ourbitPriceService.js';
+export { default as LbankPriceService }
+from './lbankPriceService.js';
 export { default as KCEXPuppeteerService }
 from '../../puppeteer/kcexService.js';
 export { default as XTPuppeteerService }

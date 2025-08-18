@@ -22,7 +22,7 @@ import statistics from "./src/Arbitrage Logic/monitoring/statistics.js";
 import logger from "./src/Arbitrage Logic/logging/logger.js";
 import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
 import "./src/Arbitrage Logic/utils/performanceOptimizer.js";
-import { ourbitPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
+import { lbankPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
 
 /**
  * Initialize the system on startup
@@ -102,26 +102,30 @@ async function startLoop(
         // Initialize the system components
         await initializeSystem();
 
-        // Initialize Ourbit price service (for Ourbit data)
-        await ourbitPriceService.initialize();
+        // Initialize LBank price service (for LBank data) - only if enabled
+        if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) {
+            await lbankPriceService.initialize();
+        }
 
         // Initialize KCEX Puppeteer service (for KCEX data)
-        await kcexPuppeteerService.initialize();
+        if (config.kcex.enabled) {
+            await kcexPuppeteerService.initialize();
 
-        // Register KCEX service cleanup with exit handler
-        exitHandler.addExitHandler(async() => {
-            await kcexPuppeteerService.cleanup();
-        });
+            // Register KCEX service cleanup with exit handler
+            exitHandler.addExitHandler(async() => {
+                await kcexPuppeteerService.cleanup();
+            });
+        }
 
-        // Initialize exchange instances for trading (MEXC only, LBank disabled)
+        // Initialize exchange instances for trading (MEXC and LBank)
         await exchangeManager.initialize();
         const exchanges = exchangeManager.getAllExchanges();
 
         // Display system startup information
         // Build list of enabled exchanges
         const enabledExchanges = [];
-        if (config.exchanges.mexc) enabledExchanges.push('MEXC');
-        if (config.ourbit.enabled) enabledExchanges.push('Ourbit');
+        if (config.exchanges.mexc && config.exchanges.mexc.enabled !== false) enabledExchanges.push('MEXC');
+        if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) enabledExchanges.push('LBank');
         if (config.xt.enabled) enabledExchanges.push('XT');
         if (config.kcex.enabled) enabledExchanges.push('KCEX');
 

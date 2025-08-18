@@ -59,22 +59,27 @@ class ExchangeManager {
 
             // Iterate through all configured exchanges
             for (const [exchangeId, exchangeConfig] of Object.entries(config.exchanges)) {
-                // Create and initialize each exchange
-                const exchange = await this.createExchange(
-                    exchangeConfig.id,
-                    exchangeConfig.options,
-                    exchangeConfig.retryAttempts,
-                    exchangeConfig.retryDelay
-                );
+                // Check if exchange is enabled
+                if (exchangeConfig.enabled !== false) {
+                    // Create and initialize each exchange
+                    const exchange = await this.createExchange(
+                        exchangeConfig.id,
+                        exchangeConfig.options,
+                        exchangeConfig.retryAttempts,
+                        exchangeConfig.retryDelay
+                    );
 
-                // Store the initialized exchange instance
-                this.exchanges.set(exchangeId, exchange);
-                console.log(`✅ ${exchangeId.toUpperCase()} initialized successfully`);
+                    // Store the initialized exchange instance
+                    this.exchanges.set(exchangeId, exchange);
+                    console.log(`✅ ${exchangeId.toUpperCase()} initialized successfully`);
+                } else {
+                    console.log(`⏸️ ${exchangeId.toUpperCase()} disabled - skipping initialization`);
+                }
             }
 
             // Mark exchanges as initialized
             this.initialized = true;
-            console.log("🎯 All exchanges initialized successfully!");
+            console.log("🎯 All enabled exchanges initialized successfully!");
         } catch (error) {
             console.error(`❌ Failed to initialize exchanges: ${error.message}`);
             throw error;
@@ -221,6 +226,42 @@ class ExchangeManager {
             };
         } catch (error) {
             console.error(`❌ Failed to get MEXC futures price for ${symbol}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Get price data from LBank exchange
+     * 
+     * Fetches current bid/ask prices for a given symbol from LBank spot market.
+     * 
+     * @param {string} symbol - Trading symbol (e.g., 'DAM/USDT' for spot)
+     * @returns {object} Price data with bid, ask, timestamp, etc.
+     * @throws {Error} If LBank exchange not available or fetch fails
+     */
+    async getLbankPrice(symbol = (config.symbols && config.symbols.lbank) || 'DAM/USDT:USDT') {
+        try {
+            const lbankExchange = this.getExchange('lbank');
+
+            // Use spot symbol format for LBank
+            const resolvedSymbol = symbol || ((config.symbols && config.symbols.lbank) || 'DAM/USDT:USDT');
+
+            // Fetch order book data from LBank (more reliable than ticker)
+            const orderBook = await lbankExchange.fetchOrderBook(resolvedSymbol);
+
+            // Extract best bid and ask from order book
+            const bestBid = orderBook.bids && orderBook.bids[0] ? orderBook.bids[0][0] : null;
+            const bestAsk = orderBook.asks && orderBook.asks[0] ? orderBook.asks[0][0] : null;
+
+            return {
+                bid: bestBid,
+                ask: bestAsk,
+                timestamp: Date.now(),
+                exchangeId: 'lbank',
+                symbol: resolvedSymbol
+            };
+        } catch (error) {
+            console.error(`❌ Failed to get LBank price for ${symbol}: ${error.message}`);
             throw error;
         }
     }
