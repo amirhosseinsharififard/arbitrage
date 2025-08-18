@@ -118,12 +118,19 @@ async function startLoop(
         const exchanges = exchangeManager.getAllExchanges();
 
         // Display system startup information
+        // Build list of enabled exchanges
+        const enabledExchanges = [];
+        if (config.exchanges.mexc) enabledExchanges.push('MEXC');
+        if (config.ourbit.enabled) enabledExchanges.push('Ourbit');
+        if (config.xt.enabled) enabledExchanges.push('XT');
+        if (config.kcex.enabled) enabledExchanges.push('KCEX');
+
         console.log("🚀 Arbitrage system started!");
         console.log(`⏱️  Check interval: ${intervalMs}ms`);
         console.log(`💵 Trade volume: $${config.tradeVolumeUSD}`);
         console.log(`📊 Profit threshold: ${config.profitThresholdPercent}%`);
         console.log(`🔒 Close threshold: ${config.closeThresholdPercent}%`);
-        console.log(`🌐 Exchanges: MEXC + Ourbit + KCEX`);
+        console.log(`🌐 Exchanges: ${enabledExchanges.join(' + ')}`);
         console.log("=".repeat(60));
 
         // Initialize loop control variables
@@ -140,10 +147,7 @@ async function startLoop(
                     displayTradingStatus();
                 }
 
-                // Always display current iteration for monitoring
-                if (config.logSettings.printStatusToConsole) {
-                    console.log(`🔄 Iteration ${iterationCount} - ${new Date().toLocaleTimeString()}`);
-                }
+                // Removed iteration log to reduce console spam
 
                 // Process prices and execute arbitrage logic
                 // This is the core function that handles all trading decisions

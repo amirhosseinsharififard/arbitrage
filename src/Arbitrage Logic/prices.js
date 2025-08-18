@@ -10,6 +10,14 @@ let lastTickKey = null;
 let lastPriceData = null;
 const lastPairPrint = new Map(); // key: "A->B", value: { left: askPrice, right: bidPrice }
 
+// Track if error messages have been shown to avoid repetition
+let errorMessagesShown = {
+    mexc: false,
+    kcex: false,
+    xt: false,
+    ourbit: false
+};
+
 // Removed unused profit logging helpers to simplify output
 
 export async function printBidAskPairs(symbols, exchanges) {
@@ -22,7 +30,10 @@ export async function printBidAskPairs(symbols, exchanges) {
         const mexcSymbol = (symbols && symbols.mexc) || (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT';
         mexcPrice = await exchangeManager.getMexcPrice(mexcSymbol);
     } catch (error) {
-        console.log(`⚠️ MEXC futures price fetch failed: ${error.message}`);
+        if (!errorMessagesShown.mexc) {
+            console.log(`⚠️ MEXC futures price fetch failed: ${error.message}`);
+            errorMessagesShown.mexc = true;
+        }
         mexcPrice = {
             bid: null,
             ask: null,
@@ -38,7 +49,10 @@ export async function printBidAskPairs(symbols, exchanges) {
     try {
         kcexPrice = await kcexPuppeteerService.extractPrices();
     } catch (error) {
-        console.log(`⚠️ KCEX price fetch failed: ${error.message}`);
+        if (!errorMessagesShown.kcex) {
+            console.log(`⚠️ KCEX price fetch failed: ${error.message}`);
+            errorMessagesShown.kcex = true;
+        }
         kcexPrice = {
             bid: null,
             ask: null,
@@ -59,7 +73,10 @@ export async function printBidAskPairs(symbols, exchanges) {
             xtPrice = await xtPuppeteerService.extractPrices();
         }
     } catch (error) {
-        console.log(`⚠️ XT price fetch failed: ${error.message}`);
+        if (!errorMessagesShown.xt) {
+            console.log(`⚠️ XT price fetch failed: ${error.message}`);
+            errorMessagesShown.xt = true;
+        }
     }
 
     const tickKey = `${ourbitPrice && ourbitPrice.bid || 'n'}|${ourbitPrice && ourbitPrice.ask || 'n'}|${mexcPrice && mexcPrice.bid || 'n'}|${mexcPrice && mexcPrice.ask || 'n'}|${kcexPrice && kcexPrice.bid || 'n'}|${kcexPrice && kcexPrice.ask || 'n'}|${xtPrice && xtPrice.bid || 'n'}|${xtPrice && xtPrice.ask || 'n'}`;
@@ -80,7 +97,10 @@ export async function printBidAskPairs(symbols, exchanges) {
         const ourbitSymbol = symbols.ourbit || (config.symbols && config.symbols.ourbit);
         ourbitOb = await ourbitPriceService.getOrderBook('ourbit', ourbitSymbol);
     } catch (error) {
-        console.log(`⚠️ Ourbit order book fetch failed, using basic price data`);
+        if (!errorMessagesShown.ourbit) {
+            console.log(`⚠️ Ourbit order book fetch failed, using basic price data`);
+            errorMessagesShown.ourbit = true;
+        }
     }
 
     const status = getTradingStatus();
@@ -116,39 +136,26 @@ export async function printBidAskPairs(symbols, exchanges) {
     if (config.kcex.enabled) enabledExchanges.push({ id: 'kcex', bid: kcexPrice.bid, ask: kcexPrice.ask });
     if (config.xt.enabled) enabledExchanges.push({ id: 'xt', bid: xtPrice.bid, ask: xtPrice.ask });
 
-    // Only print a single pair structure: [PAIR] A ask=... | B bid=... => pct
-    // And only when BOTH values changed since last print for that direction
+    // Only print arbitrage opportunities when they meet the threshold and are profitable
     for (let i = 0; i < enabledExchanges.length; i++) {
         for (let j = i + 1; j < enabledExchanges.length; j++) {
             const a = enabledExchanges[i];
             const b = enabledExchanges[j];
-            let printedAny = false;
+            
             // A ask -> B bid
             if (a.ask != null && b.bid != null) {
-                const keyAB = `${a.id}->${b.id}`;
-                const lastAB = lastPairPrint.get(keyAB);
-                const bothChangedAB = lastAB ? (lastAB.left !== a.ask && lastAB.right !== b.bid) : true;
-                if (bothChangedAB) {
-                    const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
-                    console.log(`${a.id.toUpperCase()} ask=${FormattingUtils.formatPrice(a.ask)} | ${b.id.toUpperCase()} bid=${FormattingUtils.formatPrice(b.bid)} => ${FormattingUtils.formatPercentageColored(aToB)} ${aToB >= config.profitThresholdPercent ? chalk.green('(OPEN POSITION)') : ''}`);
-                    lastPairPrint.set(keyAB, { left: a.ask, right: b.bid });
-                    printedAny = true;
+                const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
+                if (aToB >= config.profitThresholdPercent) {
+                    console.log(`${a.id.toUpperCase()} ask=${FormattingUtils.formatPrice(a.ask)} | ${b.id.toUpperCase()} bid=${FormattingUtils.formatPrice(b.bid)} => ${FormattingUtils.formatPercentageColored(aToB)} ${chalk.green('(PROFITABLE!)')}`);
                 }
             }
+            
             // B ask -> A bid
             if (b.ask != null && a.bid != null) {
-                const keyBA = `${b.id}->${a.id}`;
-                const lastBA = lastPairPrint.get(keyBA);
-                const bothChangedBA = lastBA ? (lastBA.left !== b.ask && lastBA.right !== a.bid) : true;
-                if (bothChangedBA) {
-                    const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
-                    console.log(`${b.id.toUpperCase()} ask=${FormattingUtils.formatPrice(b.ask)} | ${a.id.toUpperCase()} bid=${FormattingUtils.formatPrice(a.bid)} => ${FormattingUtils.formatPercentageColored(bToA)} ${bToA >= config.profitThresholdPercent ? chalk.green('(OPEN POSITION)') : ''}`);
-                    lastPairPrint.set(keyBA, { left: b.ask, right: a.bid });
-                    printedAny = true;
+                const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
+                if (bToA >= config.profitThresholdPercent) {
+                    console.log(`${b.id.toUpperCase()} ask=${FormattingUtils.formatPrice(b.ask)} | ${a.id.toUpperCase()} bid=${FormattingUtils.formatPrice(a.bid)} => ${FormattingUtils.formatPercentageColored(bToA)} ${chalk.green('(PROFITABLE!)')}`);
                 }
-            }
-            if (printedAny && config.display && config.display.conciseOutput) {
-                console.log(FormattingUtils.createSeparator());
             }
         }
     }
