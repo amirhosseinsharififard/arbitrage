@@ -264,9 +264,9 @@ export async function printBidAskPairs(symbols, exchanges) {
                 // A is DEX (bid-only), B is regular exchange
                 // Compare A bid with B ask (sell on A, buy on B)
                 if (a.bid != null && b.ask != null) {
-                    const aBidToBAsk = CalculationUtils.calculatePriceDifference(a.bid, b.ask);
+                    const aBidToBAsk = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
                     if (isNewComparison(`${a.id}-bid-${b.id}-ask`, aBidToBAsk)) {
-                        console.log(`🟢 DEX ${a.id.toUpperCase()}(Bid) -> ${b.id.toUpperCase()}(Ask) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
+                        console.log(`🟢 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> DEX ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
                         hasComparisonChanged = true;
                     }
                 }
@@ -276,9 +276,9 @@ export async function printBidAskPairs(symbols, exchanges) {
                 
                 // Compare A bid with B bid (buy on A, sell on B)
                 if (a.bid != null && b.bid != null) {
-                    const aBidToBBid = CalculationUtils.calculatePriceDifference(a.bid, b.bid);
+                    const aBidToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.bid);
                     if (isNewComparison(`${a.id}-bid-${b.id}-bid`, aBidToBBid)) {
-                        console.log(`🟢 ${a.id.toUpperCase()}(Bid) -> DEX ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
+                        console.log(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
                         hasComparisonChanged = true;
                         dexComparisons++;
                     }
@@ -286,9 +286,9 @@ export async function printBidAskPairs(symbols, exchanges) {
                 
                 // Compare A ask with B bid (sell on A, buy on B)
                 if (a.ask != null && b.bid != null) {
-                    const aAskToBBid = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
+                    const aAskToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.ask);
                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
-                        console.log(`🟢 ${a.id.toUpperCase()}(Ask) -> DEX ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
+                        console.log(`🟢 DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) -> ${a.id.toUpperCase()}(Ask:$${a.ask}) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
                         hasComparisonChanged = true;
                         dexComparisons++;
                     }
@@ -304,7 +304,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (a.ask != null && b.bid != null) {
                     const aToB = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aToB)) {
-                        console.log(`📈 ${a.id.toUpperCase()}(Ask) -> ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aToB)}`);
+                        console.log(`📈 ${a.id.toUpperCase()}(Ask:$${a.ask}) -> ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aToB)}`);
                         hasComparisonChanged = true;
                     }
                 }
@@ -313,7 +313,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 if (b.ask != null && a.bid != null) {
                     const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
                     if (isNewComparison(`${b.id}-ask-${a.id}-bid`, bToA)) {
-                        console.log(`📈 ${b.id.toUpperCase()}(Ask) -> ${a.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(bToA)}`);
+                        console.log(`📈 ${b.id.toUpperCase()}(Ask:$${b.ask}) -> ${a.id.toUpperCase()}(Bid:$${a.bid}) => ${FormattingUtils.formatPercentageColored(bToA)}`);
                         hasComparisonChanged = true;
                     }
                 }
