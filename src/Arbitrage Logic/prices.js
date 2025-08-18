@@ -1,5 +1,5 @@
 import config from "./config/config.js";
-import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService } from "./services/index.js";
+import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService, dexscreenerApiService } from "./services/index.js";
 import { CalculationUtils, FormattingUtils } from "./utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "./exchanges/exchangeManager.js";
@@ -206,14 +206,18 @@ export async function printBidAskPairs(symbols, exchanges) {
         }
     }
 
-    // Get DexScreener+ prices from Puppeteer service (DEX - bid only)
+    // Get DexScreener+ prices (prefer API; fallback to Puppeteer) (DEX - bid only)
     let dexscreenerPrice = { bid: null, ask: null, exchangeId: 'dexscreener', symbol: symbols.dexscreener, isDEX: true };
     try {
         if (config.dexscreener.enabled) {
-            if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
-                await dexscreenerPuppeteerService.initialize();
+            if (config.dexscreener.useApi) {
+                dexscreenerPrice = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress);
+            } else {
+                if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
+                    await dexscreenerPuppeteerService.initialize();
+                }
+                dexscreenerPrice = await dexscreenerPuppeteerService.extractPrices();
             }
-            dexscreenerPrice = await dexscreenerPuppeteerService.extractPrices();
             
             // Log DexScreener+ data if enabled and new
             if (isNewData('dexscreener', dexscreenerPrice)) {

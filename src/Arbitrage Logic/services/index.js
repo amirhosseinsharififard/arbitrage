@@ -16,9 +16,10 @@ import lbankPriceService from './lbankPriceService.js';
 import kcexPuppeteerService from '../../puppeteer/kcexService.js';
 import xtPuppeteerService from '../../puppeteer/xtService.js';
 import dexscreenerPuppeteerService from '../../puppeteer/dexscreenerService.js';
+import dexscreenerApiService from './dexscreenerApiService.js';
 
 // Export all service modules
-export { ourbitPriceService, lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService };
+export { ourbitPriceService, lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService, dexscreenerApiService };
 
 // Export individual services for direct access (named)
 export { default as OurbitPriceService }

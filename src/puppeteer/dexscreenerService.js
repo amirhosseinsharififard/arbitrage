@@ -76,12 +76,20 @@ class DexScreenerPuppeteerService {
             // Navigate to DexScreener
             console.log(`🌐 Navigating to DexScreener+: ${this.url}`);
             await this.page.goto(this.url, {
-                waitUntil: 'domcontentloaded',
+                waitUntil: 'networkidle2',
                 timeout: 120000
             });
 
-            // Wait for page to load completely
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            // Wait for page to load completely and bypass Cloudflare
+            console.log('⏳ Waiting for page to load and bypass Cloudflare...');
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            
+            // Check if we're still on Cloudflare page
+            const pageTitle = await this.page.title();
+            if (pageTitle.includes('Just a moment') || pageTitle.includes('Checking your browser')) {
+                console.log('🛡️ Cloudflare detected, waiting longer...');
+                await new Promise(resolve => setTimeout(resolve, 15000));
+            }
 
             console.log('✅ DexScreener+ Puppeteer service initialized successfully');
             return true;
@@ -107,13 +115,56 @@ class DexScreenerPuppeteerService {
             }
 
             let bidPrice = null;
+            
+            // Check if page is still loading or blocked by Cloudflare
+            const pageTitle = await this.page.title();
+            if (pageTitle.includes('Just a moment') || pageTitle.includes('Checking your browser')) {
+                console.log('🛡️ Still on Cloudflare page, waiting...');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                return {
+                    bid: null,
+                    ask: null,
+                    timestamp: Date.now(),
+                    exchangeId: 'dexscreener',
+                    symbol: 'ETH/USDT',
+                    error: 'Cloudflare protection active',
+                    isDEX: true
+                };
+            }
 
             // Extract bid price using XPath selector
             if (this.selectors.bidPrice) {
                 try {
-                    const bidElement = await this.page.$x(this.selectors.bidPrice);
-                    if (bidElement && bidElement.length > 0) {
-                        const bidText = await this.page.evaluate(el => el.textContent, bidElement[0]);
+                    // Try different methods to find the element
+                    let bidElement = null;
+                    
+                    // Method 1: Try XPath with evaluate
+                    try {
+                        const elements = await this.page.evaluateHandle((xpath) => {
+                            const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                            return result.snapshotLength > 0 ? result.snapshotItem(0) : null;
+                        }, this.selectors.bidPrice);
+                        
+                        if (elements && !(await elements.evaluate(el => el === null))) {
+                            bidElement = elements;
+                        }
+                    } catch (xpathError) {
+                        console.log(`⚠️ XPath method failed: ${xpathError.message}`);
+                    }
+                    
+                    // Method 2: Try CSS selector as fallback
+                    if (!bidElement) {
+                        try {
+                            // Convert XPath to a simpler CSS selector for testing
+                            const cssSelector = '[data-testid="price"] span, .price span, span[class*="price"]';
+                            bidElement = await this.page.$(cssSelector);
+                        } catch (cssError) {
+                            console.log(`⚠️ CSS method failed: ${cssError.message}`);
+                        }
+                    }
+                    
+                    if (bidElement) {
+                        const bidText = await this.page.evaluate(el => el.textContent, bidElement);
                         if (bidText) {
                             // Clean and parse the bid price
                             const cleanedBid = bidText.replace(/[^\d.,]/g, '').replace(',', '.');
@@ -123,6 +174,13 @@ class DexScreenerPuppeteerService {
                                 throw new Error(`Invalid bid price format: ${bidText}`);
                             }
                         }
+                    } else {
+                        console.log(`⚠️ No elements found with selector: ${this.selectors.bidPrice}`);
+                        
+                        // Debug: Let's see what's on the page
+                        const pageContent = await this.page.content();
+                        console.log(`⚠️ Page title: ${await this.page.title()}`);
+                        console.log(`⚠️ Page URL: ${this.page.url()}`);
                     }
                 } catch (error) {
                     console.log(`⚠️ Failed to extract bid price: ${error.message}`);

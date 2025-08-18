@@ -7,10 +7,11 @@ const config = {
     // MEXC, LBank, Ourbit, XT, KCEX, and DexScreener+ exchange configuration
     symbols: {
         ourbit: "ETH/USDT", // Ourbit exchange symbol
-        mexc: "ETH/USDT:USDT", // MEXC exchange symbol
-        lbank: "ETH/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
+
+        mexc: "UNITE/USDT:USDT", // MEXC exchange symbol
+        lbank: "UNITE/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
         xt: "ETH/USDT", // XT exchange symbol
-        kcex: "ETH/USDT", // KCEX exchange symbol
+        kcex: "UNITE/USDT", // KCEX exchange symbol
         dexscreener: "ETH/USDT", // DexScreener+ exchange symbol
     },
 
@@ -62,7 +63,7 @@ const config = {
 
     // Ourbit Puppeteer configuration
     ourbit: {
-        enabled: true, // Toggle to enable/disable Ourbit Puppeteer data collection
+        enabled: false, // Toggle to enable/disable Ourbit Puppeteer data collection
         url: "https://futures.ourbit.com/fa-IR/exchange/ETH_USDT?type=linear_swap",
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
@@ -85,7 +86,7 @@ const config = {
 
     // XT Puppeteer configuration
     xt: {
-        enabled: true, // Toggle to enable/disable XT Puppeteer data collection
+        enabled: false, // Toggle to enable/disable XT Puppeteer data collection
         url: "https://www.xt.com/en/futures/trade/ETH_usdt", // XT exchange URL for ETH/USDT pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
@@ -109,7 +110,7 @@ const config = {
     // KCEX Puppeteer configuration
     kcex: {
         enabled: true, // Toggle to enable/disable KCEX Puppeteer data collection
-        url: "https://www.kcex.com/futures/exchange/ETH_USDT", // KCEX exchange URL for BTC/USDT futures pair
+        url: "https://www.kcex.com/futures/exchange/UNITE_USDT", // KCEX exchange URL for BTC/USDT futures pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span", // Bid price selector
@@ -131,9 +132,12 @@ const config = {
 
     // DexScreener+ Puppeteer configuration (DEX - bid only)
     dexscreener: {
-        enabled: true, // Toggle to enable/disable DexScreener+ Puppeteer data collection
+        enabled: true, // Toggle to enable/disable DexScreener+ data collection
         url: "https://dexscreener.com/base/0x932a6d413c61f2ef151cc0c9089efbe28af5f359", // DexScreener URL
         updateInterval: 100, // Price update interval in milliseconds
+        // Prefer official public API to avoid Cloudflare blocks
+        useApi: true, // If true, use DexScreener public API instead of Puppeteer
+        contractAddress: "0x932a6d413c61f2ef151cc0c9089efbe28af5f359", // Token contract on Base
         selectors: {
             bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div", // Bid price selector (DEX only has bid)
             askPrice: null // DexScreener is DEX - no ask price available
