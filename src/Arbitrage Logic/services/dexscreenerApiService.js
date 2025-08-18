@@ -10,10 +10,11 @@ class DexScreenerApiService {
 
 	/**
 	 * Fetch bid price (DEX) using DexScreener public API
-	 * @param {string} tokenAddress EVM token contract address (e.g., Base chain)
+	 * @param {string} tokenAddress EVM token contract address
+	 * @param {string} network Network name (e.g., 'base', 'bsc', 'ethereum')
 	 * @returns {{bid:number|null, ask:null, exchangeId:string, symbol:string|null, timestamp:number, isDEX:true, error:string|null}}
 	 */
-	async getBidPriceByToken(tokenAddress) {
+	async getBidPriceByToken(tokenAddress, network = 'base') {
 		try {
 			// Attempt token endpoint first
 			const tokenUrl = `${this.tokenUrl}/${tokenAddress}`;
@@ -21,10 +22,9 @@ class DexScreenerApiService {
 			const data = response?.data;
 
 			if (!data || !Array.isArray(data.pairs) || data.pairs.length === 0) {
-				// Fallback: try pairs endpoint assuming the provided is a pair address on Base
+				// Fallback: try pairs endpoint with specified network
 				try {
-					const chain = 'base';
-					const pairsResp = await axios.get(this.pairsUrlByChain(chain, tokenAddress), { timeout: 12000 });
+					const pairsResp = await axios.get(this.pairsUrlByChain(network, tokenAddress), { timeout: 12000 });
 					const pdata = pairsResp?.data;
 
 					if (pdata && Array.isArray(pdata.pairs) && pdata.pairs.length > 0) {

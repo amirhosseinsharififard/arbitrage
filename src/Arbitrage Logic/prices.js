@@ -147,6 +147,10 @@ export async function printBidAskPairs(symbols, exchanges) {
     let kcexPrice = null;
     try {
         if (config.kcex.enabled) {
+            // Initialize KCEX service if not already initialized
+            if (!kcexPuppeteerService.browser || !kcexPuppeteerService.page) {
+                await kcexPuppeteerService.initialize();
+            }
             kcexPrice = await kcexPuppeteerService.extractPrices();
             
             // Log KCEX data if enabled and new
@@ -164,7 +168,7 @@ export async function printBidAskPairs(symbols, exchanges) {
             ask: null,
             timestamp: Date.now(),
             exchangeId: 'kcex',
-            symbol: 'BTC/USDT',
+            symbol: 'BSU/USDT',
             error: error.message
         };
     }
@@ -195,7 +199,7 @@ export async function printBidAskPairs(symbols, exchanges) {
     try {
         if (config.dexscreener.enabled) {
             if (config.dexscreener.useApi) {
-                dexscreenerPrice = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress);
+                dexscreenerPrice = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress, config.dexscreener.network);
             } else {
                 if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
                     await dexscreenerPuppeteerService.initialize();
