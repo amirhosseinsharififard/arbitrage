@@ -60,30 +60,10 @@ function isNewComparison(exchangeA, exchangeB, result) {
     return false;
 }
 
-// Function to log exchange data
+// Function to log exchange data - DISABLED
 function logExchangeData(exchangeId, data, isEnabled = true) {
-    if (!isEnabled) return;
-    
-    // Add divider to separate new data from old data
-    console.log("=".repeat(60));
-    
-    if (data && data.isDEX) {
-        // DEX exchange - only bid price available
-        if (data.bid !== null) {
-            console.log(`🟢 ${exchangeId.toUpperCase()} (DEX): Bid=${chalk.white(FormattingUtils.formatPrice(data.bid))} | Ask=N/A (DEX) | Time=${new Date().toLocaleTimeString()}`);
-        } else if (data.error) {
-            console.log(`❌ ${exchangeId.toUpperCase()} (DEX): Error - ${data.error}`);
-        } else {
-            console.log(`⚠️ ${exchangeId.toUpperCase()} (DEX): No bid data available`);
-        }
-    } else if (data && data.bid !== null && data.ask !== null) {
-        // Regular exchange - both bid and ask prices
-        console.log(`📊 ${exchangeId.toUpperCase()}: Bid=${chalk.white(FormattingUtils.formatPrice(data.bid))} | Ask=${chalk.white(FormattingUtils.formatPrice(data.ask))} | Time=${new Date().toLocaleTimeString()}`);
-    } else if (data && data.error) {
-        console.log(`❌ ${exchangeId.toUpperCase()}: Error - ${data.error}`);
-    } else {
-        console.log(`⚠️ ${exchangeId.toUpperCase()}: No data available`);
-    }
+    // No logging needed - disabled as requested
+    return;
 }
 
 export async function printBidAskPairs(symbols, exchanges) {
@@ -259,14 +239,14 @@ export async function printBidAskPairs(symbols, exchanges) {
     // Only proceed if data has changed
     if (!hasDataChanged) return;
 
-    // Show symbols for all exchanges (except DEX)
-    console.log("📋 Exchange Symbols:");
-    for (const exchange of enabledExchanges) {
-        if (!exchange.isDEX) {
-            console.log(`   ${exchange.id.toUpperCase()}: ${exchange.symbol || 'N/A'}`);
-        }
-    }
-    console.log("=".repeat(60));
+    // Show symbols for all exchanges (except DEX) - DISABLED
+    // console.log("📋 Exchange Symbols:");
+    // for (const exchange of enabledExchanges) {
+    //     if (!exchange.isDEX) {
+    //         console.log(`   ${exchange.id.toUpperCase()}: ${exchange.symbol || 'N/A'}`);
+    //     }
+    // }
+    // console.log("=".repeat(60));
 
     // Compare all exchange pairs and show percentages
     for (let i = 0; i < enabledExchanges.length; i++) {
@@ -292,13 +272,31 @@ export async function printBidAskPairs(symbols, exchanges) {
                 }
             } else if (b.isDEX) {
                 // B is DEX (bid-only), A is regular exchange
+                let dexComparisons = 0;
+                
+                // Compare A bid with B bid (buy on A, sell on B)
+                if (a.bid != null && b.bid != null) {
+                    const aBidToBBid = CalculationUtils.calculatePriceDifference(a.bid, b.bid);
+                    if (isNewComparison(`${a.id}-bid-${b.id}-bid`, aBidToBBid)) {
+                        console.log(`🟢 ${a.id.toUpperCase()}(Bid) -> DEX ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
+                        hasComparisonChanged = true;
+                        dexComparisons++;
+                    }
+                }
+                
                 // Compare A ask with B bid (sell on A, buy on B)
                 if (a.ask != null && b.bid != null) {
                     const aAskToBBid = CalculationUtils.calculatePriceDifference(a.ask, b.bid);
                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
                         console.log(`🟢 ${a.id.toUpperCase()}(Ask) -> DEX ${b.id.toUpperCase()}(Bid) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
                         hasComparisonChanged = true;
+                        dexComparisons++;
                     }
+                }
+                
+                // Add divider between DEX comparisons if both were shown
+                if (dexComparisons >= 2) {
+                    console.log("=".repeat(60));
                 }
             } else {
                 // Both are regular exchanges - normal arbitrage comparison
@@ -321,10 +319,10 @@ export async function printBidAskPairs(symbols, exchanges) {
                 }
             }
             
-            // Add divider if any comparison changed for this pair
-            if (hasComparisonChanged) {
-                console.log("=".repeat(60));
-            }
+            // Add divider if any comparison changed for this pair - DISABLED
+            // if (hasComparisonChanged) {
+            //     console.log("=".repeat(60));
+            // }
         }
     }
 
