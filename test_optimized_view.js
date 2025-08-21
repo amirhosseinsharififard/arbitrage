@@ -3,49 +3,36 @@ import WebInterface from './web_interface.js';
 // Mock exchange data for testing optimized view
 const mockExchangeData = {
     exchanges: {
-        lbank: {
-            name: 'LBank',
-            bid: 0.000722,
-            ask: 0.000726,
+        mexc: {
+            name: 'MEXC',
+            bid: 0.000764,
+            ask: 0.000775,
             symbol: 'DEBT/USDT',
             timestamp: Date.now()
         },
-        mexc: {
-            name: 'MEXC',
-            bid: 0.000739,
-            ask: 0.00074,
+        lbank: {
+            name: 'LBank',
+            bid: 0.000764,
+            ask: 0.000769,
             symbol: 'DEBT/USDT',
             timestamp: Date.now()
         },
         kcex: {
             name: 'KCEX',
-            bid: 0.000739,
-            ask: 0.00074,
+            bid: 0.000764,
+            ask: 0.000775,
             symbol: 'DEBT/USDT',
             timestamp: Date.now()
         },
         dexscreener: {
             name: 'DexScreener',
-            bid: 0.0007297,
+            bid: 0.0007765,
             ask: null,
             symbol: 'DEBT/USDT',
             isDEX: true,
             timestamp: Date.now()
         },
-        binance: {
-            name: 'Binance',
-            bid: 0.000735,
-            ask: 0.000738,
-            symbol: 'DEBT/USDT',
-            timestamp: Date.now()
-        },
-        coinbase: {
-            name: 'Coinbase',
-            bid: 0.000732,
-            ask: 0.000740,
-            symbol: 'DEBT/USDT',
-            timestamp: Date.now()
-        }
+
     }
 };
 
@@ -65,7 +52,9 @@ class OptimizedViewWebInterface extends WebInterface {
                     tradeVolumeUSD: 200,
                     profitThresholdPercent: 3.1,
                     closeThresholdPercent: 2.5,
-                    intervalMs: 50
+                    intervalMs: 50,
+                    exchanges: ['MEXC', 'LBank', 'KCEX', 'DexScreener'],
+                    symbol: 'DEBT/USDT'
                 }
             };
             
@@ -79,18 +68,14 @@ class OptimizedViewWebInterface extends WebInterface {
     broadcastDataUpdate() {
         if (this.isRunning) {
             try {
-                // Simulate changing prices for all exchanges
-                mockExchangeData.exchanges.lbank.bid = (0.000720 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.lbank.ask = (0.000724 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.mexc.bid = (0.000737 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.mexc.ask = (0.000738 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.kcex.bid = (0.000737 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.kcex.ask = (0.000738 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.dexscreener.bid = (0.000727 + Math.random() * 0.000010).toFixed(6);
-                mockExchangeData.exchanges.binance.bid = (0.000730 + Math.random() * 0.000015).toFixed(6);
-                mockExchangeData.exchanges.binance.ask = (0.000735 + Math.random() * 0.000015).toFixed(6);
-                mockExchangeData.exchanges.coinbase.bid = (0.000728 + Math.random() * 0.000015).toFixed(6);
-                mockExchangeData.exchanges.coinbase.ask = (0.000737 + Math.random() * 0.000015).toFixed(6);
+                // Simulate changing prices based on real system ranges
+                mockExchangeData.exchanges.mexc.bid = parseFloat((0.000762 + Math.random() * 0.000008).toFixed(6));
+                mockExchangeData.exchanges.mexc.ask = parseFloat((0.000772 + Math.random() * 0.000008).toFixed(6));
+                mockExchangeData.exchanges.lbank.bid = parseFloat((0.000764 + Math.random() * 0.000006).toFixed(6));
+                mockExchangeData.exchanges.lbank.ask = parseFloat((0.000769 + Math.random() * 0.000006).toFixed(6));
+                mockExchangeData.exchanges.kcex.bid = parseFloat((0.000764 + Math.random() * 0.000006).toFixed(6));
+                mockExchangeData.exchanges.kcex.ask = parseFloat((0.000775 + Math.random() * 0.000006).toFixed(6));
+                mockExchangeData.exchanges.dexscreener.bid = parseFloat((0.0007760 + Math.random() * 0.000010).toFixed(6));
                 
                 // Update timestamps
                 Object.values(mockExchangeData.exchanges).forEach(exchange => {
@@ -104,7 +89,9 @@ class OptimizedViewWebInterface extends WebInterface {
                         tradeVolumeUSD: 200,
                         profitThresholdPercent: 3.1,
                         closeThresholdPercent: 2.5,
-                        intervalMs: 50
+                        intervalMs: 50,
+                        exchanges: ['MEXC', 'LBank', 'KCEX', 'DexScreener'],
+                        symbol: 'DEBT/USDT'
                     }
                 };
                 

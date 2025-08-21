@@ -350,7 +350,7 @@ export async function printBidAskPairs(symbols, exchanges) {
             name: 'LBank',
             bid: lbankPrice.bid,
             ask: lbankPrice.ask,
-            symbol: lbankPrice.symbol,
+            symbol: 'DEBT/USDT', // Normalize symbol
             timestamp: lbankPrice.timestamp
         };
     }
@@ -360,7 +360,7 @@ export async function printBidAskPairs(symbols, exchanges) {
             name: 'MEXC',
             bid: mexcPrice.bid,
             ask: mexcPrice.ask,
-            symbol: mexcPrice.symbol,
+            symbol: 'DEBT/USDT', // Normalize symbol
             timestamp: mexcPrice.timestamp
         };
     }
@@ -370,27 +370,19 @@ export async function printBidAskPairs(symbols, exchanges) {
             name: 'KCEX',
             bid: kcexPrice.bid,
             ask: kcexPrice.ask,
-            symbol: kcexPrice.symbol,
+            symbol: 'DEBT/USDT', // Normalize symbol
             timestamp: kcexPrice.timestamp
         };
     }
 
-    if (xtPrice && xtPrice.bid !== null) {
-        exchangeDataForWeb.exchanges.xt = {
-            name: 'XT',
-            bid: xtPrice.bid,
-            ask: xtPrice.ask,
-            symbol: xtPrice.symbol,
-            timestamp: xtPrice.timestamp
-        };
-    }
+
 
     if (dexscreenerPrice && dexscreenerPrice.bid !== null) {
         exchangeDataForWeb.exchanges.dexscreener = {
             name: 'DexScreener',
             bid: dexscreenerPrice.bid,
             ask: dexscreenerPrice.ask,
-            symbol: dexscreenerPrice.symbol,
+            symbol: 'DEBT/USDT', // Normalize symbol
             isDEX: true,
             timestamp: dexscreenerPrice.timestamp
         };

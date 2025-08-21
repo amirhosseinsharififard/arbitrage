@@ -277,6 +277,44 @@
             font-size: 16px;
         }
 
+        .spread.high-profit {
+            color: #22c55e;
+            font-weight: bold;
+            font-size: 17px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .spread.high-loss {
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 17px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .spread.dex-profit {
+            color: #059669;
+            font-weight: bold;
+            font-size: 16px;
+            background: rgba(5, 150, 105, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .spread.dex-small-profit {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .spread.dex-loss {
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
         .no-data {
             color: #cbd5e0;
             font-style: italic;
@@ -421,8 +459,13 @@
         // Data update handling
         socket.on('data-update', (data) => {
             console.log('📊 Received exchange data update:', data);
-            updateExchangeMatrix(data.exchangeData);
-            updateTimestamp(data.timestamp);
+            if (data && data.exchangeData) {
+                console.log('📊 Exchange data:', data.exchangeData);
+                updateExchangeMatrix(data.exchangeData);
+                updateTimestamp(data.timestamp);
+            } else {
+                console.error('❌ Invalid data format received:', data);
+            }
         });
 
         function updateExchangeMatrix(exchangeData) {
@@ -434,9 +477,13 @@
                 return;
             }
 
-            // Get unique symbols
-            const symbols = [...new Set(Object.values(exchangeData.exchanges).map(ex => ex.symbol).filter(Boolean))];
+            // Get unique symbols (normalize them)
+            const symbols = [...new Set(Object.values(exchangeData.exchanges).map(ex => ex.symbol ? ex.symbol.replace(':USDT', '') : '').filter(Boolean))];
             const exchanges = Object.keys(exchangeData.exchanges);
+            
+            console.log('🔍 Debug - Symbols:', symbols);
+            console.log('🔍 Debug - Exchanges:', exchanges);
+            console.log('🔍 Debug - Exchange data:', exchangeData.exchanges);
 
             // Create exchange pairs for columns
             const exchangePairs = [];
@@ -483,6 +530,8 @@
             // Update body
             let bodyHtml = '';
             
+            console.log('🔍 Debug - Processing symbols:', symbols);
+            
             symbols.forEach(symbol => {
                 // First row: Symbol + Forward pairs
                 bodyHtml += '<tr>';
@@ -492,25 +541,50 @@
                     const exchangeA = exchangeData.exchanges[pair.exchangeA];
                     const exchangeB = exchangeData.exchanges[pair.exchangeB];
                     
-                    // Check if both exchanges have data for this symbol
-                    if (exchangeA.symbol === symbol && exchangeB.symbol === symbol) {
+                    // Check if both exchanges have data for this symbol (normalize symbols)
+                    const normalizedSymbolA = exchangeA.symbol ? exchangeA.symbol.replace(':USDT', '') : '';
+                    const normalizedSymbolB = exchangeB.symbol ? exchangeB.symbol.replace(':USDT', '') : '';
+                    const normalizedSymbol = symbol.replace(':USDT', '');
+                    
+                    // Check if both exchanges have valid data (bid or ask)
+                    const hasValidData = (exchangeA.bid !== null || exchangeA.ask !== null) && 
+                                       (exchangeB.bid !== null || exchangeB.bid !== null);
+                    
+                    if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
                         const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
                         const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
                         
-                        // Calculate spread between exchanges
+                        // Calculate spread between exchanges with enhanced logic
                         let spread = 'N/A';
                         let spreadClass = 'spread';
+                        
                         if (exchangeA.ask && exchangeB.bid) {
                             const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(2) + '%';
+                            spread = spreadPercent.toFixed(3) + '%';
                             
-                            // Add color based on spread value
-                            if (spreadPercent > 0) {
+                            // Enhanced color coding based on spread ranges
+                            if (spreadPercent > 2) {
+                                spreadClass = 'spread high-profit';
+                            } else if (spreadPercent > 0) {
                                 spreadClass = 'spread profit';
+                            } else if (spreadPercent < -2) {
+                                spreadClass = 'spread high-loss';
                             } else if (spreadPercent < 0) {
                                 spreadClass = 'spread loss';
                             } else {
                                 spreadClass = 'spread neutral';
+                            }
+                        } else if (exchangeB.isDEX && exchangeA.ask && exchangeB.bid) {
+                            // Special DEX handling
+                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                            spread = spreadPercent.toFixed(3) + '%';
+                            
+                            if (spreadPercent > 1) {
+                                spreadClass = 'spread dex-profit';
+                            } else if (spreadPercent > 0) {
+                                spreadClass = 'spread dex-small-profit';
+                            } else {
+                                spreadClass = 'spread dex-loss';
                             }
                         }
                         
@@ -542,25 +616,50 @@
                     const exchangeA = exchangeData.exchanges[pair.reverseA];
                     const exchangeB = exchangeData.exchanges[pair.reverseB];
                     
-                    // Check if both exchanges have data for this symbol
-                    if (exchangeA.symbol === symbol && exchangeB.symbol === symbol) {
+                    // Check if both exchanges have data for this symbol (normalize symbols)
+                    const normalizedSymbolA = exchangeA.symbol ? exchangeA.symbol.replace(':USDT', '') : '';
+                    const normalizedSymbolB = exchangeB.symbol ? exchangeB.symbol.replace(':USDT', '') : '';
+                    const normalizedSymbol = symbol.replace(':USDT', '');
+                    
+                    // Check if both exchanges have valid data (bid or ask)
+                    const hasValidData = (exchangeA.bid !== null || exchangeA.ask !== null) && 
+                                       (exchangeB.bid !== null || exchangeB.bid !== null);
+                    
+                    if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
                         const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
                         const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
                         
-                        // Calculate spread between exchanges
+                        // Calculate spread between exchanges with enhanced logic
                         let spread = 'N/A';
                         let spreadClass = 'spread';
+                        
                         if (exchangeA.ask && exchangeB.bid) {
                             const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(2) + '%';
+                            spread = spreadPercent.toFixed(3) + '%';
                             
-                            // Add color based on spread value
-                            if (spreadPercent > 0) {
+                            // Enhanced color coding based on spread ranges
+                            if (spreadPercent > 2) {
+                                spreadClass = 'spread high-profit';
+                            } else if (spreadPercent > 0) {
                                 spreadClass = 'spread profit';
+                            } else if (spreadPercent < -2) {
+                                spreadClass = 'spread high-loss';
                             } else if (spreadPercent < 0) {
                                 spreadClass = 'spread loss';
                             } else {
                                 spreadClass = 'spread neutral';
+                            }
+                        } else if (exchangeB.isDEX && exchangeA.ask && exchangeB.bid) {
+                            // Special DEX handling
+                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                            spread = spreadPercent.toFixed(3) + '%';
+                            
+                            if (spreadPercent > 1) {
+                                spreadClass = 'spread dex-profit';
+                            } else if (spreadPercent > 0) {
+                                spreadClass = 'spread dex-small-profit';
+                            } else {
+                                spreadClass = 'spread dex-loss';
                             }
                         }
                         
