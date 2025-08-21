@@ -204,6 +204,18 @@
             border-left: 3px solid #e9ecef;
         }
 
+        .exchange-cell.dex-cell {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 3px solid #0ea5e9;
+            border-right: 3px solid #0ea5e9;
+        }
+
+        .dex-bid {
+            color: #0ea5e9;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
         .symbol-cell {
             vertical-align: middle;
             text-align: center;
@@ -503,6 +515,9 @@
             }
         });
 
+        /**
+         * Enhanced DEX display with proper order: DEX Bid -> Exchange Bid first, then DEX Bid -> Exchange Ask
+         */
         function updateExchangeMatrix(exchangeData) {
             const header = document.getElementById('matrixHeader');
             const tbody = document.getElementById('matrixBody');
@@ -520,7 +535,7 @@
             console.log('🔍 Debug - Exchanges:', exchanges);
             console.log('🔍 Debug - Exchange data:', exchangeData.exchanges);
 
-            // Create exchange pairs for columns
+            // Create exchange pairs for columns with enhanced DEX handling
             const exchangePairs = [];
             const usedPairs = new Set();
             
@@ -544,7 +559,8 @@
                                 reverseA: exchanges[j],
                                 reverseB: exchanges[i],
                                 reverseNameA: exchangeB.name,
-                                reverseNameB: exchangeA.name
+                                reverseNameB: exchangeA.name,
+                                isDEXPair: exchangeA.isDEX || exchangeB.isDEX
                             });
                             
                             usedPairs.add(pairKey);
@@ -554,15 +570,40 @@
                 }
             }
 
-            // Update header
+            // Update header with enhanced DEX display
             let headerHtml = '<tr><th class="sticky-col">Symbol</th>';
             exchangePairs.forEach(pair => {
-                headerHtml += `<th>${pair.nameA}(Bid)/${pair.nameB}(Ask)</th>`;
+                const exchangeA = exchangeData.exchanges[pair.exchangeA];
+                const exchangeB = exchangeData.exchanges[pair.exchangeB];
+                
+                if (exchangeB.isDEX || exchangeA.isDEX) {
+                    // DEX pair: show both DEX Bid -> Exchange Bid and DEX Bid -> Exchange Ask
+                    headerHtml += `<th colspan="2">🟢 DEX ${exchangeB.isDEX ? pair.nameB : pair.nameA} ↔ ${exchangeB.isDEX ? pair.nameA : pair.nameB}</th>`;
+                } else {
+                    // Regular pair
+                    headerHtml += `<th>${pair.nameA}(Bid)/${pair.nameB}(Ask)</th>`;
+                }
             });
             headerHtml += '</tr>';
-            header.innerHTML = headerHtml;
+            
+            // Add sub-header for DEX pairs
+            let subHeaderHtml = '<tr><th class="sticky-col"></th>';
+            exchangePairs.forEach(pair => {
+                const exchangeA = exchangeData.exchanges[pair.exchangeA];
+                const exchangeB = exchangeData.exchanges[pair.exchangeB];
+                
+                if (exchangeB.isDEX || exchangeA.isDEX) {
+                    subHeaderHtml += `<th style="font-size: 0.8rem; background: rgba(102, 126, 234, 0.1);">DEX Bid → Exchange Bid</th>`;
+                    subHeaderHtml += `<th style="font-size: 0.8rem; background: rgba(102, 126, 234, 0.1);">DEX Bid → Exchange Ask</th>`;
+                } else {
+                    subHeaderHtml += `<th></th>`;
+                }
+            });
+            subHeaderHtml += '</tr>';
+            
+            header.innerHTML = headerHtml + subHeaderHtml;
 
-            // Update body
+            // Update body with enhanced DEX calculations
             let bodyHtml = '';
             
             console.log('🔍 Debug - Processing symbols:', symbols);
@@ -586,65 +627,98 @@
                                        (exchangeB.bid !== null || exchangeB.bid !== null);
                     
                     if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
-                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                        
-                        // Calculate spread between exchanges with enhanced logic
-                        let spread = 'N/A';
-                        let spreadClass = 'spread';
-                        
-                        if (exchangeA.ask && exchangeB.bid) {
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                        if (exchangeB.isDEX || exchangeA.isDEX) {
+                            // DEX pair: show both calculations
+                            const dexExchange = exchangeB.isDEX ? exchangeB : exchangeA;
+                            const regularExchange = exchangeB.isDEX ? exchangeA : exchangeB;
                             
-                            // Enhanced color coding based on spread ranges
-                            if (spreadPercent > 2) {
-                                spreadClass = 'spread high-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread profit';
-                            } else if (spreadPercent < -2) {
-                                spreadClass = 'spread high-loss';
-                            } else if (spreadPercent < 0) {
-                                spreadClass = 'spread loss';
-                            } else {
-                                spreadClass = 'spread neutral';
-                            }
-                        } else if (exchangeB.isDEX && exchangeA.ask && exchangeB.bid) {
-                            // Special DEX handling
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                            // First: DEX Bid -> Exchange Bid
+                            const dexBidToExchangeBid = dexExchange.bid && regularExchange.bid ? 
+                                ((regularExchange.bid - dexExchange.bid) / dexExchange.bid * 100).toFixed(3) : 'N/A';
                             
-                            if (spreadPercent > 1) {
-                                spreadClass = 'spread dex-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread dex-small-profit';
-                            } else {
-                                spreadClass = 'spread dex-loss';
+                            // Second: DEX Bid -> Exchange Ask
+                            const dexBidToExchangeAsk = dexExchange.bid && regularExchange.ask ? 
+                                ((regularExchange.ask - dexExchange.bid) / dexExchange.bid * 100).toFixed(3) : 'N/A';
+                            
+                            bodyHtml += `
+                                <td class="exchange-cell dex-cell">
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="dex-bid">DEX ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
+                                            <span class="separator">→</span>
+                                            <span class="bid-price">${regularExchange.bid ? '$' + regularExchange.bid.toFixed(6) : 'N/A'}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="spread ${parseFloat(dexBidToExchangeBid) > 0 ? 'profit' : 'loss'}">${dexBidToExchangeBid}%</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="exchange-cell dex-cell">
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="dex-bid">DEX ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
+                                            <span class="separator">→</span>
+                                            <span class="ask-price">${regularExchange.ask ? '$' + regularExchange.ask.toFixed(6) : 'N/A'}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="spread ${parseFloat(dexBidToExchangeAsk) > 0 ? 'profit' : 'loss'}">${dexBidToExchangeAsk}%</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
+                        } else {
+                            // Regular exchange pair
+                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
+                            
+                            // Calculate spread between exchanges
+                            let spread = 'N/A';
+                            let spreadClass = 'spread';
+                            
+                            if (exchangeA.ask && exchangeB.bid) {
+                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                                spread = spreadPercent.toFixed(3) + '%';
+                                
+                                if (spreadPercent > 2) {
+                                    spreadClass = 'spread high-profit';
+                                } else if (spreadPercent > 0) {
+                                    spreadClass = 'spread profit';
+                                } else if (spreadPercent < -2) {
+                                    spreadClass = 'spread high-loss';
+                                } else if (spreadPercent < 0) {
+                                    spreadClass = 'spread loss';
+                                } else {
+                                    spreadClass = 'spread neutral';
+                                }
                             }
+                            
+                            bodyHtml += `
+                                <td class="exchange-cell">
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="ask-price">${askA}</span>
+                                            <span class="separator">/</span>
+                                            <span class="bid-price">${bidB}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="${spreadClass}">${spread}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
                         }
-                        
-                        bodyHtml += `
-                            <td class="exchange-cell">
-                                <div class="price-pair">
-                                    <div class="price-row">
-                                        <span class="ask-price">${askA}</span>
-                                        <span class="separator">/</span>
-                                        <span class="bid-price">${bidB}</span>
-                                    </div>
-                                    <div class="spread-row">
-                                        <span class="${spreadClass}">${spread}</span>
-                                    </div>
-                                </div>
-                            </td>
-                        `;
                     } else {
-                        bodyHtml += `<td class="exchange-cell no-data">-</td>`;
+                        if (exchangeB.isDEX || exchangeA.isDEX) {
+                            bodyHtml += `<td class="exchange-cell no-data">-</td><td class="exchange-cell no-data">-</td>`;
+                        } else {
+                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
+                        }
                     }
                 });
                 
                 bodyHtml += '</tr>';
                 
-                // Second row: Empty + Reverse pairs
+                // Second row: Reverse pairs (only for regular exchanges)
                 bodyHtml += '<tr class="reverse-row">';
                 
                 exchangePairs.forEach(pair => {
@@ -661,62 +735,59 @@
                                        (exchangeB.bid !== null || exchangeB.bid !== null);
                     
                     if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
-                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                        
-                        // Calculate spread between exchanges with enhanced logic
-                        let spread = 'N/A';
-                        let spreadClass = 'spread';
-                        
-                        if (exchangeA.ask && exchangeB.bid) {
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                        if (exchangeB.isDEX || exchangeA.isDEX) {
+                            // Skip reverse for DEX pairs (already shown in first row)
+                            bodyHtml += `<td class="exchange-cell no-data">-</td><td class="exchange-cell no-data">-</td>`;
+                        } else {
+                            // Regular reverse exchange pair
+                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
                             
-                            // Enhanced color coding based on spread ranges
-                            if (spreadPercent > 2) {
-                                spreadClass = 'spread high-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread profit';
-                            } else if (spreadPercent < -2) {
-                                spreadClass = 'spread high-loss';
-                            } else if (spreadPercent < 0) {
-                                spreadClass = 'spread loss';
-                            } else {
-                                spreadClass = 'spread neutral';
-                            }
-                        } else if (exchangeB.isDEX && exchangeA.ask && exchangeB.bid) {
-                            // Special DEX handling
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                            // Calculate spread between exchanges
+                            let spread = 'N/A';
+                            let spreadClass = 'spread';
                             
-                            if (spreadPercent > 1) {
-                                spreadClass = 'spread dex-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread dex-small-profit';
-                            } else {
-                                spreadClass = 'spread dex-loss';
+                            if (exchangeA.ask && exchangeB.bid) {
+                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                                spread = spreadPercent.toFixed(3) + '%';
+                                
+                                if (spreadPercent > 2) {
+                                    spreadClass = 'spread high-profit';
+                                } else if (spreadPercent > 0) {
+                                    spreadClass = 'spread profit';
+                                } else if (spreadPercent < -2) {
+                                    spreadClass = 'spread high-loss';
+                                } else if (spreadPercent < 0) {
+                                    spreadClass = 'spread loss';
+                                } else {
+                                    spreadClass = 'spread neutral';
+                                }
                             }
+                            
+                            bodyHtml += `
+                                <td class="exchange-cell reverse">
+                                    <div class="reverse-pair-header">
+                                        <span class="reverse-name">${pair.reverseNameA}(Bid)/${pair.reverseNameB}(Ask)</span>
+                                    </div>
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="ask-price">${askA}</span>
+                                            <span class="separator">/</span>
+                                            <span class="bid-price">${bidB}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="${spreadClass}">${spread}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
                         }
-                        
-                        bodyHtml += `
-                            <td class="exchange-cell reverse">
-                                <div class="reverse-pair-header">
-                                    <span class="reverse-name">${pair.reverseNameA}(Bid)/${pair.reverseNameB}(Ask)</span>
-                                </div>
-                                <div class="price-pair">
-                                    <div class="price-row">
-                                        <span class="ask-price">${askA}</span>
-                                        <span class="separator">/</span>
-                                        <span class="bid-price">${bidB}</span>
-                                    </div>
-                                    <div class="spread-row">
-                                        <span class="${spreadClass}">${spread}</span>
-                                    </div>
-                                </div>
-                            </td>
-                        `;
                     } else {
-                        bodyHtml += `<td class="exchange-cell reverse no-data">-</td>`;
+                        if (exchangeB.isDEX || exchangeA.isDEX) {
+                            bodyHtml += `<td class="exchange-cell no-data">-</td><td class="exchange-cell no-data">-</td>`;
+                        } else {
+                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
+                        }
                     }
                 });
                 
