@@ -40,6 +40,40 @@
         .header .status {
             font-size: 1rem;
             opacity: 0.9;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timer-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .timer-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #realTimeTimer {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
 
         .dashboard {
@@ -389,8 +423,14 @@
         <div class="header">
             <h1>🚀 Arbitrage Trading System</h1>
             <div class="status">
-                <span class="status-indicator status-active" id="connectionStatus"></span>
-                <span id="connectionText">Connecting...</span>
+                <div class="status-row">
+                    <span class="status-indicator status-active" id="connectionStatus"></span>
+                    <span id="connectionText">Connecting...</span>
+                </div>
+                <div class="timer-row">
+                    <span class="timer-label">🕐 Last Update:</span>
+                    <span id="realTimeTimer">--:--:--</span>
+                </div>
             </div>
         </div>
 
@@ -420,12 +460,7 @@
             Last update: Never
         </div>
         
-        <!-- Test Button -->
-        <div style="text-align: center; margin-top: 10px;">
-            <button onclick="testConnection()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
-                🔄 Test Connection
-            </button>
-        </div>
+
     </div>
 
     <script>
@@ -449,10 +484,10 @@
             
             if (connected) {
                 statusIndicator.className = 'status-indicator status-active';
-                statusText.textContent = 'Connected - Real-time updates active';
+                statusText.textContent = '🌐 Connected - Real-time updates active';
             } else {
                 statusIndicator.className = 'status-indicator status-inactive';
-                statusText.textContent = 'Disconnected - Trying to reconnect...';
+                statusText.textContent = '❌ Disconnected - Trying to reconnect...';
             }
         }
 
@@ -462,7 +497,7 @@
             if (data && data.exchangeData) {
                 console.log('📊 Exchange data:', data.exchangeData);
                 updateExchangeMatrix(data.exchangeData);
-                updateTimestamp(data.timestamp);
+                updateRealTimeTimer(data.timestamp);
             } else {
                 console.error('❌ Invalid data format received:', data);
             }
@@ -695,6 +730,21 @@
 
 
 
+        function updateRealTimeTimer(timestamp) {
+            const date = new Date(timestamp);
+            const timeString = date.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('realTimeTimer').textContent = timeString;
+            
+            // Also update the bottom timestamp
+            document.getElementById('lastUpdate').textContent = 
+                `Last update: ${date.toLocaleString()}`;
+        }
+
         function updateTimestamp(timestamp) {
             const date = new Date(timestamp);
             document.getElementById('lastUpdate').textContent = 
@@ -713,6 +763,21 @@
             }).format(num);
         }
 
+        // Initialize timer with current time
+        function initializeTimer() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('realTimeTimer').textContent = timeString;
+        }
+
+        // Initialize timer on page load
+        initializeTimer();
+
         // Auto-refresh connection status
         setInterval(() => {
             if (!isConnected) {
@@ -720,15 +785,7 @@
             }
         }, 5000);
 
-        // Test connection function
-        function testConnection() {
-            console.log('🧪 Testing connection...');
-            if (isConnected) {
-                alert('✅ Connection is active! Check console for data updates.');
-            } else {
-                alert('❌ Connection is not active. Please check if the server is running.');
-            }
-        }
+
     </script>
 </body>
 </html>
