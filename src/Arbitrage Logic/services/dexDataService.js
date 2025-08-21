@@ -40,12 +40,13 @@ class DexDataService {
     /**
      * Get price from DexScreener (current implementation)
      * @param {string} contractAddress - Token contract address
+     * @param {string} network - Network name (e.g., 'base', 'bsc', 'solana')
      * @returns {object} Price data
      */
-    async getDexScreenerPrice(contractAddress) {
+    async getDexScreenerPrice(contractAddress, network = 'base') {
         try {
-            // Use pairs endpoint directly for Base chain
-            let apiUrl = `${this.sources.dexscreener.baseUrl}/pairs/base/${contractAddress}`;
+            // Use pairs endpoint directly for specified network
+            let apiUrl = `${this.sources.dexscreener.baseUrl}/pairs/${network}/${contractAddress}`;
             let response = await axios.get(apiUrl, { 
                 timeout: 10000,
                 headers: {
@@ -223,7 +224,7 @@ class DexDataService {
         };
 
         // Get DexScreener price (always available)
-        const dexScreenerResult = await this.getDexScreenerPrice(contractAddress);
+        const dexScreenerResult = await this.getDexScreenerPrice(contractAddress, 'solana');
         if (dexScreenerResult.success) {
             results.dexscreener = dexScreenerResult.data;
             results.sources.push('dexscreener');
@@ -264,7 +265,7 @@ class DexDataService {
      */
     async getLiquidityInfo(contractAddress) {
         try {
-            const dexScreenerResult = await this.getDexScreenerPrice(contractAddress);
+            const dexScreenerResult = await this.getDexScreenerPrice(contractAddress, 'solana');
             
             if (dexScreenerResult.success) {
                 return {

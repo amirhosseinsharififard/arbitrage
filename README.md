@@ -4,6 +4,12 @@ A sophisticated cryptocurrency arbitrage trading system that automatically ident
 
 ## 🚀 Key Features
 
+### **🌐 Real-time Web Interface**
+- **Beautiful Dashboard**: Modern, responsive web interface with real-time data updates
+- **Two-section Layout**: Trading Status and Session Statistics displayed in organized tables
+- **Live Updates**: Data automatically refreshes when trading system processes changes
+- **Connection Status**: Visual indicator showing real-time connection to trading system
+
 ### **Dual Trading Modes**
 - **USD-Based Trading**: Traditional dollar amount-based trading (e.g., $200 total investment)
 - **Token Quantity-Based Trading**: Trade based on specific token quantities (e.g., 1000 DEBT tokens)
@@ -53,6 +59,26 @@ volume = targetTokenQuantity
 
 // Both represent actual token count, not scaled values
 ```
+
+## 🌐 Web Interface
+
+### **Quick Start**
+1. **Start the system**: `npm start` or run `start_with_web.bat`
+2. **Open browser**: Navigate to `http://localhost:3000`
+3. **Monitor data**: Real-time updates will appear automatically
+
+### **Dashboard Sections**
+- **📊 Trading Status**: Current position status, P&L, trade counts, and investment
+- **📈 Session Statistics**: Win rate, profitable/losing trades, best/worst trades
+- **⚙️ System Configuration**: Current trading parameters and thresholds
+
+### **Features**
+- **Real-time Updates**: Data refreshes automatically when trading system processes changes
+- **Connection Status**: Visual indicator showing connection to trading system
+- **Responsive Design**: Works on desktop and mobile devices
+- **No Authentication**: Designed for local monitoring (development use)
+
+For detailed web interface documentation, see [WEB_INTERFACE_README.md](WEB_INTERFACE_README.md).
 
 ## ⚙️ Configuration
 

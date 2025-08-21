@@ -10,8 +10,8 @@ class DexScreenerApiService {
 
 	/**
 	 * Fetch bid price (DEX) using DexScreener public API
-	 * @param {string} tokenAddress EVM token contract address
-	 * @param {string} network Network name (e.g., 'base', 'bsc', 'ethereum')
+	 * @param {string} tokenAddress Token contract address (EVM or Solana)
+	 * @param {string} network Network name (e.g., 'base', 'bsc', 'ethereum', 'solana')
 	 * @returns {{bid:number|null, ask:null, exchangeId:string, symbol:string|null, timestamp:number, isDEX:true, error:string|null}}
 	 */
 	async getBidPriceByToken(tokenAddress, network = 'base') {

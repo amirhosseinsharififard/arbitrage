@@ -6,13 +6,13 @@ const config = {
     // Trading symbols configuration for each exchange
     // MEXC, LBank, Ourbit, XT, KCEX, and DexScreener+ exchange configuration
     symbols: {
-        ourbit: "BSU/USDT", // Ourbit exchange symbol
+        ourbit: "DEBT/USDT", // Ourbit exchange symbol
 
-        mexc: "BSU/USDT:USDT", // MEXC exchange symbol
-        lbank: "BSU/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
-        xt: "BSU/USDT", // XT exchange symbol
-        kcex: "BSU/USDT", // KCEX exchange symbol
-        dexscreener: "BSU/USDT", // DexScreener+ exchange symbol
+        mexc: "DEBT/USDT:USDT", // MEXC exchange symbol
+        lbank: "DEBT/USDT:USDT", // LBank exchange symbol (with :USDT suffix)
+        xt: "DEBT/USDT", // XT exchange symbol
+        kcex: "DEBT/USDT", // KCEX exchange symbol
+        dexscreener: "DEBT/USDT", // DexScreener+ exchange symbol
     },
 
     // System timing and performance settings
@@ -63,7 +63,7 @@ const config = {
 
     // Ourbit Puppeteer configuration
     ourbit: {
-        enabled: true, // Toggle to enable/disable Ourbit Puppeteer data collection
+        enabled: false, // Toggle to enable/disable Ourbit Puppeteer data collection
         url: "https://futures.ourbit.com/fa-IR/exchange/BSU_USDT?type=linear_swap",
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
@@ -110,7 +110,7 @@ const config = {
     // KCEX Puppeteer configuration
     kcex: {
         enabled: true, // Toggle to enable/disable KCEX Puppeteer data collection
-        url: "https://www.kcex.com/futures/exchange/BSU_USDT", // KCEX exchange URL for BTC/USDT futures pair
+        url: "https://www.kcex.com/futures/exchange/DEBT_USDT", // KCEX exchange URL for BTC/USDT futures pair
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {
             bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span", // Bid price selector
@@ -133,12 +133,12 @@ const config = {
     // DexScreener+ Puppeteer configuration (DEX - bid only)
     dexscreener: {
         enabled: true, // Toggle to enable/disable DexScreener+ data collection
-        url: "https://dexscreener.com/bsc/0xbee2c57e3a11220e2b948e26965daaa9dfd87a4a", // DexScreener URL
+        url: "https://dexscreener.com/solana/9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex", // DexScreener URL for Solana token
         updateInterval: 100, // Price update interval in milliseconds
         // Prefer official public API to avoid Cloudflare blocks
         useApi: true, // If true, use DexScreener public API instead of Puppeteer
-        contractAddress: "0xbee2c57e3a11220e2b948e26965daaa9dfd87a4a", // Token contract on BSC
-        network: "bsc", // Network: bsc (Binance Smart Chain)
+        contractAddress: "9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex", // Token contract on Solana
+        network: "solana", // Network: solana
         selectors: {
             bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div", // Bid price selector (DEX only has bid)
             askPrice: null // DexScreener is DEX - no ask price available

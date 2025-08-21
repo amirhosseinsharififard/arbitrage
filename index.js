@@ -12,7 +12,7 @@
  * arbitrage trades based on configured thresholds and strategies.
  */
 
-import { printBidAskPairs } from "./src/Arbitrage Logic/prices.js";
+import { printBidAskPairs, setWebInterface } from "./src/Arbitrage Logic/prices.js";
 import config from "./src/Arbitrage Logic/config/config.js";
 import { retryWrapper } from "./src/Arbitrage Logic/error/errorBoundary.js";
 import exchangeManager from "./src/Arbitrage Logic/exchanges/exchangeManager.js";
@@ -23,6 +23,10 @@ import logger from "./src/Arbitrage Logic/logging/logger.js";
 import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
 import "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 import { lbankPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
+import WebInterface from "./web_interface.js";
+
+// Global web interface instance
+let webInterface = null;
 
 /**
  * Initialize the system on startup
@@ -31,6 +35,7 @@ import { lbankPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/s
  * - Clears log files based on configuration
  * - Resets session statistics for fresh start
  * - Prepares system for trading operations
+ * - Starts web interface for real-time monitoring
  * 
  * @throws {Error} If system initialization fails
  */
@@ -50,6 +55,20 @@ async function initializeSystem() {
 
         // Performance monitoring is initialized by side-effect import
 
+        // Initialize and start web interface
+        webInterface = new WebInterface();
+        await webInterface.start();
+
+        // Set web interface reference in prices module for data broadcasting
+        setWebInterface(webInterface);
+
+        // Register web interface cleanup with exit handler
+        exitHandler.addExitHandler(async() => {
+            if (webInterface) {
+                webInterface.stop();
+            }
+        });
+
         console.log("✅ System initialization completed!");
     } catch (error) {
         console.error(`❌ System initialization failed: ${error.message}`);
@@ -63,6 +82,7 @@ async function initializeSystem() {
  * Shows current P&L, trade counts, and investment information
  * for monitoring and debugging purposes. Updates are displayed
  * based on configuration settings.
+ * Also updates the web interface with real-time data.
  */
 function displayTradingStatus() {
     // Get current trading status from arbitrage module
@@ -74,6 +94,11 @@ function displayTradingStatus() {
     // Display detailed status if configured
     if (config.logSettings.printStatusToConsole) {
         statistics.displayFullStatus(status);
+    }
+
+    // Update web interface with real-time data
+    if (webInterface) {
+        webInterface.broadcastDataUpdate();
     }
 }
 

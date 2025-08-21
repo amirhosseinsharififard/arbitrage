@@ -12,7 +12,7 @@ console.log(`   Status: ✅ Always Available (No API key needed)`);
 console.log(`   Data: Price, Volume, Liquidity, DEX info`);
 
 try {
-    const dexScreenerResult = await dexDataService.getDexScreenerPrice(contractAddress);
+    const dexScreenerResult = await dexDataService.getDexScreenerPrice(contractAddress, 'solana');
     if (dexScreenerResult.success) {
         console.log(`   ✅ Price: $${dexScreenerResult.data.bid}`);
         console.log(`   📈 Volume 24h: $${dexScreenerResult.data.volume24h.toLocaleString()}`);
