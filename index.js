@@ -12,8 +12,8 @@
  * arbitrage trades based on configured thresholds and strategies.
  */
 
-import { printBidAskPairs, setWebInterface } from "./src/Arbitrage Logic/prices.js";
-import config from "./src/Arbitrage Logic/config/config.js";
+import { processAllCurrencies, setWebInterface } from "./src/Arbitrage Logic/core/multiCurrencyManager.js";
+import { getAvailableCurrencies } from "./src/Arbitrage Logic/config/multiCurrencyConfig.js";
 import { retryWrapper } from "./src/Arbitrage Logic/error/errorBoundary.js";
 import exchangeManager from "./src/Arbitrage Logic/exchanges/exchangeManager.js";
 import exitHandler from "./src/Arbitrage Logic/system/exitHandler.js";
@@ -43,8 +43,7 @@ async function initializeSystem() {
     try {
         console.log("🚀 Initializing arbitrage system...");
 
-        // Clear log files based on persistence configuration
-        // Respects preserve flags: do not clear logs/summaries if preserve flags are true
+        // Clear log files on startup
         await logger.clearLogFiles();
 
         // Reset session statistics to start fresh
@@ -59,7 +58,7 @@ async function initializeSystem() {
         webInterface = new WebInterface();
         await webInterface.start();
 
-        // Set web interface reference in prices module for data broadcasting
+        // Set web interface reference in multi-currency manager for data broadcasting
         setWebInterface(webInterface);
 
         // Register web interface cleanup with exit handler
@@ -91,10 +90,8 @@ function displayTradingStatus() {
     // Display basic status information
     console.log(`P&L: ${FormattingUtils.formatCurrency(status.totalProfit)} | Total trades: ${status.totalTrades} | Investment: ${FormattingUtils.formatCurrency(status.totalInvestment)}`);
 
-    // Display detailed status if configured
-    if (config.logSettings.printStatusToConsole) {
-        statistics.displayFullStatus(status);
-    }
+    // Display detailed status
+    statistics.displayFullStatus(status);
 
     // Update web interface with real-time data
     if (webInterface) {
@@ -119,52 +116,38 @@ function displayTradingStatus() {
  * @param {object} symbols - Trading symbols for each exchange
  * @param {number} intervalMs - Interval between price checks in milliseconds
  */
-async function startLoop(
-    symbols = config.symbols,
-    intervalMs = config.intervalMs
-) {
+async function startLoop(intervalMs = 50) {
     try {
         // Initialize the system components
         await initializeSystem();
 
-        // Initialize LBank price service (for LBank data) - only if enabled
-        if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) {
-            await lbankPriceService.initialize();
-        }
+        // Initialize LBank price service
+        await lbankPriceService.initialize();
 
-        // Initialize KCEX Puppeteer service (for KCEX data)
-        if (config.kcex.enabled) {
-            await kcexPuppeteerService.initialize();
+        // Initialize KCEX Puppeteer service
+        await kcexPuppeteerService.initialize();
 
-            // Register KCEX service cleanup with exit handler
-            exitHandler.addExitHandler(async() => {
-                await kcexPuppeteerService.cleanup();
-            });
-        }
+        // Register service cleanup with exit handler
+        exitHandler.addExitHandler(async() => {
+            await kcexPuppeteerService.cleanup();
+        });
 
         // Initialize exchange instances for trading (MEXC and LBank)
         await exchangeManager.initialize();
         const exchanges = exchangeManager.getAllExchanges();
 
         // Display system startup information
-        // Build list of enabled exchanges
-        const enabledExchanges = [];
-        if (config.exchanges.mexc && config.exchanges.mexc.enabled !== false) enabledExchanges.push('MEXC');
-        if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) enabledExchanges.push('LBank');
-        if (config.xt.enabled) enabledExchanges.push('XT');
-        if (config.kcex.enabled) enabledExchanges.push('KCEX');
-
-        console.log("🚀 Arbitrage system started!");
+        const availableCurrencies = getAvailableCurrencies();
+        
+        console.log("🚀 Multi-Currency Arbitrage System Started!");
         console.log(`⏱️  Check interval: ${intervalMs}ms`);
-        console.log(`💵 Trade volume: $${config.tradeVolumeUSD}`);
-        console.log(`📊 Profit threshold: ${config.profitThresholdPercent}%`);
-        console.log(`🔒 Close threshold: ${config.closeThresholdPercent}%`);
-        console.log(`🌐 Exchanges: ${enabledExchanges.join(' + ')}`);
+        console.log(`💰 Currencies: ${availableCurrencies.join(', ')}`);
+        console.log(`🌐 Exchanges: MEXC, LBank, KCEX, DexScreener`);
         console.log("=".repeat(60));
 
         // Initialize loop control variables
         let iterationCount = 0;
-        const statusUpdateInterval = config.statusUpdateInterval;
+        const statusUpdateInterval = 2000; // Status update every 2 seconds
 
         // Main trading loop - runs until shutdown is requested
         while (!exitHandler.isExitingNow()) {
@@ -178,17 +161,17 @@ async function startLoop(
 
                 // Removed iteration log to reduce console spam
 
-                // Process prices and execute arbitrage logic
-                // This is the core function that handles all trading decisions
-                await printBidAskPairs(symbols, exchanges);
+                // Process all currencies and execute arbitrage logic
+                // This is the core function that handles all trading decisions for multiple currencies
+                await processAllCurrencies(exchanges);
 
             } catch (error) {
                 // Handle errors in the main loop gracefully
                 console.error(`❌ Error in main loop: ${error.message || error}`);
-                console.log(`⏳ Waiting ${config.retryDelayMs / 1000} seconds before retrying...`);
+                console.log(`⏳ Waiting 2 seconds before retrying...`);
 
                 // Wait before retrying to avoid rapid error loops
-                await new Promise((r) => setTimeout(r, config.retryDelayMs));
+                await new Promise((r) => setTimeout(r, 2000));
                 continue;
             }
 

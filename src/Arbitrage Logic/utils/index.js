@@ -14,6 +14,7 @@
 
 // Import calculation utilities
 import * as CalculationUtils from './calculations.js';
+import calculationManager from './calculationManager.js';
 
 // Import formatting utilities
 import * as FormattingUtils from './formatting.js';
@@ -35,7 +36,8 @@ export {
     CommonUtils,
     ValidationUtils,
     OrderbookUtils,
-    computeSpreads
+    computeSpreads,
+    calculationManager
 };
 
 // Export individual calculation functions for direct access
@@ -50,3 +52,12 @@ export const {
     calculateSharpeRatio,
     calculateMaxDrawdown
 } = CalculationUtils;
+
+// Export calculation manager functions
+export const {
+    calculateProfitPercentage,
+    calculateArbitrageOpportunity,
+    calculateAllArbitrageOpportunities,
+    calculateTradeVolume,
+    calculateRiskMetrics
+} = calculationManager;

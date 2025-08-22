@@ -1,0 +1,454 @@
+/**
+ * Multi-Currency Configuration for Dynamic Arbitrage System
+ * Supports multiple currencies with exchange-specific configurations
+ */
+
+// Base exchange configurations
+const baseExchangeConfigs = {
+    mexc: {
+        id: "mexc",
+        enabled: true,
+        options: { defaultType: "future" },
+        retryAttempts: 10,
+        retryDelay: 1000,
+        feesPercent: 0
+    },
+    lbank: {
+        id: "lbank", 
+        enabled: true,
+        options: { defaultType: "future" },
+        retryAttempts: 10,
+        retryDelay: 1000,
+        feesPercent: 0
+    },
+    ourbit: {
+        enabled: true,
+        feesPercent: 0,
+        url: "https://futures.ourbit.com/fa-IR/exchange/{SYMBOL}?type=linear_swap",
+        updateInterval: 100,
+        selectors: {
+            bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span",
+            askPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span"
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        }
+    },
+    xt: {
+        enabled: false,
+        feesPercent: 0,
+        url: "https://www.xt.com/en/futures/trade/{SYMBOL}_usdt",
+        updateInterval: 100,
+        selectors: {
+            bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+            askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        }
+    },
+    kcex: {
+        enabled: true,
+        feesPercent: 0,
+        url: "https://www.kcex.com/futures/exchange/{SYMBOL}_USDT",
+        updateInterval: 100,
+        selectors: {
+            bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+            askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+        },
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        }
+    }
+};
+
+// DEX configurations
+const dexConfigs = {
+    dexscreener: {
+        enabled: true,
+        feesPercent: 0,
+        useApi: true,
+        updateInterval: 100,
+        browser: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        },
+        isDEX: true
+    }
+};
+
+// Currency definitions with exchange-specific symbols and configurations
+const currencies = {
+    AIOT: {
+        name: "AIOT",
+        baseCurrency: "AIOT",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "AIOT/USDT:USDT",
+                enabled: true
+            },
+            lbank: {
+                symbol: "AIOT/USDT:USDT", 
+                enabled: true
+            },
+            ourbit: {
+                symbol: "AIOT_USDT",
+                enabled: true
+            },
+            xt: {
+                symbol: "AIOT",
+                enabled: false
+            },
+            kcex: {
+                symbol: "AIOT",
+                enabled: true
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+                network: "bsc",
+                symbol: "AIOT/USDT",
+                url: "https://dexscreener.com/bsc/0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
+    },
+    BSU: {
+        name: "BSU", 
+        baseCurrency: "BSU",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "BSU/USDT:USDT",
+                enabled: true
+            },
+            lbank: {
+                symbol: "BSU/USDT:USDT",
+                enabled: true
+            },
+            ourbit: {
+                symbol: "BSU_USDT",
+                enabled: true
+            },
+            xt: {
+                symbol: "BSU",
+                enabled: true
+            },
+            kcex: {
+                symbol: "BSU",
+                enabled: true
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: false,
+                contractAddress: null,
+                network: null,
+                symbol: "BSU/USDT",
+                url: null,
+                selectors: {
+                    bidPrice: null,
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 2.5,
+            closeThresholdPercent: 2.0,
+            tradeVolumeUSD: 150,
+            targetTokenQuantity: 3000,
+            maxTokenQuantity: 25000
+        }
+    },
+    BTC: {
+        name: "Bitcoin",
+        baseCurrency: "BTC", 
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "BTC/USDT:USDT",
+                enabled: true
+            },
+            lbank: {
+                symbol: "BTC/USDT:USDT",
+                enabled: true
+            },
+            ourbit: {
+                symbol: "BTC_USDT",
+                enabled: true
+            },
+            xt: {
+                symbol: "BTC",
+                enabled: true
+            },
+            kcex: {
+                symbol: "BTC",
+                enabled: true
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: false,
+                contractAddress: null,
+                network: null,
+                symbol: "BTC/USDT",
+                url: null,
+                selectors: {
+                    bidPrice: null,
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 1.5,
+            closeThresholdPercent: 1.2,
+            tradeVolumeUSD: 500,
+            targetTokenQuantity: 0.01,
+            maxTokenQuantity: 0.1
+        }
+    }
+};
+
+// System configuration
+const systemConfig = {
+    intervalMs: 50,
+    statusUpdateInterval: 2000,
+    retryDelayMs: 2000,
+    tradingMode: "TOKEN",
+    maxTrades: 0,
+    logSettings: {
+        maxRecentTrades: 500,
+        summaryUpdateInterval: 20,
+        enableDetailedLogging: false,
+        logFile: "trades.log",
+        summaryFile: "session_summary.txt",
+        clearOnStartup: true,
+        preserveLogs: false,
+        preserveSummary: false,
+        printSummaryToConsole: true,
+        printStatusToConsole: true,
+        requestLogFile: "requests.log",
+        loggableActions: ["ARBITRAGE_OPEN", "ARBITRAGE_CLOSE"],
+        excludeActions: ["PRICE_ORDERBOOK", "PRICE_ERROR", "PRICE_UPDATE"]
+    },
+    arbitrage: {
+        minDifference: 0.5,
+        enableVolumeValidation: true,
+        enableFeeCalculation: true,
+        enablBSUresholdFiltering: false,
+        defaultThresholdPercent: 0.5,
+        useOrderBookVolume: false
+    },
+    errorHandling: {
+        maxRetries: 3,
+        defaultRetryDelay: 1000,
+        enableErrorLogging: true,
+        logLevel: "info"
+    },
+    cache: {
+        statisticsTimeout: 5000,
+        priceCacheTimeout: 1000,
+        maxCacheSize: 100
+    },
+    display: {
+        decimalPlaces: {
+            price: 6,
+            percentage: 3,
+            currency: 2,
+            volume: 6
+        },
+        enableEmojis: true,
+        enableColor: true,
+        separatorLength: 60,
+        conciseOutput: true
+    },
+    paths: {
+        logs: "./",
+        exports: "./exports/",
+        temp: "./temp/"
+    },
+    performance: {
+        enableBatchProcessing: true,
+        maxConcurrentRequests: 5,
+        requestTimeout: 30000,
+        enableCompression: false
+    }
+};
+
+/**
+ * Get configuration for a specific currency
+ * @param {string} currencyCode - The currency code (e.g., 'AIOT', 'BSU', 'BTC')
+ * @returns {object} Complete configuration for the currency
+ */
+export function getCurrencyConfig(currencyCode) {
+    const currency = currencies[currencyCode];
+    if (!currency) {
+        throw new Error(`Currency ${currencyCode} not found in configuration`);
+    }
+
+    // Merge base exchange configs with currency-specific configs
+    const mergedExchanges = {};
+    Object.keys(baseExchangeConfigs).forEach(exchangeId => {
+        const baseConfig = baseExchangeConfigs[exchangeId];
+        const currencyExchangeConfig = currency.exchanges[exchangeId];
+        
+        if (currencyExchangeConfig && currencyExchangeConfig.enabled) {
+            mergedExchanges[exchangeId] = {
+                ...baseConfig,
+                symbol: currencyExchangeConfig.symbol,
+                enabled: currencyExchangeConfig.enabled
+            };
+        }
+    });
+
+    // Merge DEX configs
+    const mergedDex = {};
+    Object.keys(dexConfigs).forEach(dexId => {
+        const baseDexConfig = dexConfigs[dexId];
+        const currencyDexConfig = currency.dex[dexId];
+        
+        if (currencyDexConfig && currencyDexConfig.enabled) {
+            mergedDex[dexId] = {
+                ...baseDexConfig,
+                ...currencyDexConfig
+            };
+        }
+    });
+
+    return {
+        ...systemConfig,
+        currency: currency,
+        symbols: {
+            ...Object.fromEntries(
+                Object.entries(mergedExchanges).map(([exchangeId, config]) => [exchangeId, config.symbol])
+            ),
+            ...Object.fromEntries(
+                Object.entries(mergedDex).map(([dexId, config]) => [dexId, config.symbol])
+            )
+        },
+        exchanges: mergedExchanges,
+        dex: mergedDex,
+        profitThresholdPercent: currency.trading.profitThresholdPercent,
+        closeThresholdPercent: currency.trading.closeThresholdPercent,
+        tradeVolumeUSD: currency.trading.tradeVolumeUSD,
+        targetTokenQuantity: currency.trading.targetTokenQuantity,
+        maxTokenQuantity: currency.trading.maxTokenQuantity,
+        feesPercent: {
+            ...Object.fromEntries(
+                Object.entries(mergedExchanges).map(([exchangeId, config]) => [exchangeId, config.feesPercent])
+            ),
+            ...Object.fromEntries(
+                Object.entries(mergedDex).map(([dexId, config]) => [dexId, config.feesPercent])
+            )
+        }
+    };
+}
+
+/**
+ * Get all available currencies
+ * @returns {Array} Array of currency codes
+ */
+export function getAvailableCurrencies() {
+    return Object.keys(currencies);
+}
+
+/**
+ * Get all enabled exchanges for a currency
+ * @param {string} currencyCode - The currency code
+ * @returns {Array} Array of enabled exchange IDs
+ */
+export function getEnabledExchanges(currencyCode) {
+    const config = getCurrencyConfig(currencyCode);
+    const enabledExchanges = [];
+    
+    Object.entries(config.exchanges).forEach(([exchangeId, exchangeConfig]) => {
+        if (exchangeConfig.enabled) {
+            enabledExchanges.push(exchangeId);
+        }
+    });
+    
+    Object.entries(config.dex).forEach(([dexId, dexConfig]) => {
+        if (dexConfig.enabled) {
+            enabledExchanges.push(dexId);
+        }
+    });
+    
+    return enabledExchanges;
+}
+
+/**
+ * Add a new currency to the configuration
+ * @param {string} currencyCode - The currency code
+ * @param {object} currencyConfig - The currency configuration
+ */
+export function addCurrency(currencyCode, currencyConfig) {
+    currencies[currencyCode] = currencyConfig;
+}
+
+/**
+ * Remove a currency from the configuration
+ * @param {string} currencyCode - The currency code
+ */
+export function removeCurrency(currencyCode) {
+    delete currencies[currencyCode];
+}
+
+export default {
+    getCurrencyConfig,
+    getAvailableCurrencies,
+    getEnabledExchanges,
+    addCurrency,
+    removeCurrency,
+    currencies,
+    baseExchangeConfigs,
+    dexConfigs,
+    systemConfig
+};

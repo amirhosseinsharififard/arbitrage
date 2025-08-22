@@ -1,496 +1,421 @@
 /**
- * Central Data Manager - Enhanced DEX Calculations
+ * Centralized Data Manager
+ * Manages all data storage and retrieval throughout the project
  * 
- * این ماژول تمام دیتا و محاسبات را متمرکز می‌کند:
- * 1. یکبار خواندن قیمت‌ها از exchanges
- * 2. محاسبه arbitrage opportunities با ترتیب صحیح DEX
- * 3. ارسال یکسان دیتا به terminal و UI
- * 4. مدیریت cache و بهینه‌سازی
+ * This module provides:
+ * 1. Centralized data storage for all currencies and exchanges
+ * 2. Cached data for performance optimization
+ * 3. Data validation and sanitization
+ * 4. Real-time data updates
+ * 5. Data persistence and retrieval
  */
-
-import config from "../config/config.js";
-import { lbankPriceService, kcexPuppeteerService, xtPuppeteerService, dexscreenerPuppeteerService, dexscreenerApiService } from "../services/index.js";
-import { CalculationUtils, FormattingUtils } from "../utils/index.js";
-import exchangeManager from "../exchanges/exchangeManager.js";
 
 class DataManager {
     constructor() {
-        // Single source of truth for all data
-        this.currentData = {
+        // Central data storage
+        this.data = {
+            currencies: {},
             exchanges: {},
-            arbitrageOpportunities: [],
-            timestamp: null,
-            isUpdating: false
+            opportunities: {},
+            statistics: {},
+            configuration: {},
+            cache: new Map()
         };
 
-        // Track previous data for change detection
-        this.previousData = {
-            lbank: null,
-            mexc: null,
-            kcex: null,
-            xt: null,
-            dexscreener: null
+        // Data update listeners
+        this.listeners = new Map();
+        
+        // Data validation rules
+        this.validationRules = {
+            price: (value) => typeof value === 'number' && value > 0,
+            percentage: (value) => typeof value === 'number' && value >= -100 && value <= 1000,
+            timestamp: (value) => typeof value === 'number' && value > 0,
+            string: (value) => typeof value === 'string' && value.length > 0
         };
 
-        // Track previous comparison results
-        this.previousComparisons = new Map();
-
-        // Error tracking
-        this.errorMessagesShown = {
-            mexc: false,
-            kcex: false,
-            xt: false,
-            lbank: false,
-            dexscreener: false
+        // Performance tracking
+        this.stats = {
+            totalUpdates: 0,
+            cacheHits: 0,
+            cacheMisses: 0,
+            lastUpdate: null
         };
-
-        // Subscribers for data updates
-        this.subscribers = [];
     }
 
     /**
-     * Subscribe to data updates
-     * @param {function} callback - Function to call when data updates
+     * Store currency data
+     * @param {string} currencyCode - Currency code
+     * @param {object} data - Currency data
      */
-    subscribe(callback) {
-        this.subscribers.push(callback);
+    storeCurrencyData(currencyCode, data) {
+        if (!this.validationRules.string(currencyCode)) {
+            throw new Error('Invalid currency code');
+        }
+
+        this.data.currencies[currencyCode] = {
+            ...data,
+            lastUpdate: Date.now(),
+            version: (this.data.currencies[currencyCode]?.version || 0) + 1
+        };
+
+        this.notifyListeners('currency', currencyCode, this.data.currencies[currencyCode]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
     }
 
     /**
-     * Notify all subscribers of data updates
+     * Get currency data
+     * @param {string} currencyCode - Currency code
+     * @returns {object} Currency data
      */
-    notifySubscribers() {
-        this.subscribers.forEach(callback => {
-            try {
-                callback(this.currentData);
-            } catch (error) {
-                console.error('Error notifying subscriber:', error);
-            }
+    getCurrencyData(currencyCode) {
+        return this.data.currencies[currencyCode] || null;
+    }
+
+    /**
+     * Store exchange data
+     * @param {string} exchangeId - Exchange ID
+     * @param {object} data - Exchange data
+     */
+    storeExchangeData(exchangeId, data) {
+        if (!this.validationRules.string(exchangeId)) {
+            throw new Error('Invalid exchange ID');
+        }
+
+        this.data.exchanges[exchangeId] = {
+            ...data,
+            lastUpdate: Date.now(),
+            version: (this.data.exchanges[exchangeId]?.version || 0) + 1
+        };
+
+        this.notifyListeners('exchange', exchangeId, this.data.exchanges[exchangeId]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
+    }
+
+    /**
+     * Get exchange data
+     * @param {string} exchangeId - Exchange ID
+     * @returns {object} Exchange data
+     */
+    getExchangeData(exchangeId) {
+        return this.data.exchanges[exchangeId] || null;
+    }
+
+    /**
+     * Store arbitrage opportunities
+     * @param {string} currencyCode - Currency code
+     * @param {Array} opportunities - Arbitrage opportunities
+     */
+    storeOpportunities(currencyCode, opportunities) {
+        if (!this.validationRules.string(currencyCode)) {
+            throw new Error('Invalid currency code');
+        }
+
+        this.data.opportunities[currencyCode] = {
+            opportunities: opportunities || [],
+            lastUpdate: Date.now(),
+            count: opportunities ? opportunities.length : 0
+        };
+
+        this.notifyListeners('opportunities', currencyCode, this.data.opportunities[currencyCode]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
+    }
+
+    /**
+     * Get arbitrage opportunities
+     * @param {string} currencyCode - Currency code
+     * @returns {Array} Arbitrage opportunities
+     */
+    getOpportunities(currencyCode) {
+        return this.data.opportunities[currencyCode]?.opportunities || [];
+    }
+
+    /**
+     * Store statistics
+     * @param {string} key - Statistics key
+     * @param {object} stats - Statistics data
+     */
+    storeStatistics(key, stats) {
+        if (!this.validationRules.string(key)) {
+            throw new Error('Invalid statistics key');
+        }
+
+        this.data.statistics[key] = {
+            ...stats,
+            lastUpdate: Date.now()
+        };
+
+        this.notifyListeners('statistics', key, this.data.statistics[key]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
+    }
+
+    /**
+     * Get statistics
+     * @param {string} key - Statistics key
+     * @returns {object} Statistics data
+     */
+    getStatistics(key) {
+        return this.data.statistics[key] || null;
+    }
+
+    /**
+     * Store configuration
+     * @param {string} key - Configuration key
+     * @param {object} config - Configuration data
+     */
+    storeConfiguration(key, config) {
+        if (!this.validationRules.string(key)) {
+            throw new Error('Invalid configuration key');
+        }
+
+        this.data.configuration[key] = {
+            ...config,
+            lastUpdate: Date.now()
+        };
+
+        this.notifyListeners('configuration', key, this.data.configuration[key]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
+    }
+
+    /**
+     * Get configuration
+     * @param {string} key - Configuration key
+     * @returns {object} Configuration data
+     */
+    getConfiguration(key) {
+        return this.data.configuration[key] || null;
+    }
+
+    /**
+     * Cache data with key
+     * @param {string} key - Cache key
+     * @param {any} data - Data to cache
+     * @param {number} ttl - Time to live in milliseconds
+     */
+    cacheData(key, data, ttl = 60000) {
+        this.data.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+            ttl
         });
     }
 
     /**
-     * Check if data is new (different from previous)
+     * Get cached data
+     * @param {string} key - Cache key
+     * @returns {any} Cached data or null
      */
-    isNewData(exchangeId, newData) {
-        const prev = this.previousData[exchangeId];
-        if (!prev) return true;
-        
-        // For DEX exchanges, only compare bid prices
-        if (newData.isDEX) {
-            if (newData.bid !== prev.bid) {
-                this.previousData[exchangeId] = { ...newData };
-                return true;
-            }
-        } else {
-            // For regular exchanges, compare both bid and ask prices
-            if (newData.bid !== prev.bid || newData.ask !== prev.ask) {
-                this.previousData[exchangeId] = { ...newData };
-                return true;
-            }
+    getCachedData(key) {
+        const cached = this.data.cache.get(key);
+        if (!cached) {
+            this.stats.cacheMisses++;
+            return null;
         }
-        return false;
+
+        if (Date.now() - cached.timestamp > cached.ttl) {
+            this.data.cache.delete(key);
+            this.stats.cacheMisses++;
+            return null;
+        }
+
+        this.stats.cacheHits++;
+        return cached.data;
     }
 
     /**
-     * Check if comparison result is new
+     * Get all currency data
+     * @returns {object} All currency data
      */
-    isNewComparison(key, result) {
-        const prev = this.previousComparisons.get(key);
-        
-        if (!prev || Math.abs(prev - result) > 0.001) {
-            this.previousComparisons.set(key, result);
-            return true;
-        }
-        return false;
+    getAllCurrencyData() {
+        return this.data.currencies;
     }
 
     /**
-     * Fetch all exchange prices - SINGLE DATA FETCH
+     * Get all exchange data
+     * @returns {object} All exchange data
      */
-    async fetchAllExchangeData(symbols) {
-        if (this.currentData.isUpdating) {
-            return this.currentData; // Return cached data if update in progress
+    getAllExchangeData() {
+        return this.data.exchanges;
+    }
+
+    /**
+     * Get all opportunities
+     * @returns {object} All opportunities
+     */
+    getAllOpportunities() {
+        return this.data.opportunities;
+    }
+
+    /**
+     * Get all statistics
+     * @returns {object} All statistics
+     */
+    getAllStatistics() {
+        return this.data.statistics;
+    }
+
+    /**
+     * Get all configuration
+     * @returns {object} All configuration
+     */
+    getAllConfiguration() {
+        return this.data.configuration;
+    }
+
+    /**
+     * Get all data
+     * @returns {object} All data
+     */
+    getAllData() {
+        return {
+            currencies: this.data.currencies,
+            exchanges: this.data.exchanges,
+            opportunities: this.data.opportunities,
+            statistics: this.data.statistics,
+            configuration: this.data.configuration,
+            lastUpdate: this.stats.lastUpdate
+        };
+    }
+
+    /**
+     * Add data update listener
+     * @param {string} type - Data type
+     * @param {string} key - Data key
+     * @param {function} callback - Callback function
+     */
+    addListener(type, key, callback) {
+        const listenerKey = `${type}:${key}`;
+        if (!this.listeners.has(listenerKey)) {
+            this.listeners.set(listenerKey, []);
         }
+        this.listeners.get(listenerKey).push(callback);
+    }
 
-        this.currentData.isUpdating = true;
-
-        try {
-            const exchangePromises = [];
-
-            // Fetch LBank data
-            if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) {
-                exchangePromises.push(this.fetchLBankData(symbols));
+    /**
+     * Remove data update listener
+     * @param {string} type - Data type
+     * @param {string} key - Data key
+     * @param {function} callback - Callback function
+     */
+    removeListener(type, key, callback) {
+        const listenerKey = `${type}:${key}`;
+        const listeners = this.listeners.get(listenerKey);
+        if (listeners) {
+            const index = listeners.indexOf(callback);
+            if (index > -1) {
+                listeners.splice(index, 1);
             }
+        }
+    }
 
-            // Fetch MEXC data
-            if (config.exchanges.mexc && config.exchanges.mexc.enabled !== false) {
-                exchangePromises.push(this.fetchMEXCData(symbols));
-            }
-
-            // Fetch KCEX data
-            if (config.kcex.enabled) {
-                exchangePromises.push(this.fetchKCEXData());
-            }
-
-            // Fetch XT data
-            if (config.xt.enabled) {
-                exchangePromises.push(this.fetchXTData(symbols));
-            }
-
-            // Fetch DexScreener data
-            if (config.dexscreener.enabled) {
-                exchangePromises.push(this.fetchDexScreenerData(symbols));
-            }
-
-            // Wait for all exchanges to fetch data
-            const results = await Promise.allSettled(exchangePromises);
-
-            // Update current data
-            this.currentData.exchanges = {};
-            let hasDataChanged = false;
-
-            // Process results
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled' && result.value) {
-                    const exchangeData = result.value;
-                    if (this.isNewData(exchangeData.id, exchangeData)) {
-                        hasDataChanged = true;
-                    }
-                    
-                    // Add to current data with normalized format
-                    this.currentData.exchanges[exchangeData.id] = {
-                        name: exchangeData.name,
-                        bid: exchangeData.bid,
-                        ask: exchangeData.ask,
-                        symbol: 'DEBT/USDT', // Normalize symbol
-                        isDEX: exchangeData.isDEX || false,
-                        timestamp: exchangeData.timestamp
-                    };
+    /**
+     * Notify listeners of data updates
+     * @param {string} type - Data type
+     * @param {string} key - Data key
+     * @param {any} data - Updated data
+     */
+    notifyListeners(type, key, data) {
+        const listenerKey = `${type}:${key}`;
+        const listeners = this.listeners.get(listenerKey);
+        if (listeners) {
+            listeners.forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`Error in data listener: ${error.message}`);
                 }
             });
-
-            // Only calculate arbitrage opportunities if data changed
-            if (hasDataChanged) {
-                this.currentData.arbitrageOpportunities = this.calculateArbitrageOpportunities();
-                this.currentData.timestamp = Date.now();
-
-                // Notify all subscribers
-                this.notifySubscribers();
-            }
-
-            return this.currentData;
-
-        } catch (error) {
-            console.error('Error fetching exchange data:', error);
-            return this.currentData;
-        } finally {
-            this.currentData.isUpdating = false;
         }
     }
 
     /**
-     * Fetch LBank data
+     * Clear all data
      */
-    async fetchLBankData(symbols) {
-        try {
-            const lbankSymbol = (symbols && symbols.lbank) || (config.symbols && config.symbols.lbank) || 'DAM/USDT:USDT';
-            const data = await lbankPriceService.getPrice('lbank', lbankSymbol);
-            
-            return {
-                id: 'lbank',
-                name: 'LBank',
-                bid: data.bid,
-                ask: data.ask,
-                timestamp: data.timestamp,
-                symbol: data.symbol
-            };
-        } catch (error) {
-            if (!this.errorMessagesShown.lbank) {
-                console.log(`⚠️ LBank price fetch failed: ${error.message}`);
-                this.errorMessagesShown.lbank = true;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Fetch MEXC data
-     */
-    async fetchMEXCData(symbols) {
-        try {
-            const mexcSymbol = (symbols && symbols.mexc) || (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT';
-            const data = await exchangeManager.getMexcPrice(mexcSymbol);
-            
-            return {
-                id: 'mexc',
-                name: 'MEXC',
-                bid: data.bid,
-                ask: data.ask,
-                timestamp: data.timestamp,
-                symbol: data.symbol
-            };
-        } catch (error) {
-            if (!this.errorMessagesShown.mexc) {
-                console.log(`⚠️ MEXC futures price fetch failed: ${error.message}`);
-                this.errorMessagesShown.mexc = true;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Fetch KCEX data
-     */
-    async fetchKCEXData() {
-        try {
-            if (!kcexPuppeteerService.browser || !kcexPuppeteerService.page) {
-                await kcexPuppeteerService.initialize();
-            }
-            const data = await kcexPuppeteerService.extractPrices();
-            
-            return {
-                id: 'kcex',
-                name: 'KCEX',
-                bid: data.bid,
-                ask: data.ask,
-                timestamp: data.timestamp,
-                symbol: data.symbol
-            };
-        } catch (error) {
-            if (!this.errorMessagesShown.kcex) {
-                console.log(`⚠️ KCEX price fetch failed: ${error.message}`);
-                this.errorMessagesShown.kcex = true;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Fetch XT data
-     */
-    async fetchXTData(symbols) {
-        try {
-            if (!xtPuppeteerService.browser || !xtPuppeteerService.page) {
-                await xtPuppeteerService.initialize();
-            }
-            const data = await xtPuppeteerService.extractPrices();
-            
-            return {
-                id: 'xt',
-                name: 'XT',
-                bid: data.bid,
-                ask: data.ask,
-                timestamp: data.timestamp,
-                symbol: data.symbol
-            };
-        } catch (error) {
-            if (!this.errorMessagesShown.xt) {
-                console.log(`⚠️ XT price fetch failed: ${error.message}`);
-                this.errorMessagesShown.xt = true;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Fetch DexScreener data
-     */
-    async fetchDexScreenerData(symbols) {
-        try {
-            let data;
-            if (config.dexscreener.useApi) {
-                data = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress, config.dexscreener.network);
-            } else {
-                if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
-                    await dexscreenerPuppeteerService.initialize();
-                }
-                data = await dexscreenerPuppeteerService.extractPrices();
-            }
-            
-            return {
-                id: 'dexscreener',
-                name: 'DexScreener',
-                bid: data.bid,
-                ask: data.ask,
-                timestamp: data.timestamp,
-                symbol: data.symbol,
-                isDEX: true
-            };
-        } catch (error) {
-            if (!this.errorMessagesShown.dexscreener) {
-                console.log(`⚠️ DexScreener+ price fetch failed: ${error.message}`);
-                this.errorMessagesShown.dexscreener = true;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Calculate all arbitrage opportunities - ENHANCED DEX ORDER
-     */
-    calculateArbitrageOpportunities() {
-        const opportunities = [];
-        const exchanges = Object.values(this.currentData.exchanges);
-
-        // Compare all exchange pairs with enhanced DEX handling
-        for (let i = 0; i < exchanges.length; i++) {
-            for (let j = i + 1; j < exchanges.length; j++) {
-                const exchangeA = exchanges[i];
-                const exchangeB = exchanges[j];
-
-                // Handle DEX exchanges (bid-only)
-                if (exchangeA.isDEX && exchangeB.isDEX) {
-                    // Both are DEX - skip comparison (no DEX to DEX in terminal)
-                    continue;
-                } else if (exchangeA.isDEX) {
-                    // A is DEX, B is regular exchange
-                    // DEX Bid -> Exchange Ask (like terminal: DEX $0.000871 / $0.000868)
-                    if (exchangeA.bid != null && exchangeB.ask != null) {
-                        const percentage = CalculationUtils.calculatePriceDifference(exchangeB.ask, exchangeA.bid);
-                        const key = `${exchangeA.id}-bid-${exchangeB.id}-ask`;
-                        
-                        if (this.isNewComparison(key, percentage)) {
-                            opportunities.push({
-                                type: 'DEX',
-                                fromExchange: exchangeA.id,
-                                toExchange: exchangeB.id,
-                                fromPrice: exchangeA.bid,
-                                toPrice: exchangeB.ask,
-                                percentage: percentage,
-                                direction: `DEX ${exchangeA.name}(Bid) -> ${exchangeB.name}(Ask)`,
-                                timestamp: Date.now(),
-                                order: 2 // Second in DEX order
-                            });
-                        }
-                    }
-                } else if (exchangeB.isDEX) {
-                    // B is DEX, A is regular exchange
-                    // Exchange Bid -> DEX Bid (FIRST: DEX Bid -> Exchange Bid)
-                    if (exchangeA.bid != null && exchangeB.bid != null) {
-                        const percentage = CalculationUtils.calculatePriceDifference(exchangeB.bid, exchangeA.bid);
-                        const key = `${exchangeA.id}-bid-${exchangeB.id}-bid`;
-                        
-                        if (this.isNewComparison(key, percentage)) {
-                            opportunities.push({
-                                type: 'DEX',
-                                fromExchange: exchangeA.id,
-                                toExchange: exchangeB.id,
-                                fromPrice: exchangeA.bid,
-                                toPrice: exchangeB.bid,
-                                percentage: percentage,
-                                direction: `${exchangeA.name}(Bid) -> DEX ${exchangeB.name}(Bid)`,
-                                timestamp: Date.now(),
-                                order: 1 // First in DEX order
-                            });
-                        }
-                    }
-
-                    // Exchange Ask -> DEX Bid (SECOND: DEX Bid -> Exchange Ask)
-                    if (exchangeA.ask != null && exchangeB.bid != null) {
-                        const percentage = CalculationUtils.calculatePriceDifference(exchangeB.bid, exchangeA.ask);
-                        const key = `${exchangeA.id}-ask-${exchangeB.id}-bid`;
-                        
-                        if (this.isNewComparison(key, percentage)) {
-                            opportunities.push({
-                                type: 'DEX',
-                                fromExchange: exchangeA.id,
-                                toExchange: exchangeB.id,
-                                fromPrice: exchangeA.ask,
-                                toPrice: exchangeB.bid,
-                                percentage: percentage,
-                                direction: `${exchangeA.name}(Ask) -> DEX ${exchangeB.name}(Bid)`,
-                                timestamp: Date.now(),
-                                order: 2 // Second in DEX order
-                            });
-                        }
-                    }
-                } else {
-                    // Both are regular exchanges
-                    // A ask -> B bid (like terminal: MEXC(Ask) -> LBANK(Bid))
-                    if (exchangeA.ask != null && exchangeB.bid != null) {
-                        const percentage = CalculationUtils.calculatePriceDifference(exchangeA.ask, exchangeB.bid);
-                        const key = `${exchangeA.id}-ask-${exchangeB.id}-bid`;
-                        
-                        if (this.isNewComparison(key, percentage)) {
-                            opportunities.push({
-                                type: 'CEX',
-                                fromExchange: exchangeA.id,
-                                toExchange: exchangeB.id,
-                                fromPrice: exchangeA.ask,
-                                toPrice: exchangeB.bid,
-                                percentage: percentage,
-                                direction: `${exchangeA.name}(Ask) -> ${exchangeB.name}(Bid)`,
-                                timestamp: Date.now()
-                            });
-                        }
-                    }
-
-                    // B ask -> A bid (like terminal: LBANK(Ask) -> MEXC(Bid))
-                    if (exchangeB.ask != null && exchangeA.bid != null) {
-                        const percentage = CalculationUtils.calculatePriceDifference(exchangeB.ask, exchangeA.bid);
-                        const key = `${exchangeB.id}-ask-${exchangeA.id}-bid`;
-                        
-                        if (this.isNewComparison(key, percentage)) {
-                            opportunities.push({
-                                type: 'CEX',
-                                fromExchange: exchangeB.id,
-                                toExchange: exchangeA.id,
-                                fromPrice: exchangeB.ask,
-                                toPrice: exchangeA.bid,
-                                percentage: percentage,
-                                direction: `${exchangeB.name}(Ask) -> ${exchangeA.name}(Bid)`,
-                                timestamp: Date.now()
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        // Sort opportunities: DEX first (by order), then CEX
-        return opportunities.sort((a, b) => {
-            if (a.type === 'DEX' && b.type === 'CEX') return -1;
-            if (a.type === 'CEX' && b.type === 'DEX') return 1;
-            if (a.type === 'DEX' && b.type === 'DEX') {
-                return (a.order || 0) - (b.order || 0);
-            }
-            return 0;
-        });
-    }
-
-    /**
-     * Get current data for terminal display
-     */
-    getTerminalData() {
-        const logLines = [];
-        
-        // Add timestamp
-        logLines.push(`🕐 ${new Date().toLocaleTimeString()}`);
-        
-        // Add arbitrage opportunities
-        this.currentData.arbitrageOpportunities.forEach(opportunity => {
-            const emoji = opportunity.type === 'DEX' ? '🟢' : '📈';
-            const formattedPercentage = FormattingUtils.formatPercentageColored(opportunity.percentage);
-            logLines.push(`${emoji} ${opportunity.direction} => ${formattedPercentage}`);
-        });
-
-        return logLines.join('\n');
-    }
-
-    /**
-     * Get current data for web interface
-     */
-    getWebInterfaceData() {
-        return {
-            exchanges: this.currentData.exchanges,
-            arbitrageOpportunities: this.currentData.arbitrageOpportunities,
-            timestamp: this.currentData.timestamp,
-            config: {
-                exchanges: Object.keys(this.currentData.exchanges),
-                symbol: 'DEBT/USDT'
-            }
+    clearAllData() {
+        this.data = {
+            currencies: {},
+            exchanges: {},
+            opportunities: {},
+            statistics: {},
+            configuration: {},
+            cache: new Map()
         };
+        this.stats = {
+            totalUpdates: 0,
+            cacheHits: 0,
+            cacheMisses: 0,
+            lastUpdate: null
+        };
+    }
+
+    /**
+     * Clear cache
+     */
+    clearCache() {
+        this.data.cache.clear();
+    }
+
+    /**
+     * Get data manager statistics
+     * @returns {object} Statistics
+     */
+    getManagerStatistics() {
+        return {
+            ...this.stats,
+            currencyCount: Object.keys(this.data.currencies).length,
+            exchangeCount: Object.keys(this.data.exchanges).length,
+            opportunityCount: Object.keys(this.data.opportunities).length,
+            cacheSize: this.data.cache.size,
+            listenerCount: this.listeners.size
+        };
+    }
+
+    /**
+     * Validate data
+     * @param {string} type - Data type
+     * @param {any} data - Data to validate
+     * @returns {boolean} Validation result
+     */
+    validateData(type, data) {
+        const validator = this.validationRules[type];
+        if (!validator) {
+            return true; // No validation rule for this type
+        }
+        return validator(data);
+    }
+
+    /**
+     * Export data to JSON
+     * @returns {string} JSON string
+     */
+    exportData() {
+        return JSON.stringify({
+            data: this.data,
+            stats: this.stats,
+            timestamp: Date.now()
+        }, null, 2);
+    }
+
+    /**
+     * Import data from JSON
+     * @param {string} jsonData - JSON data string
+     */
+    importData(jsonData) {
+        try {
+            const imported = JSON.parse(jsonData);
+            if (imported.data) {
+                this.data = imported.data;
+            }
+            if (imported.stats) {
+                this.stats = imported.stats;
+            }
+        } catch (error) {
+            throw new Error(`Failed to import data: ${error.message}`);
+        }
     }
 }
 

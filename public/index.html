@@ -433,7 +433,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Arbitrage Trading System</h1>
+            <h1>🚀 Multi-Currency Arbitrage System</h1>
             <div class="status">
                 <div class="status-row">
                     <span class="status-indicator status-active" id="connectionStatus"></span>
@@ -447,9 +447,9 @@
         </div>
 
         <div class="dashboard">
-            <!-- Exchange Prices Matrix Section -->
+            <!-- Multi-Currency Exchange Prices Matrix Section -->
             <div class="section full-width">
-                <h2>💰 Exchange Prices Matrix</h2>
+                <h2>💰 Multi-Currency Exchange Prices Matrix</h2>
                 <div class="matrix-container">
                     <table id="exchangeMatrixTable">
                         <thead id="matrixHeader">
@@ -505,10 +505,10 @@
 
         // Data update handling
         socket.on('data-update', (data) => {
-            console.log('📊 Received exchange data update:', data);
+            console.log('📊 Received multi-currency data update:', data);
             if (data && data.exchangeData) {
-                console.log('📊 Exchange data:', data.exchangeData);
-                updateExchangeMatrix(data.exchangeData);
+                console.log('📊 Multi-currency data:', data.exchangeData);
+                updateMultiCurrencyMatrix(data.exchangeData);
                 updateRealTimeTimer(data.timestamp);
             } else {
                 console.error('❌ Invalid data format received:', data);
@@ -516,26 +516,26 @@
         });
 
         /**
-         * Enhanced DEX display with proper order: DEX Bid -> Exchange Bid first, then DEX Bid -> Exchange Ask
+         * Multi-currency matrix display with enhanced DEX support
          */
-        function updateExchangeMatrix(exchangeData) {
+        function updateMultiCurrencyMatrix(exchangeData) {
             const header = document.getElementById('matrixHeader');
             const tbody = document.getElementById('matrixBody');
             
-            if (!exchangeData || !exchangeData.exchanges || Object.keys(exchangeData.exchanges).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #718096;">No exchange data available</td></tr>';
+            if (!exchangeData || !exchangeData.currencies || Object.keys(exchangeData.currencies).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #718096;">No multi-currency data available</td></tr>';
                 return;
             }
 
-            // Get unique symbols (normalize them)
-            const symbols = [...new Set(Object.values(exchangeData.exchanges).map(ex => ex.symbol ? ex.symbol.replace(':USDT', '') : '').filter(Boolean))];
-            const exchanges = Object.keys(exchangeData.exchanges);
+            // Get currencies and their exchange data
+            const currencies = Object.keys(exchangeData.currencies);
+            const exchanges = ['mexc', 'lbank', 'kcex', 'dexscreener'];
             
-            console.log('🔍 Debug - Symbols:', symbols);
+            console.log('🔍 Debug - Currencies:', currencies);
             console.log('🔍 Debug - Exchanges:', exchanges);
-            console.log('🔍 Debug - Exchange data:', exchangeData.exchanges);
+            console.log('🔍 Debug - Multi-currency data:', exchangeData.currencies);
 
-            // Create exchange pairs for columns with enhanced DEX handling
+            // Create exchange pairs for columns
             const exchangePairs = [];
             const usedPairs = new Set();
             
@@ -546,21 +546,12 @@
                         const reverseKey = `${exchanges[j]}/${exchanges[i]}`;
                         
                         if (!usedPairs.has(pairKey) && !usedPairs.has(reverseKey)) {
-                            const exchangeA = exchangeData.exchanges[exchanges[i]];
-                            const exchangeB = exchangeData.exchanges[exchanges[j]];
-                            
-                            // Add pair group
                             exchangePairs.push({
                                 id: pairKey,
-                                nameA: exchangeA.name,
-                                nameB: exchangeB.name,
                                 exchangeA: exchanges[i],
                                 exchangeB: exchanges[j],
                                 reverseA: exchanges[j],
-                                reverseB: exchanges[i],
-                                reverseNameA: exchangeB.name,
-                                reverseNameB: exchangeA.name,
-                                isDEXPair: exchangeA.isDEX || exchangeB.isDEX
+                                reverseB: exchanges[i]
                             });
                             
                             usedPairs.add(pairKey);
@@ -570,213 +561,129 @@
                 }
             }
 
-            // Update header with enhanced DEX display
-            let headerHtml = '<tr><th class="sticky-col">Symbol</th>';
+            // Update header
+            let headerHtml = '<tr><th class="sticky-col">Currency</th>';
             exchangePairs.forEach(pair => {
-                const exchangeA = exchangeData.exchanges[pair.exchangeA];
-                const exchangeB = exchangeData.exchanges[pair.exchangeB];
-                
-                if (exchangeB.isDEX || exchangeA.isDEX) {
-                    // DEX pair: show single column for DEX
-                    headerHtml += `<th>🟢 DEX ${exchangeB.isDEX ? pair.nameB : pair.nameA} ↔ ${exchangeB.isDEX ? pair.nameA : pair.nameB}</th>`;
-                } else {
-                    // Regular pair
-                    headerHtml += `<th>${pair.nameA}(Bid)/${pair.nameB}(Ask)</th>`;
-                }
+                headerHtml += `<th>${pair.exchangeA.toUpperCase()}(Bid)/${pair.exchangeB.toUpperCase()}(Ask)</th>`;
             });
             headerHtml += '</tr>';
             
             header.innerHTML = headerHtml;
 
-            // Update body with enhanced DEX calculations
+            // Update body with multi-currency data
             let bodyHtml = '';
             
-            console.log('🔍 Debug - Processing symbols:', symbols);
+            console.log('🔍 Debug - Processing currencies:', currencies);
             
-            symbols.forEach(symbol => {
-                // First row: Symbol + Forward pairs
+            currencies.forEach(currency => {
+                const currencyData = exchangeData.currencies[currency];
+                if (!currencyData) return;
+                
+                // First row: Currency + Forward pairs
                 bodyHtml += '<tr>';
-                bodyHtml += `<td class="sticky-cell symbol-cell" rowspan="2"><strong>${symbol}</strong></td>`;
+                bodyHtml += `<td class="sticky-cell symbol-cell" rowspan="2"><strong>${currency}</strong></td>`;
                 
                 exchangePairs.forEach(pair => {
-                    const exchangeA = exchangeData.exchanges[pair.exchangeA];
-                    const exchangeB = exchangeData.exchanges[pair.exchangeB];
+                    const exchangeA = currencyData.prices[pair.exchangeA];
+                    const exchangeB = currencyData.prices[pair.exchangeB];
                     
-                    // Check if both exchanges have data for this symbol (normalize symbols)
-                    const normalizedSymbolA = exchangeA.symbol ? exchangeA.symbol.replace(':USDT', '') : '';
-                    const normalizedSymbolB = exchangeB.symbol ? exchangeB.symbol.replace(':USDT', '') : '';
-                    const normalizedSymbol = symbol.replace(':USDT', '');
-                    
-                    // Check if both exchanges have valid data (bid or ask)
-                    const hasValidData = (exchangeA.bid !== null || exchangeA.ask !== null) && 
-                                       (exchangeB.bid !== null || exchangeB.bid !== null);
-                    
-                    if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
-                        if (exchangeB.isDEX || exchangeA.isDEX) {
-                            // DEX pair: show first calculation only in first row
-                            const dexExchange = exchangeB.isDEX ? exchangeB : exchangeA;
-                            const regularExchange = exchangeB.isDEX ? exchangeA : exchangeB;
+                    if (exchangeA && exchangeB) {
+                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
+                        
+                        // Calculate spread between exchanges
+                        let spread = 'N/A';
+                        let spreadClass = 'spread';
+                        
+                        if (exchangeA.ask && exchangeB.bid) {
+                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                            spread = spreadPercent.toFixed(3) + '%';
                             
-                            // First: DEX Bid -> Exchange Bid
-                            const dexBidToExchangeBid = dexExchange.bid && regularExchange.bid ? 
-                                ((regularExchange.bid - dexExchange.bid) / dexExchange.bid * 100).toFixed(3) : 'N/A';
-                            
-                            bodyHtml += `
-                                <td class="exchange-cell dex-cell">
-                                    <div class="price-pair">
-                                        <div class="price-row">
-                                            <span class="dex-bid">DEX ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
-                                            <span class="separator">→</span>
-                                            <span class="bid-price">${regularExchange.bid ? '$' + regularExchange.bid.toFixed(6) : 'N/A'}</span>
-                                        </div>
-                                        <div class="spread-row">
-                                            <span class="spread ${parseFloat(dexBidToExchangeBid) > 0 ? 'profit' : 'loss'}">${dexBidToExchangeBid}%</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            `;
-                        } else {
-                            // Regular exchange pair
-                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                            
-                            // Calculate spread between exchanges
-                            let spread = 'N/A';
-                            let spreadClass = 'spread';
-                            
-                            if (exchangeA.ask && exchangeB.bid) {
-                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                                spread = spreadPercent.toFixed(3) + '%';
-                                
-                                if (spreadPercent > 2) {
-                                    spreadClass = 'spread high-profit';
-                                } else if (spreadPercent > 0) {
-                                    spreadClass = 'spread profit';
-                                } else if (spreadPercent < -2) {
-                                    spreadClass = 'spread high-loss';
-                                } else if (spreadPercent < 0) {
-                                    spreadClass = 'spread loss';
-                                } else {
-                                    spreadClass = 'spread neutral';
-                                }
+                            if (spreadPercent > 2) {
+                                spreadClass = 'spread high-profit';
+                            } else if (spreadPercent > 0) {
+                                spreadClass = 'spread profit';
+                            } else if (spreadPercent < -2) {
+                                spreadClass = 'spread high-loss';
+                            } else if (spreadPercent < 0) {
+                                spreadClass = 'spread loss';
+                            } else {
+                                spreadClass = 'spread neutral';
                             }
-                            
-                            bodyHtml += `
-                                <td class="exchange-cell">
-                                    <div class="price-pair">
-                                        <div class="price-row">
-                                            <span class="ask-price">${askA}</span>
-                                            <span class="separator">/</span>
-                                            <span class="bid-price">${bidB}</span>
-                                        </div>
-                                        <div class="spread-row">
-                                            <span class="${spreadClass}">${spread}</span>
-                                        </div>
+                        }
+                        
+                        bodyHtml += `
+                            <td class="exchange-cell">
+                                <div class="price-pair">
+                                    <div class="price-row">
+                                        <span class="ask-price">${askA}</span>
+                                        <span class="separator">/</span>
+                                        <span class="bid-price">${bidB}</span>
                                     </div>
-                                </td>
-                            `;
-                        }
+                                    <div class="spread-row">
+                                        <span class="${spreadClass}">${spread}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
                     } else {
-                        if (exchangeB.isDEX || exchangeA.isDEX) {
-                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
-                        } else {
-                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
-                        }
+                        bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
                 });
                 
                 bodyHtml += '</tr>';
                 
-                // Second row: Reverse pairs and DEX second calculation
+                // Second row: Reverse pairs
                 bodyHtml += '<tr class="reverse-row">';
                 
                 exchangePairs.forEach(pair => {
-                    const exchangeA = exchangeData.exchanges[pair.reverseA];
-                    const exchangeB = exchangeData.exchanges[pair.reverseB];
+                    const exchangeA = currencyData.prices[pair.reverseA];
+                    const exchangeB = currencyData.prices[pair.reverseB];
                     
-                    // Check if both exchanges have data for this symbol (normalize symbols)
-                    const normalizedSymbolA = exchangeA.symbol ? exchangeA.symbol.replace(':USDT', '') : '';
-                    const normalizedSymbolB = exchangeB.symbol ? exchangeB.symbol.replace(':USDT', '') : '';
-                    const normalizedSymbol = symbol.replace(':USDT', '');
-                    
-                    // Check if both exchanges have valid data (bid or ask)
-                    const hasValidData = (exchangeA.bid !== null || exchangeA.ask !== null) && 
-                                       (exchangeB.bid !== null || exchangeB.bid !== null);
-                    
-                    if (normalizedSymbolA === normalizedSymbol && normalizedSymbolB === normalizedSymbol && hasValidData) {
-                        if (exchangeB.isDEX || exchangeA.isDEX) {
-                            // DEX pair: show second calculation in second row
-                            const dexExchange = exchangeB.isDEX ? exchangeB : exchangeA;
-                            const regularExchange = exchangeB.isDEX ? exchangeA : exchangeB;
+                    if (exchangeA && exchangeB) {
+                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
+                        
+                        // Calculate spread between exchanges
+                        let spread = 'N/A';
+                        let spreadClass = 'spread';
+                        
+                        if (exchangeA.ask && exchangeB.bid) {
+                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                            spread = spreadPercent.toFixed(3) + '%';
                             
-                            // Second: DEX Bid -> Exchange Ask
-                            const dexBidToExchangeAsk = dexExchange.bid && regularExchange.ask ? 
-                                ((regularExchange.ask - dexExchange.bid) / dexExchange.bid * 100).toFixed(3) : 'N/A';
-                            
-                            bodyHtml += `
-                                <td class="exchange-cell dex-cell">
-                                    <div class="price-pair">
-                                        <div class="price-row">
-                                            <span class="dex-bid">DEX ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
-                                            <span class="separator">→</span>
-                                            <span class="ask-price">${regularExchange.ask ? '$' + regularExchange.ask.toFixed(6) : 'N/A'}</span>
-                                        </div>
-                                        <div class="spread-row">
-                                            <span class="spread ${parseFloat(dexBidToExchangeAsk) > 0 ? 'profit' : 'loss'}">${dexBidToExchangeAsk}%</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            `;
-                        } else {
-                            // Regular reverse exchange pair
-                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                            
-                            // Calculate spread between exchanges
-                            let spread = 'N/A';
-                            let spreadClass = 'spread';
-                            
-                            if (exchangeA.ask && exchangeB.bid) {
-                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                                spread = spreadPercent.toFixed(3) + '%';
-                                
-                                if (spreadPercent > 2) {
-                                    spreadClass = 'spread high-profit';
-                                } else if (spreadPercent > 0) {
-                                    spreadClass = 'spread profit';
-                                } else if (spreadPercent < -2) {
-                                    spreadClass = 'spread high-loss';
-                                } else if (spreadPercent < 0) {
-                                    spreadClass = 'spread loss';
-                                } else {
-                                    spreadClass = 'spread neutral';
-                                }
+                            if (spreadPercent > 2) {
+                                spreadClass = 'spread high-profit';
+                            } else if (spreadPercent > 0) {
+                                spreadClass = 'spread profit';
+                            } else if (spreadPercent < -2) {
+                                spreadClass = 'spread high-loss';
+                            } else if (spreadPercent < 0) {
+                                spreadClass = 'spread loss';
+                            } else {
+                                spreadClass = 'spread neutral';
                             }
-                            
-                            bodyHtml += `
-                                <td class="exchange-cell reverse">
-                                    <div class="reverse-pair-header">
-                                        <span class="reverse-name">${pair.reverseNameA}(Bid)/${pair.reverseNameB}(Ask)</span>
-                                    </div>
-                                    <div class="price-pair">
-                                        <div class="price-row">
-                                            <span class="ask-price">${askA}</span>
-                                            <span class="separator">/</span>
-                                            <span class="bid-price">${bidB}</span>
-                                        </div>
-                                        <div class="spread-row">
-                                            <span class="${spreadClass}">${spread}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            `;
                         }
+                        
+                        bodyHtml += `
+                            <td class="exchange-cell reverse">
+                                <div class="reverse-pair-header">
+                                    <span class="reverse-name">${pair.reverseA.toUpperCase()}(Bid)/${pair.reverseB.toUpperCase()}(Ask)</span>
+                                </div>
+                                <div class="price-pair">
+                                    <div class="price-row">
+                                        <span class="ask-price">${askA}</span>
+                                        <span class="separator">/</span>
+                                        <span class="bid-price">${bidB}</span>
+                                    </div>
+                                    <div class="spread-row">
+                                        <span class="${spreadClass}">${spread}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
                     } else {
-                        if (exchangeB.isDEX || exchangeA.isDEX) {
-                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
-                        } else {
-                            bodyHtml += `<td class="exchange-cell no-data">-</td>`;
-                        }
+                        bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
                 });
                 

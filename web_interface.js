@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getTradingStatus } from './src/Arbitrage Logic/arbitrage_bot/arbitrage.js';
 import statistics from './src/Arbitrage Logic/monitoring/statistics.js';
-import config from './src/Arbitrage Logic/config/config.js';
+import { getAvailableCurrencies } from './src/Arbitrage Logic/config/multiCurrencyConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,14 +48,13 @@ class WebInterface {
 
     sendDataToClient(socket) {
         try {
+            const availableCurrencies = getAvailableCurrencies();
             const data = {
                 timestamp: new Date().toISOString(),
                 exchangeData: this.latestExchangeData,
                 config: {
-                    tradeVolumeUSD: config.tradeVolumeUSD,
-                    profitThresholdPercent: config.profitThresholdPercent,
-                    closeThresholdPercent: config.closeThresholdPercent,
-                    intervalMs: config.intervalMs
+                    currencies: availableCurrencies,
+                    intervalMs: 50
                 }
             };
             
@@ -65,9 +64,9 @@ class WebInterface {
         }
     }
 
-    // Store latest exchange data
+    // Store latest multi-currency data
     latestExchangeData = {
-        exchanges: {},
+        currencies: {},
         arbitrageOpportunities: [],
         timestamp: null
     };
@@ -84,18 +83,17 @@ class WebInterface {
     broadcastDataUpdate() {
         if (this.isRunning) {
             try {
+                const availableCurrencies = getAvailableCurrencies();
                 const data = {
                     timestamp: new Date().toISOString(),
                     exchangeData: this.latestExchangeData,
                     config: {
-                        tradeVolumeUSD: config.tradeVolumeUSD,
-                        profitThresholdPercent: config.profitThresholdPercent,
-                        closeThresholdPercent: config.closeThresholdPercent,
-                        intervalMs: config.intervalMs
+                        currencies: availableCurrencies,
+                        intervalMs: 50
                     }
                 };
                 
-                console.log('🌐 Broadcasting exchange data update to web interface');
+                console.log('🌐 Broadcasting multi-currency data update to web interface');
                 this.io.emit('data-update', data);
             } catch (error) {
                 console.error('❌ Error broadcasting data update:', error.message);
