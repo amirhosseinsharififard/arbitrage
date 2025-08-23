@@ -383,8 +383,6 @@
             background-color: #e53e3e;
         }
 
-
-
         .timestamp {
             text-align: center;
             color: #718096;
@@ -412,8 +410,6 @@
             margin: 20px 0;
             border-left: 4px solid #e53e3e;
         }
-
-
 
         @media (max-width: 768px) {
             .dashboard {
@@ -454,7 +450,7 @@
                     <table id="exchangeMatrixTable">
                         <thead id="matrixHeader">
                             <tr>
-                                <th class="sticky-col">Symbol</th>
+                                <th class="sticky-col">Currency</th>
                                 <!-- Exchange headers will be added here dynamically -->
                             </tr>
                         </thead>
@@ -471,13 +467,119 @@
         <div class="timestamp" id="lastUpdate">
             Last update: Never
         </div>
-        
-
     </div>
 
     <script>
         const socket = io();
         let isConnected = false;
+        
+        // DEX Calculation Utilities - بهینه‌سازی شده و متمرکز
+        const DEXCalculations = {
+            /**
+             * محاسبه درصد تفاوت قیمت دکس نسبت به صرافی
+             */
+            calculateDEXPriceDifference(dexPrice, exchangePrice) {
+                if (!dexPrice || !exchangePrice || dexPrice <= 0 || exchangePrice <= 0) {
+                    return 'N/A';
+                }
+                // فرمول: ((sellPrice - buyPrice) / buyPrice) * 100 (بدون ضرب در -1)
+                const difference = ((exchangePrice - dexPrice) / dexPrice * 100);
+                return difference.toFixed(3);
+            },
+            
+            /**
+             * تشخیص نوع صرافی (دکس یا عادی)
+             */
+            isDEXExchange(exchangeId) {
+                const dexExchanges = ['dexscreener', 'uniswap', 'pancakeswap', 'sushiswap'];
+                return dexExchanges.includes(exchangeId.toLowerCase());
+            },
+            
+            /**
+             * شناسایی صرافی دکس و عادی در یک جفت
+             */
+            identifyDEXAndRegularExchange(exchangeA, exchangeB, exchangeAId, exchangeBId) {
+                const isADex = this.isDEXExchange(exchangeAId);
+                const isBDex = this.isDEXExchange(exchangeBId);
+                
+                if (isADex && !isBDex) {
+                    return {
+                        dexExchange: exchangeA,
+                        regularExchange: exchangeB,
+                        dexId: exchangeAId,
+                        regularId: exchangeBId
+                    };
+                } else if (!isADex && isBDex) {
+                    return {
+                        dexExchange: exchangeB,
+                        regularExchange: exchangeA,
+                        dexId: exchangeBId,
+                        regularId: exchangeAId
+                    };
+                }
+                return null;
+            },
+            
+            /**
+             * تولید HTML برای سلول دکس - ردیف اول (BID)
+             */
+            generateDEXBidCellHTML(dexExchange, regularExchange) {
+                const percentage = this.calculateDEXPriceDifference( regularExchange.bid,dexExchange.bid,);
+                const spreadClass = parseFloat(percentage) > 0 ? 'profit' : 'loss';
+                
+                return `
+                    <td class="exchange-cell dex-cell">
+                        <div class="price-pair">
+                            <div class="price-row">
+                                <span class="dex-bid">DEX: ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
+                                <span class="separator">vs</span>
+                                <span class="bid-price">BID: ${regularExchange.bid ? '$' + regularExchange.bid.toFixed(6) : 'N/A'}</span>
+                            </div>
+                            <div class="spread-row">
+                                <span class="spread ${spreadClass}">BID: ${percentage}%</span>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            },
+            
+            /**
+             * تولید HTML برای سلول دکس - ردیف دوم (ASK)
+             */
+            generateDEXAskCellHTML(dexExchange, regularExchange) {
+                const percentage = this.calculateDEXPriceDifference(dexExchange.bid, regularExchange.ask);
+                const spreadClass = parseFloat(percentage) > 0 ? 'profit' : 'loss';
+                
+                return `
+                    <td class="exchange-cell dex-cell">
+                        <div class="price-pair">
+                            <div class="price-row">
+                                <span class="dex-bid">DEX: ${dexExchange.bid ? '$' + dexExchange.bid.toFixed(6) : 'N/A'}</span>
+                                <span class="separator">vs</span>
+                                <span class="ask-price">ASK: ${regularExchange.ask ? '$' + regularExchange.ask.toFixed(6) : 'N/A'}</span>
+                            </div>
+                            <div class="spread-row">
+                                <span class="spread ${spreadClass}">ASK: ${percentage}%</span>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            },
+            
+            /**
+             * تولید هدر برای جفت دکس
+             */
+            generateDEXPairHeader(regularId) {
+                const regularName = regularId.toUpperCase();
+                return `
+                    <th class="exchange-header dex-header">
+                        🟢 DEX vs ${regularName}
+                        <br>
+                        <small class="dex-sub-label">Bid/Ask محاسبات</small>
+                    </th>
+                `;
+            }
+        };
 
         // Connection status management
         socket.on('connect', () => {
@@ -508,6 +610,10 @@
             console.log('📊 Received multi-currency data update:', data);
             if (data && data.exchangeData) {
                 console.log('📊 Multi-currency data:', data.exchangeData);
+                
+                // Add divider line between new and old data
+                console.log('========');
+                
                 updateMultiCurrencyMatrix(data.exchangeData);
                 updateRealTimeTimer(data.timestamp);
             } else {
@@ -516,7 +622,7 @@
         });
 
         /**
-         * Multi-currency matrix display with enhanced DEX support
+         * Enhanced Multi-Currency Matrix with DEX support
          */
         function updateMultiCurrencyMatrix(exchangeData) {
             const header = document.getElementById('matrixHeader');
@@ -535,7 +641,7 @@
             console.log('🔍 Debug - Exchanges:', exchanges);
             console.log('🔍 Debug - Multi-currency data:', exchangeData.currencies);
 
-            // Create exchange pairs for columns
+            // Create exchange pairs for columns with enhanced DEX handling
             const exchangePairs = [];
             const usedPairs = new Set();
             
@@ -551,7 +657,8 @@
                                 exchangeA: exchanges[i],
                                 exchangeB: exchanges[j],
                                 reverseA: exchanges[j],
-                                reverseB: exchanges[i]
+                                reverseB: exchanges[i],
+                                isDEXPair: exchanges[i] === 'dexscreener' || exchanges[j] === 'dexscreener'
                             });
                             
                             usedPairs.add(pairKey);
@@ -561,16 +668,23 @@
                 }
             }
 
-            // Update header
+            // Update header with enhanced DEX display - بهینه‌سازی شده
             let headerHtml = '<tr><th class="sticky-col">Currency</th>';
             exchangePairs.forEach(pair => {
-                headerHtml += `<th>${pair.exchangeA.toUpperCase()}(Bid)/${pair.exchangeB.toUpperCase()}(Ask)</th>`;
+                if (pair.isDEXPair) {
+                    // DEX pair: استفاده از ماژول بهینه‌سازی شده
+                    const regularExchange = pair.exchangeA === 'dexscreener' ? pair.exchangeB : pair.exchangeA;
+                    headerHtml += DEXCalculations.generateDEXPairHeader(regularExchange);
+                } else {
+                    // Regular pair
+                    headerHtml += `<th>${pair.exchangeA.toUpperCase()}(Ask) → ${pair.exchangeB.toUpperCase()}(Bid)<br><small>آربیتراژ معمولی</small></th>`;
+                }
             });
             headerHtml += '</tr>';
             
             header.innerHTML = headerHtml;
 
-            // Update body with multi-currency data
+            // Update body with enhanced DEX calculations
             let bodyHtml = '';
             
             console.log('🔍 Debug - Processing currencies:', currencies);
@@ -581,51 +695,65 @@
                 
                 // First row: Currency + Forward pairs
                 bodyHtml += '<tr>';
-                bodyHtml += `<td class="sticky-cell symbol-cell" rowspan="2"><strong>${currency}</strong></td>`;
+                bodyHtml += `<td class="sticky-cell symbol-cell" rowspan="2"><strong>${currency}</strong><br><small style="color: #666;">💰 Arbitrage Opportunities</small></td>`;
                 
                 exchangePairs.forEach(pair => {
                     const exchangeA = currencyData.prices[pair.exchangeA];
                     const exchangeB = currencyData.prices[pair.exchangeB];
                     
                     if (exchangeA && exchangeB) {
-                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                        
-                        // Calculate spread between exchanges
-                        let spread = 'N/A';
-                        let spreadClass = 'spread';
-                        
-                        if (exchangeA.ask && exchangeB.bid) {
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                        if (pair.isDEXPair) {
+                            // DEX pair: استفاده از ماژول بهینه‌سازی شده
+                            const dexInfo = DEXCalculations.identifyDEXAndRegularExchange(
+                                exchangeA, exchangeB, pair.exchangeA, pair.exchangeB
+                            );
                             
-                            if (spreadPercent > 2) {
-                                spreadClass = 'spread high-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread profit';
-                            } else if (spreadPercent < -2) {
-                                spreadClass = 'spread high-loss';
-                            } else if (spreadPercent < 0) {
-                                spreadClass = 'spread loss';
+                            if (dexInfo) {
+                                bodyHtml += DEXCalculations.generateDEXBidCellHTML(dexInfo.dexExchange, dexInfo.regularExchange);
                             } else {
-                                spreadClass = 'spread neutral';
+                                bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                             }
+                        } else {
+                            // Regular exchange pair
+                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
+                            
+                            // Calculate spread between exchanges
+                            let spread = 'N/A';
+                            let spreadClass = 'spread';
+                            
+                            if (exchangeA.ask && exchangeB.bid) {
+                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                                spread = spreadPercent.toFixed(3) + '%';
+                                
+                                if (spreadPercent > 2) {
+                                    spreadClass = 'spread high-profit';
+                                } else if (spreadPercent > 0) {
+                                    spreadClass = 'spread profit';
+                                } else if (spreadPercent < -2) {
+                                    spreadClass = 'spread high-loss';
+                                } else if (spreadPercent < 0) {
+                                    spreadClass = 'spread loss';
+                                } else {
+                                    spreadClass = 'spread neutral';
+                                }
+                            }
+                            
+                            bodyHtml += `
+                                <td class="exchange-cell">
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="ask-price">${askA}</span>
+                                            <span class="separator">/</span>
+                                            <span class="bid-price">${bidB}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="${spreadClass}">${spread}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
                         }
-                        
-                        bodyHtml += `
-                            <td class="exchange-cell">
-                                <div class="price-pair">
-                                    <div class="price-row">
-                                        <span class="ask-price">${askA}</span>
-                                        <span class="separator">/</span>
-                                        <span class="bid-price">${bidB}</span>
-                                    </div>
-                                    <div class="spread-row">
-                                        <span class="${spreadClass}">${spread}</span>
-                                    </div>
-                                </div>
-                            </td>
-                        `;
                     } else {
                         bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
@@ -633,7 +761,7 @@
                 
                 bodyHtml += '</tr>';
                 
-                // Second row: Reverse pairs
+                // Second row: Reverse pairs and DEX second calculation
                 bodyHtml += '<tr class="reverse-row">';
                 
                 exchangePairs.forEach(pair => {
@@ -641,47 +769,61 @@
                     const exchangeB = currencyData.prices[pair.reverseB];
                     
                     if (exchangeA && exchangeB) {
-                        const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
-                        const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                        
-                        // Calculate spread between exchanges
-                        let spread = 'N/A';
-                        let spreadClass = 'spread';
-                        
-                        if (exchangeA.ask && exchangeB.bid) {
-                            const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
-                            spread = spreadPercent.toFixed(3) + '%';
+                        if (pair.isDEXPair) {
+                            // DEX pair: استفاده از ماژول بهینه‌سازی شده برای ردیف دوم (ASK)
+                            const dexInfo = DEXCalculations.identifyDEXAndRegularExchange(
+                                exchangeA, exchangeB, pair.reverseA, pair.reverseB
+                            );
                             
-                            if (spreadPercent > 2) {
-                                spreadClass = 'spread high-profit';
-                            } else if (spreadPercent > 0) {
-                                spreadClass = 'spread profit';
-                            } else if (spreadPercent < -2) {
-                                spreadClass = 'spread high-loss';
-                            } else if (spreadPercent < 0) {
-                                spreadClass = 'spread loss';
+                            if (dexInfo) {
+                                bodyHtml += DEXCalculations.generateDEXAskCellHTML(dexInfo.dexExchange, dexInfo.regularExchange);
                             } else {
-                                spreadClass = 'spread neutral';
+                                bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                             }
+                        } else {
+                            // Regular reverse exchange pair
+                            const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
+                            const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
+                            
+                            // Calculate spread between exchanges
+                            let spread = 'N/A';
+                            let spreadClass = 'spread';
+                            
+                            if (exchangeA.ask && exchangeB.bid) {
+                                const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
+                                spread = spreadPercent.toFixed(3) + '%';
+                                
+                                if (spreadPercent > 2) {
+                                    spreadClass = 'spread high-profit';
+                                } else if (spreadPercent > 0) {
+                                    spreadClass = 'spread profit';
+                                } else if (spreadPercent < -2) {
+                                    spreadClass = 'spread high-loss';
+                                } else if (spreadPercent < 0) {
+                                    spreadClass = 'spread loss';
+                                } else {
+                                    spreadClass = 'spread neutral';
+                                }
+                            }
+                            
+                            bodyHtml += `
+                                <td class="exchange-cell reverse">
+                                    <div class="reverse-pair-header">
+                                        <span class="reverse-name">${pair.reverseA.toUpperCase()}(Bid)/${pair.reverseB.toUpperCase()}(Ask)</span>
+                                    </div>
+                                    <div class="price-pair">
+                                        <div class="price-row">
+                                            <span class="ask-price">${askA}</span>
+                                            <span class="separator">/</span>
+                                            <span class="bid-price">${bidB}</span>
+                                        </div>
+                                        <div class="spread-row">
+                                            <span class="${spreadClass}">${spread}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            `;
                         }
-                        
-                        bodyHtml += `
-                            <td class="exchange-cell reverse">
-                                <div class="reverse-pair-header">
-                                    <span class="reverse-name">${pair.reverseA.toUpperCase()}(Bid)/${pair.reverseB.toUpperCase()}(Ask)</span>
-                                </div>
-                                <div class="price-pair">
-                                    <div class="price-row">
-                                        <span class="ask-price">${askA}</span>
-                                        <span class="separator">/</span>
-                                        <span class="bid-price">${bidB}</span>
-                                    </div>
-                                    <div class="spread-row">
-                                        <span class="${spreadClass}">${spread}</span>
-                                    </div>
-                                </div>
-                            </td>
-                        `;
                     } else {
                         bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
@@ -692,10 +834,6 @@
             
             tbody.innerHTML = bodyHtml;
         }
-
-                 
-
-
 
         function updateRealTimeTimer(timestamp) {
             const date = new Date(timestamp);
@@ -717,8 +855,6 @@
             document.getElementById('lastUpdate').textContent = 
                 `Last update: ${date.toLocaleString()}`;
         }
-
-
 
         function formatNumber(value) {
             const num = parseFloat(value);
@@ -751,8 +887,6 @@
                 updateConnectionStatus(false);
             }
         }, 5000);
-
-
     </script>
 </body>
 </html>

@@ -51,6 +51,7 @@ export {
 // Export individual calculation functions for direct access
 export const {
     calculatePriceDifference,
+    calculateDEXPriceDifference,
     calculateAbsolutePriceDifference,
     calculateProfitLossPercentage,
     calculateTotalCost,

@@ -49,6 +49,33 @@ export function calculatePriceDifference(buyPrice, sellPrice) {
 }
 
 /**
+ * Calculate DEX price difference for UI display
+ * 
+ * For DEX calculations, we use standard formula without sign inversion:
+ * - Positive = Profit (Exchange price > DEX price)
+ * - Negative = Loss (Exchange price < DEX price)
+ * 
+ * Formula: ((sellPrice - buyPrice) / buyPrice) * 100
+ * 
+ * @param {number} dexPrice - DEX price (buy price)
+ * @param {number} exchangePrice - Exchange price (sell price)
+ * @returns {number} Standard percentage difference
+ */
+export function calculateDEXPriceDifference(dexPrice, exchangePrice) {
+    // Validate input parameters
+    if (typeof dexPrice !== 'number' || typeof exchangePrice !== 'number') {
+        throw new Error('Price parameters must be numbers');
+    }
+
+    if (dexPrice <= 0 || exchangePrice <= 0) {
+        throw new Error('Prices must be positive numbers');
+    }
+
+    // Calculate standard difference (no sign inversion)
+    return calculatePriceDifference(dexPrice, exchangePrice);
+}
+
+/**
  * Calculate the absolute price difference between two prices
  * 
  * Returns the raw price difference in the same units as the input prices.
