@@ -208,6 +208,60 @@ const currencies = {
             targetTokenQuantity: 5000,
             maxTokenQuantity: 35000
         }
+    },
+
+    ALT: {
+        name: "ALT",
+        baseCurrency: "ALT",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "ALTCOIN/USDT:USDT",
+                enabled: true
+            },
+            lbank: {
+                symbol: "ALTSOL/USDT:USDT",
+                enabled: true
+            },
+            ourbit: {
+                symbol: "ALT_USDT",
+                enabled: false // Disabled for now as it was set to BSU in original config
+            },
+            xt: {
+                symbol: "ALT",
+                enabled: false // Disabled for now as it was set to BSU in original config
+            },
+            kcex: {
+                symbol: "ALTCOIN",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/ALTCOIN_USDT",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+                network: "solana",
+                symbol: "ALT/SOL",
+                url: "https://dexscreener.com/solana/bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
     }
 };
 
@@ -297,8 +351,7 @@ export function getCurrencyConfig(currencyCode) {
         if (currencyExchangeConfig && currencyExchangeConfig.enabled) {
             mergedExchanges[exchangeId] = {
                 ...baseConfig,
-                symbol: currencyExchangeConfig.symbol,
-                enabled: currencyExchangeConfig.enabled
+                ...currencyExchangeConfig // This will override base config with currency-specific settings
             };
         }
     });
