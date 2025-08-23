@@ -42,6 +42,28 @@ class KCEXPuppeteerService {
         this.updateInterval = config.kcex.updateInterval;
         this.selectors = config.kcex.selectors;
         this.browserConfig = config.kcex.browser;
+        
+        // Dynamic config for multi-currency support
+        this.currentConfig = null;
+    }
+
+    /**
+     * Set dynamic configuration for multi-currency support
+     */
+    setConfig(currencyConfig) {
+        this.currentConfig = currencyConfig;
+        if (currencyConfig && currencyConfig.exchanges && currencyConfig.exchanges.kcex) {
+            const kcexConfig = currencyConfig.exchanges.kcex;
+            this.url = kcexConfig.url || config.kcex.url;
+            this.selectors = kcexConfig.selectors || config.kcex.selectors;
+            this.updateInterval = kcexConfig.updateInterval || config.kcex.updateInterval;
+            this.browserConfig = kcexConfig.browser || config.kcex.browser;
+            
+            // Update symbol in URL
+            if (this.url && kcexConfig.symbol) {
+                this.url = this.url.replace('{SYMBOL}', kcexConfig.symbol);
+            }
+        }
     }
 
     /**

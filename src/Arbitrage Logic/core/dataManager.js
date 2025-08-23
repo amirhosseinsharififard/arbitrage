@@ -124,6 +124,30 @@ class DataManager {
     }
 
     /**
+     * Store all arbitrage calculations (including non-profitable ones)
+     * @param {string} currencyCode - Currency code
+     * @param {Array} calculations - All arbitrage calculations
+     */
+    storeArbitrageCalculations(currencyCode, calculations) {
+        if (!this.validationRules.string(currencyCode)) {
+            throw new Error('Invalid currency code');
+        }
+
+        this.data.opportunities[currencyCode] = {
+            ...this.data.opportunities[currencyCode],
+            allCalculations: calculations || [],
+            profitableOpportunities: calculations ? calculations.filter(calc => calc.isProfitable) : [],
+            lastUpdate: Date.now(),
+            count: calculations ? calculations.filter(calc => calc.isProfitable).length : 0,
+            totalCalculations: calculations ? calculations.length : 0
+        };
+
+        this.notifyListeners('arbitrageCalculations', currencyCode, this.data.opportunities[currencyCode]);
+        this.stats.totalUpdates++;
+        this.stats.lastUpdate = Date.now();
+    }
+
+    /**
      * Get arbitrage opportunities
      * @param {string} currencyCode - Currency code
      * @returns {Array} Arbitrage opportunities

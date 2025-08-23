@@ -137,7 +137,7 @@ const currencies = {
             },
             kcex: {
                 symbol: "AIOT",
-                enabled: true
+                enabled: false
             }
         },
         dex: {
@@ -161,98 +161,52 @@ const currencies = {
             maxTokenQuantity: 35000
         }
     },
-    BSU: {
-        name: "BSU", 
-        baseCurrency: "BSU",
+
+    DEBT: {
+        name: "DEBT",
+        baseCurrency: "DEBT",
         quoteCurrency: "USDT",
         exchanges: {
             mexc: {
-                symbol: "BSU/USDT:USDT",
+                symbol: "DEBT/USDT:USDT",
                 enabled: true
             },
             lbank: {
-                symbol: "BSU/USDT:USDT",
+                symbol: "DEBT/USDT:USDT",
                 enabled: true
             },
             ourbit: {
-                symbol: "BSU_USDT",
+                symbol: "DEBT_USDT",
                 enabled: true
             },
             xt: {
-                symbol: "BSU",
+                symbol: "DEBT",
                 enabled: true
             },
             kcex: {
-                symbol: "BSU",
+                symbol: "DEBT",
                 enabled: true
             }
         },
         dex: {
             dexscreener: {
-                enabled: false,
-                contractAddress: null,
-                network: null,
-                symbol: "BSU/USDT",
-                url: null,
+                enabled: true,
+                contractAddress: "9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
+                network: "solana",
+                symbol: "DEBT/USDT",
+                url: "https://dexscreener.com/solana/9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
                 selectors: {
-                    bidPrice: null,
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
                     askPrice: null
                 }
             }
         },
         trading: {
-            profitThresholdPercent: 2.5,
-            closeThresholdPercent: 2.0,
-            tradeVolumeUSD: 150,
-            targetTokenQuantity: 3000,
-            maxTokenQuantity: 25000
-        }
-    },
-    BTC: {
-        name: "Bitcoin",
-        baseCurrency: "BTC", 
-        quoteCurrency: "USDT",
-        exchanges: {
-            mexc: {
-                symbol: "BTC/USDT:USDT",
-                enabled: true
-            },
-            lbank: {
-                symbol: "BTC/USDT:USDT",
-                enabled: true
-            },
-            ourbit: {
-                symbol: "BTC_USDT",
-                enabled: true
-            },
-            xt: {
-                symbol: "BTC",
-                enabled: true
-            },
-            kcex: {
-                symbol: "BTC",
-                enabled: true
-            }
-        },
-        dex: {
-            dexscreener: {
-                enabled: false,
-                contractAddress: null,
-                network: null,
-                symbol: "BTC/USDT",
-                url: null,
-                selectors: {
-                    bidPrice: null,
-                    askPrice: null
-                }
-            }
-        },
-        trading: {
-            profitThresholdPercent: 1.5,
-            closeThresholdPercent: 1.2,
-            tradeVolumeUSD: 500,
-            targetTokenQuantity: 0.01,
-            maxTokenQuantity: 0.1
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
         }
     }
 };

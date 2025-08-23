@@ -15,7 +15,7 @@ class WebInterface {
         this.app = express();
         this.server = http.createServer(this.app);
         this.io = new Server(this.server);
-        this.port = 3000;
+        this.port = 8080;
         this.isRunning = false;
         this.updateInterval = null;
         

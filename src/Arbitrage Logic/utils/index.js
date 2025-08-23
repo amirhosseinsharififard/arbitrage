@@ -29,6 +29,11 @@ import * as ValidationUtils from './validation.js';
 import * as OrderbookUtils from './orderbook.js';
 import { computeSpreads } from './spreads.js';
 
+// Import request and data management utilities
+import requestManager from './requestManager.js';
+import dataUpdateManager from './dataUpdateManager.js';
+import systemMonitor from './systemMonitor.js';
+
 // Export all utility modules
 export {
     CalculationUtils,
@@ -37,7 +42,10 @@ export {
     ValidationUtils,
     OrderbookUtils,
     computeSpreads,
-    calculationManager
+    calculationManager,
+    requestManager,
+    dataUpdateManager,
+    systemMonitor
 };
 
 // Export individual calculation functions for direct access
