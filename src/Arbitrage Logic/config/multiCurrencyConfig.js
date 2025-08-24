@@ -122,56 +122,56 @@ const dexConfigs = {
 
 // Currency definitions with exchange-specific symbols and configurations
 const currencies = {
-    // AIOT: {
-    //     name: "AIOT",
-    //     baseCurrency: "AIOT",
-    //     quoteCurrency: "USDT",
-    //     exchanges: {
-    //         mexc: {
-    //             symbol: "AIOT/USDT:USDT",
-    //             enabled: true
-    //         },
-    //         lbank: {
-    //             symbol: "AIOT/USDT:USDT",
-    //             enabled: true
-    //         },
-    //         ourbit: {
-    //             symbol: "AIOT_USDT",
-    //             enabled: true,
-    //             url: "https://futures.ourbit.com/fa-IR/exchange/AIOT_USDT?type=linear_swap"
-    //         },
-    //         xt: {
-    //             symbol: "AIOT",
-    //             enabled: false,
-    //             url: "https://www.xt.com/en/futures/trade/AIOT_usdt"
-    //         },
-    //         kcex: {
-    //             symbol: "AIOT",
-    //             enabled: false,
-    //             url: "https://www.kcex.com/futures/exchange/AIOT_USDT"
-    //         }
-    //     },
-    //     dex: {
-    //         dexscreener: {
-    //             enabled: true,
-    //             contractAddress: "0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
-    //             network: "bsc",
-    //             symbol: "AIOT/USDT",
-    //             url: "https://dexscreener.com/bsc/0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
-    //             selectors: {
-    //                 bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
-    //                 askPrice: null
-    //             }
-    //         }
-    //     },
-    //     trading: {
-    //         profitThresholdPercent: 3.1,
-    //         closeThresholdPercent: 2.5,
-    //         tradeVolumeUSD: 200,
-    //         targetTokenQuantity: 5000,
-    //         maxTokenQuantity: 35000
-    //     }
-    // },
+    AIOT: {
+        name: "AIOT",
+        baseCurrency: "AIOT",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "AIOT/USDT:USDT",
+                enabled: true
+            },
+            lbank: {
+                symbol: "AIOT/USDT:USDT",
+                enabled: true
+            },
+            ourbit: {
+                symbol: "AIOT_USDT",
+                enabled: true,
+                url: "https://futures.ourbit.com/exchange/AIOT_USDT?type=linear_swap"
+            },
+            xt: {
+                symbol: "AIOT",
+                enabled: false,
+                url: "https://www.xt.com/en/futures/trade/AIOT_usdt"
+            },
+            kcex: {
+                symbol: "AIOT",
+                enabled: false,
+                url: "https://www.kcex.com/futures/exchange/AIOT_USDT"
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+                network: "bsc",
+                symbol: "AIOT/USDT",
+                url: "https://dexscreener.com/bsc/0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
+    },
 
     DEBT: {
         name: "DEBT",
@@ -188,12 +188,12 @@ const currencies = {
             },
             ourbit: {
                 symbol: "DEBT_USDT",
-                enabled: true,
+                enabled: false,
                 url: "https://futures.ourbit.com/fa-IR/exchange/DEBT_USDT?type=linear_swap"
             },
             xt: {
                 symbol: "DEBT",
-                enabled: true,
+                enabled: false,
                 url: "https://www.xt.com/en/futures/trade/DEBT_usdt"
             },
             kcex: {

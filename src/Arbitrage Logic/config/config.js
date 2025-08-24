@@ -63,7 +63,7 @@ const config = {
 
     // Ourbit Puppeteer configuration
     ourbit: {
-        enabled: false, // Toggle to enable/disable Ourbit Puppeteer data collection
+        enabled: true, // Toggle to enable/disable Ourbit Puppeteer data collection
         url: "https://futures.ourbit.com/fa-IR/exchange/BSU_USDT?type=linear_swap",
         updateInterval: 100, // Price update interval in milliseconds
         selectors: {

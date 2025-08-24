@@ -89,7 +89,19 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                         if (!ourbitPuppeteerService.browser || !ourbitPuppeteerService.page) {
                             await ourbitPuppeteerService.initialize();
                         }
-                        return await ourbitPuppeteerService.extractPrices();
+
+                        // Try multiple times to get prices (OurBit needs more time)
+                        let priceData = null;
+                        for (let attempt = 1; attempt <= 5; attempt++) {
+                            priceData = await ourbitPuppeteerService.extractPrices();
+                            if (priceData && (priceData.bid || priceData.ask)) {
+                                break; // Success, exit loop
+                            }
+                            if (attempt < 5) {
+                                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                            }
+                        }
+                        return priceData;
                     });
                 }
                 break;
