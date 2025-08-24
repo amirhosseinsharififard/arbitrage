@@ -38,14 +38,14 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
     try {
         switch (exchangeId) {
             case 'lbank':
-                if (config.exchanges.lbank.enabled) {
+                if (config.exchanges.lbank && config.exchanges.lbank.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         return await lbankPriceService.getPrice('lbank', config.symbols.lbank);
                     });
                 }
                 break;
             case 'mexc':
-                if (config.exchanges.mexc.enabled) {
+                if (config.exchanges.mexc && config.exchanges.mexc.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         const exchanges = exchangeManager.getAllExchanges();
                         const mexcExchange = exchanges.get('mexc');
@@ -58,7 +58,7 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'kcex':
-                if (config.exchanges.kcex.enabled) {
+                if (config.exchanges.kcex && config.exchanges.kcex.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         // Set dynamic config for this currency
                         kcexPuppeteerService.setConfig(config);
@@ -72,7 +72,7 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'xt':
-                if (config.exchanges.xt && config.exchanges.xt.enabled) {
+                if (config.exchanges.xt && config.exchanges.xt.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         xtPuppeteerService.setConfig(config);
                         if (!xtPuppeteerService.browser || !xtPuppeteerService.page) {
@@ -83,7 +83,7 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'ourbit':
-                if (config.exchanges.ourbit && config.exchanges.ourbit.enabled) {
+                if (config.exchanges.ourbit && config.exchanges.ourbit.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         ourbitPuppeteerService.setConfig(config);
                         if (!ourbitPuppeteerService.browser || !ourbitPuppeteerService.page) {
@@ -94,7 +94,7 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'dexscreener':
-                if (config.dex.dexscreener.enabled) {
+                if (config.dex && config.dex.dexscreener && config.dex.dexscreener.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
                         return await dexscreenerApiService.getBidPriceByToken(
                             config.dex.dexscreener.contractAddress,

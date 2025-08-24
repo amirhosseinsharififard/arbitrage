@@ -246,7 +246,7 @@ const currencies = {
                 enabled: false // Disabled for now as it was set to BSU in original config
             },
             kcex: {
-                symbol: "ALTCOIN",
+                symbol: "ALT",
                 enabled: true,
                 url: "https://www.kcex.com/futures/exchange/ALTCOIN_USDT",
                 updateInterval: 100,
@@ -362,7 +362,7 @@ export function getCurrencyConfig(currencyCode) {
         const baseConfig = baseExchangeConfigs[exchangeId];
         const currencyExchangeConfig = currency.exchanges[exchangeId];
 
-        if (currencyExchangeConfig && currencyExchangeConfig.enabled) {
+        if (currencyExchangeConfig && currencyExchangeConfig.enabled && baseConfig.enabled !== false) {
             const merged = {
                 ...baseConfig,
                 ...currencyExchangeConfig // currency-specific settings override base
@@ -375,6 +375,8 @@ export function getCurrencyConfig(currencyCode) {
                     .replaceAll('{BASE}', currency.baseCurrency)
                     .replaceAll('{QUOTE}', currency.quoteCurrency);
             }
+
+
             mergedExchanges[exchangeId] = merged;
         }
     });

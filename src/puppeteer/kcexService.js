@@ -42,7 +42,7 @@ class KCEXPuppeteerService {
         this.updateInterval = config.kcex.updateInterval;
         this.selectors = config.kcex.selectors;
         this.browserConfig = config.kcex.browser;
-        
+
         // Dynamic config for multi-currency support
         this.currentConfig = null;
     }
@@ -58,11 +58,13 @@ class KCEXPuppeteerService {
             this.selectors = kcexConfig.selectors || config.kcex.selectors;
             this.updateInterval = kcexConfig.updateInterval || config.kcex.updateInterval;
             this.browserConfig = kcexConfig.browser || config.kcex.browser;
-            
+
             // Update symbol in URL
             if (this.url && kcexConfig.symbol) {
                 this.url = this.url.replace('{SYMBOL}', kcexConfig.symbol);
             }
+
+
         }
     }
 
@@ -90,7 +92,7 @@ class KCEXPuppeteerService {
             await this.page.setDefaultNavigationTimeout(120000);
             await this.page.setDefaultTimeout(120000);
 
-            // Navigate to KCEX exchange
+            // Navigate to KCEX exchange with current URL
             console.log(`🌐 Navigating to KCEX: ${this.url}`);
             await this.page.goto(this.url, {
                 waitUntil: 'domcontentloaded',
@@ -122,6 +124,16 @@ class KCEXPuppeteerService {
                 return {...this.priceData, bid: null, ask: null, error: null };
             }
 
+            // Check if URL has changed and navigate if needed
+            const currentUrl = this.page.url();
+
+
+            if (!currentUrl.includes(this.url.split('/').pop())) {
+                console.log(`🔄 URL changed, restarting browser and navigating to: ${this.url}`);
+                await this.cleanup();
+                await this.initialize();
+            }
+
             // Extract bid price
             const bidText = await this.page.evaluate((xpath) => {
                 const element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
@@ -135,6 +147,8 @@ class KCEXPuppeteerService {
                 return element ? element.textContent : null;
             }, this.selectors.askPrice);
             const askPrice = this.parsePrice(askText);
+
+
 
             // Check if prices have changed
             const pricesChanged = (this.previousPrices.bid !== bidPrice || this.previousPrices.ask !== askPrice);
