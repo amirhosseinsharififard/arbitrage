@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +12,32 @@
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
         }
-
+        
         .container {
             max-width: 100%;
             margin: 0 auto;
             padding: 5px;
         }
-
+        
         .header {
             text-align: center;
             margin-bottom: 15px;
             color: white;
         }
-
+        
         .header h1 {
             font-size: 1.8rem;
             margin-bottom: 5px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
-
+        
         .header .status {
             font-size: 1rem;
             opacity: 0.9;
@@ -45,13 +46,13 @@
             gap: 8px;
             align-items: center;
         }
-
+        
         .status-row {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
+        
         .timer-row {
             display: flex;
             align-items: center;
@@ -62,44 +63,44 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
+        
         .timer-label {
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.9);
         }
-
+        
         #realTimeTimer {
             font-family: 'Courier New', monospace;
             font-weight: bold;
             font-size: 1rem;
             color: #fff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
-
+        
         .dashboard {
             display: grid;
             grid-template-columns: 1fr;
             gap: 10px;
             margin-bottom: 10px;
         }
-
+        
         .section {
             background: white;
             border-radius: 10px;
             padding: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             transition: transform 0.3s ease;
         }
-
+        
         .section.full-width {
             grid-column: 1 / -1;
             margin: 0;
         }
-
+        
         .section:hover {
             transform: translateY(-5px);
         }
-
+        
         .section h2 {
             color: #4a5568;
             margin-bottom: 10px;
@@ -107,18 +108,18 @@
             border-bottom: 2px solid #667eea;
             padding-bottom: 5px;
         }
-
+        
         .matrix-container {
             overflow-x: auto;
             max-width: 100%;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
+        
         .table-container {
             overflow-x: auto;
         }
-
+        
         table {
             width: 100%;
             border-collapse: separate;
@@ -128,13 +129,14 @@
             border-radius: 8px;
             overflow: hidden;
         }
-
-        th, td {
+        
+        th,
+        td {
             padding: 15px 12px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
         }
-
+        
         th {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -147,7 +149,7 @@
             font-size: 14px;
             padding: 12px 8px;
         }
-
+        
         .sticky-col {
             position: sticky;
             left: 0;
@@ -155,7 +157,7 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             min-width: 100px;
         }
-
+        
         .sticky-cell {
             position: sticky;
             left: 0;
@@ -164,29 +166,29 @@
             border-right: 2px solid #e2e8f0;
             border: 1px solid #e2e8f0;
         }
-
+        
         tr:nth-child(even) {
             background-color: #f8fafc;
         }
-
+        
         tr:hover {
             background-color: #edf2f7;
         }
-
+        
         .profit {
             color: #38a169;
             font-weight: bold;
         }
-
+        
         .loss {
             color: #e53e3e;
             font-weight: bold;
         }
-
+        
         .neutral {
             color: #718096;
         }
-
+        
         .exchange-cell {
             padding: 10px 8px;
             text-align: center;
@@ -196,26 +198,26 @@
             border: 1px solid #e2e8f0;
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
-
+        
         .exchange-cell.reverse {
             background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
             border-left: 3px solid #e9ecef;
         }
-
+        
         .exchange-cell.dex-cell {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             border-left: 3px solid #0ea5e9;
             border-right: 3px solid #0ea5e9;
         }
-
+        
         .dex-bid {
             color: #0ea5e9;
             font-weight: bold;
             font-size: 13px;
         }
-
+        
         .symbol-cell {
             vertical-align: middle;
             text-align: center;
@@ -223,13 +225,13 @@
             background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
             border-right: 2px solid #e2e8f0 !important;
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
-
+        
         .reverse-row {
             border-top: 1px dashed #cbd5e0;
         }
-
+        
         .reverse-pair-header {
             font-size: 14px;
             color: white;
@@ -239,19 +241,19 @@
             padding: 5px 8px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
+        
         .reverse-name {
             color: white;
             font-size: 14px;
             font-weight: 600;
         }
-
+        
         .reverse-header {
             background: linear-gradient(135deg, #6c757d, #495057) !important;
         }
-
+        
         .price-pair {
             display: flex;
             flex-direction: column;
@@ -261,7 +263,7 @@
             font-size: 11px;
             gap: 2px;
         }
-
+        
         .price-row {
             display: flex;
             align-items: center;
@@ -270,25 +272,25 @@
             padding: 1px 0;
             width: 100%;
         }
-
+        
         .ask-price {
             color: #e53e3e;
             font-weight: bold;
             font-size: 13px;
         }
-
+        
         .bid-price {
             color: #38a169;
             font-weight: bold;
             font-size: 13px;
         }
-
+        
         .separator {
             color: #718096;
             font-weight: normal;
             font-size: 12px;
         }
-
+        
         .spread-row {
             margin-top: 2px;
             font-size: 16px;
@@ -298,45 +300,45 @@
             font-weight: 600;
             text-align: center;
         }
-
+        
         .spread {
             color: #4a5568;
             font-weight: 500;
             font-size: 16px;
         }
-
+        
         .spread.profit {
             color: #38a169;
             font-weight: bold;
             font-size: 16px;
         }
-
+        
         .spread.loss {
             color: #e53e3e;
             font-weight: bold;
             font-size: 16px;
         }
-
+        
         .spread.neutral {
             color: #718096;
             font-weight: normal;
             font-size: 16px;
         }
-
+        
         .spread.high-profit {
             color: #22c55e;
             font-weight: bold;
             font-size: 17px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-
+        
         .spread.high-loss {
             color: #dc2626;
             font-weight: bold;
             font-size: 17px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-
+        
         .spread.dex-profit {
             color: #059669;
             font-weight: bold;
@@ -345,13 +347,13 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
-
+        
         .spread.dex-small-profit {
             color: #10b981;
             font-weight: 600;
             font-size: 16px;
         }
-
+        
         .spread.dex-loss {
             color: #ef4444;
             font-weight: 600;
@@ -360,12 +362,12 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
-
+        
         .no-data {
             color: #cbd5e0;
             font-style: italic;
         }
-
+        
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -373,35 +375,41 @@
             border-radius: 50%;
             margin-right: 8px;
         }
-
+        
         .status-active {
             background-color: #38a169;
             animation: pulse 2s infinite;
         }
-
+        
         .status-inactive {
             background-color: #e53e3e;
         }
-
+        
         .timestamp {
             text-align: center;
             color: #718096;
             font-size: 0.8rem;
             margin-top: 10px;
         }
-
+        
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
         }
-
+        
         .loading {
             text-align: center;
             padding: 40px;
             color: #718096;
         }
-
+        
         .error {
             background: #fed7d7;
             color: #c53030;
@@ -410,22 +418,21 @@
             margin: 20px 0;
             border-left: 4px solid #e53e3e;
         }
-
+        
         @media (max-width: 768px) {
             .dashboard {
                 grid-template-columns: 1fr;
             }
-            
             .header h1 {
                 font-size: 2rem;
             }
-            
             .container {
                 padding: 10px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -472,36 +479,30 @@
     <script>
         const socket = io();
         let isConnected = false;
-        
-        // DEX Calculation Utilities - بهینه‌سازی شده و متمرکز
+
+        // DEX Calculation Utilities - centralized
         const DEXCalculations = {
-            /**
-             * محاسبه درصد تفاوت قیمت دکس نسبت به صرافی
-             */
+            // Calculate percentage difference DEX vs CEX
             calculateDEXPriceDifference(dexPrice, exchangePrice) {
                 if (!dexPrice || !exchangePrice || dexPrice <= 0 || exchangePrice <= 0) {
                     return 'N/A';
                 }
-                // فرمول: ((sellPrice - buyPrice) / buyPrice) * 100 (بدون ضرب در -1)
-                const difference = ((exchangePrice - dexPrice) / dexPrice * 100);
+                // (CEX - DEX) / CEX * 100
+                const difference = ((exchangePrice - dexPrice) / exchangePrice * 100);
                 return difference.toFixed(3);
             },
-            
-            /**
-             * تشخیص نوع صرافی (دکس یا عادی)
-             */
+
+            // DEX id detector
             isDEXExchange(exchangeId) {
                 const dexExchanges = ['dexscreener', 'uniswap', 'pancakeswap', 'sushiswap'];
                 return dexExchanges.includes(exchangeId.toLowerCase());
             },
-            
-            /**
-             * شناسایی صرافی دکس و عادی در یک جفت
-             */
+
+            // Identify DEX and regular exchange in a pair
             identifyDEXAndRegularExchange(exchangeA, exchangeB, exchangeAId, exchangeBId) {
                 const isADex = this.isDEXExchange(exchangeAId);
                 const isBDex = this.isDEXExchange(exchangeBId);
-                
+
                 if (isADex && !isBDex) {
                     return {
                         dexExchange: exchangeA,
@@ -519,14 +520,12 @@
                 }
                 return null;
             },
-            
-            /**
-             * تولید HTML برای سلول دکس - ردیف اول (BID)
-             */
+
+            // Render DEX cell - first row (BID)
             generateDEXBidCellHTML(dexExchange, regularExchange) {
-                const percentage = this.calculateDEXPriceDifference( regularExchange.bid,dexExchange.bid,);
+                const percentage = this.calculateDEXPriceDifference(dexExchange.bid, regularExchange.bid);
                 const spreadClass = parseFloat(percentage) > 0 ? 'profit' : 'loss';
-                
+
                 return `
                     <td class="exchange-cell dex-cell">
                         <div class="price-pair">
@@ -542,14 +541,12 @@
                     </td>
                 `;
             },
-            
-            /**
-             * تولید HTML برای سلول دکس - ردیف دوم (ASK)
-             */
+
+            // Render DEX cell - second row (ASK)
             generateDEXAskCellHTML(dexExchange, regularExchange) {
                 const percentage = this.calculateDEXPriceDifference(dexExchange.bid, regularExchange.ask);
                 const spreadClass = parseFloat(percentage) > 0 ? 'profit' : 'loss';
-                
+
                 return `
                     <td class="exchange-cell dex-cell">
                         <div class="price-pair">
@@ -565,17 +562,15 @@
                     </td>
                 `;
             },
-            
-            /**
-             * تولید هدر برای جفت دکس
-             */
+
+            // Render DEX pair header
             generateDEXPairHeader(regularId) {
                 const regularName = regularId.toUpperCase();
                 return `
                     <th class="exchange-header dex-header">
                         🟢 DEX vs ${regularName}
                         <br>
-                        <small class="dex-sub-label">Bid/Ask محاسبات</small>
+                        <small class="dex-sub-label">Bid/Ask Calculations</small>
                     </th>
                 `;
             }
@@ -595,7 +590,7 @@
         function updateConnectionStatus(connected) {
             const statusIndicator = document.getElementById('connectionStatus');
             const statusText = document.getElementById('connectionText');
-            
+
             if (connected) {
                 statusIndicator.className = 'status-indicator status-active';
                 statusText.textContent = '🌐 Connected - Real-time updates active';
@@ -610,10 +605,10 @@
             console.log('📊 Received multi-currency data update:', data);
             if (data && data.exchangeData) {
                 console.log('📊 Multi-currency data:', data.exchangeData);
-                
+
                 // Add divider line between new and old data
                 console.log('========');
-                
+
                 updateMultiCurrencyMatrix(data.exchangeData);
                 updateRealTimeTimer(data.timestamp);
             } else {
@@ -627,7 +622,7 @@
         function updateMultiCurrencyMatrix(exchangeData) {
             const header = document.getElementById('matrixHeader');
             const tbody = document.getElementById('matrixBody');
-            
+
             if (!exchangeData || !exchangeData.currencies || Object.keys(exchangeData.currencies).length === 0) {
                 tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #718096;">No multi-currency data available</td></tr>';
                 return;
@@ -636,7 +631,7 @@
             // Get currencies and their exchange data
             const currencies = Object.keys(exchangeData.currencies);
             const exchanges = ['mexc', 'lbank', 'kcex', 'dexscreener'];
-            
+
             console.log('🔍 Debug - Currencies:', currencies);
             console.log('🔍 Debug - Exchanges:', exchanges);
             console.log('🔍 Debug - Multi-currency data:', exchangeData.currencies);
@@ -644,13 +639,13 @@
             // Create exchange pairs for columns with enhanced DEX handling
             const exchangePairs = [];
             const usedPairs = new Set();
-            
+
             for (let i = 0; i < exchanges.length; i++) {
                 for (let j = 0; j < exchanges.length; j++) {
                     if (i !== j) {
                         const pairKey = `${exchanges[i]}/${exchanges[j]}`;
                         const reverseKey = `${exchanges[j]}/${exchanges[i]}`;
-                        
+
                         if (!usedPairs.has(pairKey) && !usedPairs.has(reverseKey)) {
                             exchangePairs.push({
                                 id: pairKey,
@@ -660,7 +655,7 @@
                                 reverseB: exchanges[i],
                                 isDEXPair: exchanges[i] === 'dexscreener' || exchanges[j] === 'dexscreener'
                             });
-                            
+
                             usedPairs.add(pairKey);
                             usedPairs.add(reverseKey);
                         }
@@ -681,33 +676,33 @@
                 }
             });
             headerHtml += '</tr>';
-            
+
             header.innerHTML = headerHtml;
 
             // Update body with enhanced DEX calculations
             let bodyHtml = '';
-            
+
             console.log('🔍 Debug - Processing currencies:', currencies);
-            
+
             currencies.forEach(currency => {
                 const currencyData = exchangeData.currencies[currency];
                 if (!currencyData) return;
-                
+
                 // First row: Currency + Forward pairs
                 bodyHtml += '<tr>';
                 bodyHtml += `<td class="sticky-cell symbol-cell" rowspan="2"><strong>${currency}</strong><br><small style="color: #666;">💰 Arbitrage Opportunities</small></td>`;
-                
+
                 exchangePairs.forEach(pair => {
                     const exchangeA = currencyData.prices[pair.exchangeA];
                     const exchangeB = currencyData.prices[pair.exchangeB];
-                    
+
                     if (exchangeA && exchangeB) {
                         if (pair.isDEXPair) {
                             // DEX pair: استفاده از ماژول بهینه‌سازی شده
                             const dexInfo = DEXCalculations.identifyDEXAndRegularExchange(
                                 exchangeA, exchangeB, pair.exchangeA, pair.exchangeB
                             );
-                            
+
                             if (dexInfo) {
                                 bodyHtml += DEXCalculations.generateDEXBidCellHTML(dexInfo.dexExchange, dexInfo.regularExchange);
                             } else {
@@ -717,15 +712,15 @@
                             // Regular exchange pair
                             const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
                             const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                            
+
                             // Calculate spread between exchanges
                             let spread = 'N/A';
                             let spreadClass = 'spread';
-                            
+
                             if (exchangeA.ask && exchangeB.bid) {
                                 const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
                                 spread = spreadPercent.toFixed(3) + '%';
-                                
+
                                 if (spreadPercent > 2) {
                                     spreadClass = 'spread high-profit';
                                 } else if (spreadPercent > 0) {
@@ -738,7 +733,7 @@
                                     spreadClass = 'spread neutral';
                                 }
                             }
-                            
+
                             bodyHtml += `
                                 <td class="exchange-cell">
                                     <div class="price-pair">
@@ -758,23 +753,23 @@
                         bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
                 });
-                
+
                 bodyHtml += '</tr>';
-                
+
                 // Second row: Reverse pairs and DEX second calculation
                 bodyHtml += '<tr class="reverse-row">';
-                
+
                 exchangePairs.forEach(pair => {
                     const exchangeA = currencyData.prices[pair.reverseA];
                     const exchangeB = currencyData.prices[pair.reverseB];
-                    
+
                     if (exchangeA && exchangeB) {
                         if (pair.isDEXPair) {
                             // DEX pair: استفاده از ماژول بهینه‌سازی شده برای ردیف دوم (ASK)
                             const dexInfo = DEXCalculations.identifyDEXAndRegularExchange(
                                 exchangeA, exchangeB, pair.reverseA, pair.reverseB
                             );
-                            
+
                             if (dexInfo) {
                                 bodyHtml += DEXCalculations.generateDEXAskCellHTML(dexInfo.dexExchange, dexInfo.regularExchange);
                             } else {
@@ -784,15 +779,15 @@
                             // Regular reverse exchange pair
                             const askA = exchangeA.ask ? '$' + exchangeA.ask.toFixed(6) : 'N/A';
                             const bidB = exchangeB.bid ? '$' + exchangeB.bid.toFixed(6) : 'N/A';
-                            
+
                             // Calculate spread between exchanges
                             let spread = 'N/A';
                             let spreadClass = 'spread';
-                            
+
                             if (exchangeA.ask && exchangeB.bid) {
                                 const spreadPercent = ((exchangeB.bid - exchangeA.ask) / exchangeA.ask * 100);
                                 spread = spreadPercent.toFixed(3) + '%';
-                                
+
                                 if (spreadPercent > 2) {
                                     spreadClass = 'spread high-profit';
                                 } else if (spreadPercent > 0) {
@@ -805,7 +800,7 @@
                                     spreadClass = 'spread neutral';
                                 }
                             }
-                            
+
                             bodyHtml += `
                                 <td class="exchange-cell reverse">
                                     <div class="reverse-pair-header">
@@ -828,10 +823,10 @@
                         bodyHtml += `<td class="exchange-cell no-data">-</td>`;
                     }
                 });
-                
+
                 bodyHtml += '</tr>';
             });
-            
+
             tbody.innerHTML = bodyHtml;
         }
 
@@ -844,22 +839,22 @@
                 second: '2-digit'
             });
             document.getElementById('realTimeTimer').textContent = timeString;
-            
+
             // Also update the bottom timestamp
-            document.getElementById('lastUpdate').textContent = 
+            document.getElementById('lastUpdate').textContent =
                 `Last update: ${date.toLocaleString()}`;
         }
 
         function updateTimestamp(timestamp) {
             const date = new Date(timestamp);
-            document.getElementById('lastUpdate').textContent = 
+            document.getElementById('lastUpdate').textContent =
                 `Last update: ${date.toLocaleString()}`;
         }
 
         function formatNumber(value) {
             const num = parseFloat(value);
             if (isNaN(num)) return 'N/A';
-            
+
             return new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 6
@@ -889,4 +884,5 @@
         }, 5000);
     </script>
 </body>
+
 </html>

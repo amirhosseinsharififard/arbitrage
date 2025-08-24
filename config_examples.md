@@ -104,6 +104,34 @@ kcex: {
 }
 ```
 
+### Multi-currency URL templates and overrides
+Per-currency entries can override URLs and use placeholders. Supported: {SYMBOL}, {BASE}, {QUOTE}
+```javascript
+// Example per-currency overrides (inside multiCurrencyConfig currencies section)
+DEBT: {
+  baseCurrency: "DEBT",
+  quoteCurrency: "USDT",
+  exchanges: {
+    kcex: {
+      enabled: true,
+      symbol: "DEBT",
+      // Overrides the base template if needed
+      url: "https://www.kcex.com/futures/exchange/DEBT_USDT"
+    },
+    ourbit: {
+      enabled: true,
+      symbol: "DEBT_USDT",
+      url: "https://futures.ourbit.com/fa-IR/exchange/DEBT_USDT?type=linear_swap"
+    },
+    xt: {
+      enabled: true,
+      symbol: "DEBT",
+      url: "https://www.xt.com/en/futures/trade/DEBT_usdt"
+    }
+  }
+}
+```
+
 ## Usage Examples
 
 ### Test with MEXC Disabled
