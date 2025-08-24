@@ -4,7 +4,8 @@
  */
 
 import { getCurrencyConfig, getAvailableCurrencies, getEnabledExchanges } from "../config/multiCurrencyConfig.js";
-import { lbankPriceService, kcexPuppeteerService, dexscreenerApiService } from "../services/index.js";
+import { lbankPriceService, kcexPuppeteerService, dexscreenerApiService, xtPuppeteerService } from "../services/index.js";
+import ourbitPuppeteerService from "../../puppeteer/index.js";
 import { calculationManager, FormattingUtils } from "../utils/index.js";
 import chalk from "chalk";
 import exchangeManager from "../exchanges/exchangeManager.js";
@@ -26,6 +27,7 @@ function initializeErrorTracking(currencyCode) {
             mexc: false,
             kcex: false,
             xt: false,
+            ourbit: false,
             lbank: false,
             dexscreener: false
         };
@@ -66,6 +68,28 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                             await kcexPuppeteerService.initialize();
                         }
                         return await kcexPuppeteerService.extractPrices();
+                    });
+                }
+                break;
+            case 'xt':
+                if (config.exchanges.xt && config.exchanges.xt.enabled) {
+                    return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
+                        xtPuppeteerService.setConfig(config);
+                        if (!xtPuppeteerService.browser || !xtPuppeteerService.page) {
+                            await xtPuppeteerService.initialize();
+                        }
+                        return await xtPuppeteerService.extractPrices();
+                    });
+                }
+                break;
+            case 'ourbit':
+                if (config.exchanges.ourbit && config.exchanges.ourbit.enabled) {
+                    return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
+                        ourbitPuppeteerService.setConfig(config);
+                        if (!ourbitPuppeteerService.browser || !ourbitPuppeteerService.page) {
+                            await ourbitPuppeteerService.initialize();
+                        }
+                        return await ourbitPuppeteerService.extractPrices();
                     });
                 }
                 break;

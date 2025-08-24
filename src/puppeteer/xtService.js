@@ -42,6 +42,33 @@ class XTPuppeteerService {
         this.updateInterval = config.xt.updateInterval;
         this.selectors = config.xt.selectors;
         this.browserConfig = config.xt.browser;
+        this.enabled = config.xt.enabled;
+    }
+
+    /**
+     * Apply dynamic configuration for multi-currency support
+     */
+    setConfig(currencyConfig) {
+        try {
+            if (!currencyConfig || !currencyConfig.exchanges || !currencyConfig.exchanges.xt) return;
+            const xtCfg = currencyConfig.exchanges.xt;
+            this.enabled = xtCfg.enabled !== undefined ? xtCfg.enabled : this.enabled;
+            this.url = (xtCfg.url || this.url || config.xt.url);
+            this.selectors = xtCfg.selectors || this.selectors || config.xt.selectors;
+            this.updateInterval = xtCfg.updateInterval || this.updateInterval || config.xt.updateInterval;
+            this.browserConfig = xtCfg.browser || this.browserConfig || config.xt.browser;
+
+            // Resolve placeholders
+            if (this.url) {
+                const symbolForUrl = xtCfg.symbol || (currencyConfig.symbols && currencyConfig.symbols.xt) || (currencyConfig.currency && currencyConfig.currency.baseCurrency) || '';
+                const base = (currencyConfig.currency && currencyConfig.currency.baseCurrency) || '';
+                const quote = (currencyConfig.currency && currencyConfig.currency.quoteCurrency) || '';
+                this.url = this.url
+                    .replaceAll('{SYMBOL}', symbolForUrl)
+                    .replaceAll('{BASE}', base)
+                    .replaceAll('{QUOTE}', quote);
+            }
+        } catch (_) {}
     }
 
     /**
@@ -49,7 +76,7 @@ class XTPuppeteerService {
      */
     async initialize() {
         try {
-            if (!config.xt.enabled) {
+            if (!this.enabled) {
                 console.log('⚠️ XT Puppeteer service disabled by config');
                 return false;
             }
@@ -96,7 +123,7 @@ class XTPuppeteerService {
             if (!this.page) {
                 throw new Error('Page not initialized');
             }
-            if (!config.xt.enabled) {
+            if (!this.enabled) {
                 return {...this.priceData, bid: null, ask: null, error: null };
             }
 
@@ -227,7 +254,7 @@ class XTPuppeteerService {
      * Check if service is healthy
      */
     isHealthy() {
-        if (!config.xt.enabled) return true;
+        if (!this.enabled) return true;
         return this.browser && this.page && !this.priceData.error;
     }
 }

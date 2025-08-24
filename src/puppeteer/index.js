@@ -42,6 +42,33 @@ class OurbitPuppeteerService {
         this.updateInterval = config.ourbit.updateInterval;
         this.selectors = config.ourbit.selectors;
         this.browserConfig = config.ourbit.browser;
+        this.enabled = config.ourbit.enabled;
+    }
+
+    /**
+     * Apply dynamic configuration for multi-currency support
+     */
+    setConfig(currencyConfig) {
+        try {
+            if (!currencyConfig || !currencyConfig.exchanges || !currencyConfig.exchanges.ourbit) return;
+            const ourbitCfg = currencyConfig.exchanges.ourbit;
+            this.enabled = ourbitCfg.enabled !== undefined ? ourbitCfg.enabled : this.enabled;
+            this.url = (ourbitCfg.url || this.url || config.ourbit.url);
+            this.selectors = ourbitCfg.selectors || this.selectors || config.ourbit.selectors;
+            this.updateInterval = ourbitCfg.updateInterval || this.updateInterval || config.ourbit.updateInterval;
+            this.browserConfig = ourbitCfg.browser || this.browserConfig || config.ourbit.browser;
+
+            // Resolve placeholders
+            if (this.url) {
+                const symbolForUrl = ourbitCfg.symbol || (currencyConfig.symbols && currencyConfig.symbols.ourbit) || (currencyConfig.currency && currencyConfig.currency.baseCurrency) || '';
+                const base = (currencyConfig.currency && currencyConfig.currency.baseCurrency) || '';
+                const quote = (currencyConfig.currency && currencyConfig.currency.quoteCurrency) || '';
+                this.url = this.url
+                    .replaceAll('{SYMBOL}', symbolForUrl)
+                    .replaceAll('{BASE}', base)
+                    .replaceAll('{QUOTE}', quote);
+            }
+        } catch (_) {}
     }
 
     /**
