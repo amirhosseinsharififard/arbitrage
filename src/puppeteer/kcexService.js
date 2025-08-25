@@ -15,7 +15,7 @@
 import puppeteer from 'puppeteer';
 import { FormattingUtils } from '../Arbitrage Logic/utils/index.js';
 import logger from '../Arbitrage Logic/logging/logger.js';
-import config from '../Arbitrage Logic/config/config.js';
+import { config } from '../Arbitrage Logic/config/multiCurrencyConfig.js';
 
 class KCEXPuppeteerService {
     constructor() {
@@ -54,17 +54,12 @@ class KCEXPuppeteerService {
         this.currentConfig = currencyConfig;
         if (currencyConfig && currencyConfig.exchanges && currencyConfig.exchanges.kcex) {
             const kcexConfig = currencyConfig.exchanges.kcex;
+
+            // Use currency-specific URL directly from config
             this.url = kcexConfig.url || config.kcex.url;
             this.selectors = kcexConfig.selectors || config.kcex.selectors;
             this.updateInterval = kcexConfig.updateInterval || config.kcex.updateInterval;
             this.browserConfig = kcexConfig.browser || config.kcex.browser;
-
-            // Update symbol in URL
-            if (this.url && kcexConfig.symbol) {
-                this.url = this.url.replace('{SYMBOL}', kcexConfig.symbol);
-            }
-
-
         }
     }
 

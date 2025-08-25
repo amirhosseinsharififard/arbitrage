@@ -3,11 +3,16 @@
  */
 
 import kcexPuppeteerService from './src/puppeteer/kcexService.js';
+import { getCurrencyConfig } from './src/Arbitrage Logic/config/multiCurrencyConfig.js';
 
 async function testKCEXPuppeteer() {
     console.log('🧪 Testing KCEX Puppeteer integration...');
 
     try {
+        // Get DEBT configuration and set it for KCex service
+        const debtConfig = getCurrencyConfig('DEBT');
+        kcexPuppeteerService.setConfig(debtConfig);
+        
         console.log('1️⃣ Initializing KCEX Puppeteer service...');
         const initialized = await kcexPuppeteerService.initialize();
         if (!initialized) {

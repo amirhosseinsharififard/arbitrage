@@ -76,7 +76,7 @@ const baseExchangeConfigs = {
     kcex: {
         enabled: true,
         feesPercent: 0,
-        url: "https://www.kcex.com/futures/exchange/{SYMBOL}_USDT",
+        url: "https://www.kcex.com/futures/exchange/DEBT_USDT",
         updateInterval: 100,
         selectors: {
             bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
@@ -473,6 +473,47 @@ export function removeCurrency(currencyCode) {
     delete currencies[currencyCode];
 }
 
+// Legacy config export for backward compatibility
+export const config = {
+    ...systemConfig,
+    symbols: {
+        ourbit: "DEBT/USDT",
+        mexc: "DEBT/USDT:USDT",
+        lbank: "DEBT/USDT:USDT",
+        xt: "DEBT/USDT",
+        kcex: "DEBT/USDT",
+        dexscreener: "DEBT/USDT"
+    },
+    feesPercent: {
+        ourbit: 0,
+        mexc: 0,
+        lbank: 0,
+        xt: 0,
+        kcex: 0,
+        dexscreener: 0
+    },
+    exchanges: {
+        mexc: {
+            id: "mexc",
+            enabled: true,
+            options: { defaultType: "future" },
+            retryAttempts: 10,
+            retryDelay: 1000
+        },
+        lbank: {
+            id: "lbank",
+            enabled: true,
+            options: { defaultType: "future" },
+            retryAttempts: 10,
+            retryDelay: 1000
+        }
+    },
+    ourbit: baseExchangeConfigs.ourbit,
+    xt: baseExchangeConfigs.xt,
+    kcex: baseExchangeConfigs.kcex,
+    dexscreener: dexConfigs.dexscreener
+};
+
 export default {
     getCurrencyConfig,
     getAvailableCurrencies,
@@ -482,5 +523,6 @@ export default {
     currencies,
     baseExchangeConfigs,
     dexConfigs,
-    systemConfig
+    systemConfig,
+    config // Legacy export
 };
