@@ -8,7 +8,10 @@
         "start": "node index.js",
         "puppeteer": "node \"./src/Puppeteer Logic/index.js\"",
         "puppeteer:xt": "node test_xt_puppeteer.js",
-        "puppeteer:kcex": "node test_kcex_puppeteer.js"
+        "puppeteer:kcex": "node test_kcex_puppeteer.js",
+        "clean": "node -e \"import('fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\"",
+        "build": "npm run clean && node scripts/build.js",
+        "start:dist": "node dist/index.js"
     },
     "dependencies": {
         "axios": "^1.11.0",
