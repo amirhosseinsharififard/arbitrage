@@ -7,6 +7,7 @@ import { getTradingStatus } from './src/Arbitrage Logic/arbitrage_bot/arbitrage.
 import statistics from './src/Arbitrage Logic/monitoring/statistics.js';
 import { getAvailableCurrencies } from './src/Arbitrage Logic/config/multiCurrencyConfig.js';
 import dataManager from './src/Arbitrage Logic/core/dataManager.js';
+import { getLatestArbitrageData } from './src/Arbitrage Logic/core/multiCurrencyManager.js';
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -87,13 +88,13 @@ class WebInterface {
             try {
                 const availableCurrencies = getAvailableCurrencies();
 
-                // Get arbitrage opportunities from data manager
-                const arbitrageOpportunities = {};
-                availableCurrencies.forEach(currency => {
-                    const opportunities = dataManager.getOpportunities(currency);
-                    if (opportunities && opportunities.length > 0) {
-                        arbitrageOpportunities[currency] = opportunities;
-                    }
+                // Get arbitrage opportunities from multi-currency manager
+                const arbitrageOpportunities = getLatestArbitrageData();
+                console.log(`📊 Web Interface: Retrieved arbitrage data for ${Object.keys(arbitrageOpportunities).length} currencies`);
+
+                // Log opportunities for debugging
+                Object.entries(arbitrageOpportunities).forEach(([currency, opportunities]) => {
+                    console.log(`✅ Web Interface: ${currency} has ${opportunities.length} opportunities`);
                 });
 
                 const data = {

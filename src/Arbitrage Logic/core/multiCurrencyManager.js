@@ -16,9 +16,14 @@ import dataUpdateManager from "../utils/dataUpdateManager.js";
 let webInterfaceInstance = null;
 let previousData = {};
 let errorMessagesShown = {};
+let latestArbitrageData = {};
 
 export function setWebInterface(webInterface) {
     webInterfaceInstance = webInterface;
+}
+
+export function getLatestArbitrageData() {
+    return latestArbitrageData;
 }
 
 function initializeErrorTracking(currencyCode) {
@@ -355,6 +360,12 @@ async function processCurrency(currencyCode, exchanges) {
                 tradeVolume: config.tradeVolumeUSD
             }
         });
+
+        // Also store opportunities separately for web interface
+        if (opportunities && opportunities.length > 0) {
+            console.log(`🌐 Web Interface: Storing ${opportunities.length} opportunities for ${currencyCode}`);
+            latestArbitrageData[currencyCode] = opportunities;
+        }
         
         // Display data
         if (Object.keys(prices).length > 0) {
