@@ -6,9 +6,6 @@
     "private": true,
     "scripts": {
         "start": "node index.js",
-        "puppeteer": "node \"./src/Puppeteer Logic/index.js\"",
-        "puppeteer:xt": "node test_xt_puppeteer.js",
-        "puppeteer:kcex": "node test_kcex_puppeteer.js",
         "clean": "node -e \"import('fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\"",
         "build": "npm run clean && node scripts/build.js",
         "start:dist": "node dist/index.js",
@@ -34,10 +31,10 @@
         "socket.io": "^4.7.4",
         "ws": "^8.18.3"
     },
+    "devDependencies": {
+        "javascript-obfuscator": "^4.1.0"
+    },
     "engines": {
         "node": ">=18"
-    },
-    "devDependencies": {
-        "javascript-obfuscator": "^4.1.1"
     }
 }

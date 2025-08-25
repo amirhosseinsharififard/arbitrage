@@ -1,292 +1,262 @@
-# Arbitrage Trading System
+# 🤖 CCXT Arbitrage Trading Bot
 
-A sophisticated cryptocurrency arbitrage trading system that automatically identifies and executes profitable trading opportunities between different exchanges. The system supports both USD-based and token quantity-based trading modes with comprehensive logging and risk management.
+A sophisticated cryptocurrency arbitrage trading system that automatically identifies and executes profitable trading opportunities between multiple exchanges. Features real-time price monitoring, multi-currency support, DEX integration, and a beautiful web interface.
 
-## 🚀 Key Features
+## 🚀 Features
 
-### **🌐 Real-time Web Interface**
-- **Beautiful Dashboard**: Modern, responsive web interface with real-time data updates
-- **Two-section Layout**: Trading Status and Session Statistics displayed in organized tables
-- **Live Updates**: Data automatically refreshes when trading system processes changes
-- **Connection Status**: Visual indicator showing real-time connection to trading system
+### **Core Trading System**
+- **Multi-Exchange Support**: MEXC, LBank, KCEX, OurBit, XT
+- **DEX Integration**: DexScreener API for decentralized exchange data
+- **Multi-Currency Trading**: AIOT, DEBT, ALT with easy currency addition
+- **Real-time Price Monitoring**: 50ms intervals for optimal opportunity detection
+- **Advanced Arbitrage Logic**: CEX vs CEX and CEX vs DEX calculations
+- **Risk Management**: Single position trading, volume validation, profit thresholds
 
-### **Dual Trading Modes**
-- **USD-Based Trading**: Traditional dollar amount-based trading (e.g., $200 total investment)
-- **Token Quantity-Based Trading**: Trade based on specific token quantities (e.g., 1000 DEBT tokens)
+### **Web Interface**
+- **Real-time Dashboard**: Live price matrix and arbitrage opportunities
+- **Beautiful UI**: Modern, responsive design with gradient backgrounds
+- **Auto-updates**: Data refreshes every 2 seconds
+- **Connection Status**: Visual indicators for system health
+- **Mobile Responsive**: Works on desktop and mobile devices
 
-### **Accurate Profit Calculations**
-- **Corrected `actualProfitUSD`**: Now uses the accurate formula: `TotalInvestmentUSD × (netProfitPercent / 100)`
-- **Accurate `volume`**: Represents actual token count, not scaled values: `TotalInvestmentUSD / buyPrice`
-- **Transparent Scaling**: All calculations are explicit and documented in the code
-
-### **Advanced Trading Logic**
-- **Sequential Trading**: Only one position open at a time for risk management
-- **Token Quantity Continuation**: Automatically continues buying/selling if target quantity isn't met
-- **Liquidity Validation**: Uses order book data to ensure trade execution feasibility
-- **Dynamic Volume Calculation**: Adjusts trade size based on available liquidity and account balance
-
-### **Comprehensive Logging**
-- **Detailed Trade Logs**: Complete JSON logs for all open/close events
-- **Performance Metrics**: Real-time profit/loss tracking and statistics
-- **Order Book Snapshots**: Market condition capture at trade open/close
-- **Continuation Tracking**: Detailed logs for token quantity continuation trades
+### **Build & Deployment**
+- **Build System**: Clean build pipeline with `dist/` output
+- **Code Protection**: Obfuscation pipeline with `dist_protected/` output
+- **Cross-platform**: Windows batch scripts and npm scripts
+- **Production Ready**: Optimized for deployment
 
 ## 📊 Trading Strategy
 
-### **Core Arbitrage Logic**
-1. **Buy at LBANK ask price** (lower price)
-2. **Sell at MEXC bid price** (higher price)
-3. **Profit from price difference** between exchanges
-4. **Maintain single position** for risk management
+### **Arbitrage Logic**
+1. **Price Monitoring**: Continuously fetch prices from all enabled exchanges
+2. **Opportunity Detection**: Calculate profit percentages between exchanges
+3. **Validation**: Check liquidity, fees, and profit thresholds
+4. **Execution**: Open positions when profitable conditions are met
+5. **Management**: Monitor and close positions based on strategy
 
 ### **Profit Calculation**
 ```javascript
-// Corrected formula for actual profit calculation
-actualProfitUSD = TotalInvestmentUSD × (netProfitPercent / 100)
+// Gross profit calculation
+profitPercent = ((sellPrice - buyPrice) / buyPrice) * 100
 
-// Where:
-// - TotalInvestmentUSD = actual amount invested in the position
-// - netProfitPercent = gross profit % minus total fees %
+// Net profit after fees
+netProfit = grossProfit - (buyFee + sellFee)
 ```
 
-### **Volume Calculation**
-```javascript
-// For USD-based trading:
-volume = (tradeVolumeUSD / 2) / buyPrice
+### **Supported Trading Modes**
+- **USD-Based**: Trade with fixed USD amounts
+- **Token-Based**: Trade specific token quantities
+- **Hybrid**: Combine both approaches for optimal results
 
-// For token quantity-based trading:
-volume = targetTokenQuantity
-
-// Both represent actual token count, not scaled values
-```
-
-## 🌐 Web Interface
-
-### **Quick Start**
-1. **Start the system**: `npm start` or run `start_with_web.bat`
-2. **Open browser**: Navigate to `http://localhost:3000`
-3. **Monitor data**: Real-time updates will appear automatically
-
-### **Dashboard Sections**
-- **📊 Trading Status**: Current position status, P&L, trade counts, and investment
-- **📈 Session Statistics**: Win rate, profitable/losing trades, best/worst trades
-- **⚙️ System Configuration**: Current trading parameters and thresholds
-
-### **Features**
-- **Real-time Updates**: Data refreshes automatically when trading system processes changes
-- **Connection Status**: Visual indicator showing connection to trading system
-- **Responsive Design**: Works on desktop and mobile devices
-- **No Authentication**: Designed for local monitoring (development use)
-
-For detailed web interface documentation, see [WEB_INTERFACE_README.md](WEB_INTERFACE_README.md).
-
-## ⚙️ Configuration
-
-### **Trading Mode Selection**
-```javascript
-// In config.js
-tradingMode: "USD", // "USD" or "TOKEN"
-```
-
-### **USD-Based Trading**
-```javascript
-tradeVolumeUSD: 200, // Total investment across both exchanges
-// Results in $100 per side (buy and sell)
-```
-
-### **Token Quantity-Based Trading**
-```javascript
-tradingMode: "TOKEN",
-targetTokenQuantity: 1000, // Target number of tokens to trade
-maxTokenQuantity: 10000,   // Maximum allowed for safety
-minTokenQuantity: 100      // Minimum for validation
-```
-
-### **Profit Thresholds**
-```javascript
-profitThresholdPercent: 2,    // Minimum % to open position
-closeThresholdPercent: 1,     // % threshold to close position
-```
-
-## 🔄 Token Quantity Continuation
-
-### **How It Works**
-1. **Initial Trade**: Opens position for target token quantity
-2. **Quantity Check**: Monitors if target quantity was achieved
-3. **Continuation Logic**: If shortfall exists and conditions are met:
-   - Calculate remaining quantity needed
-   - Check available account balance
-   - Validate profit conditions still exist
-   - Open continuation position
-   - Respect liquidity constraints
-
-### **Continuation Example**
-```javascript
-// Target: 1000 DEBT tokens
-// Initial trade: 800 DEBT tokens (limited by liquidity)
-// Continuation: 200 DEBT tokens (remaining needed)
-// Result: Total 1000 DEBT tokens achieved
-```
-
-### **Safety Features**
-- **Balance Validation**: Ensures sufficient funds before continuation
-- **Profit Threshold Check**: Only continues if profitable conditions persist
-- **Liquidity Respect**: Limits continuation volume to available market depth
-- **Maximum Limits**: Configurable upper bounds for safety
-
-## 📈 Logging and Monitoring
-
-### **Trade Log Structure**
-```json
-{
-  "action": "ARBITRAGE_OPEN",
-  "symbol": "DEBT/USDT:USDT",
-  "timestamp": "2024-01-01T12:00:00.000Z",
-  "data": {
-    "arbitrageId": "lbank-mexc",
-    "tradingMode": "TOKEN",
-    "targetTokenQuantity": 1000,
-    "volume": 1000,
-    "buyPrice": 0.001,
-    "sellPrice": 0.00102,
-    "totalInvestmentUSD": 2.04,
-    "expectedProfitUSD": 0.0408,
-    "details": {
-      "profitBreakdown": {
-        "grossDiffPercent": "2.0%",
-        "feesPercentTotal": "0.0%",
-        "netExpectedDiffPercent": "2.0%"
-      }
-    }
-  }
-}
-```
-
-### **Close Log Structure**
-```json
-{
-  "action": "ARBITRAGE_CLOSE",
-  "symbol": "DEBT/USDT:USDT",
-  "timestamp": "2024-01-01T12:05:00.000Z",
-  "data": {
-    "arbitrageId": "lbank-mexc",
-    "volume": 1000,
-    "actualProfitUSD": 0.0408,
-    "totalInvestmentUSD": 2.04,
-    "netProfitPercent": "2.0%",
-    "profitCalculation": {
-      "formula": "actualProfitUSD = TotalInvestmentUSD × (netProfitPercent / 100)",
-      "totalInvestmentUSD": 2.04,
-      "netProfitPercent": 2.0,
-      "calculatedProfit": 0.0408
-    }
-  }
-}
-```
-
-## 🛠️ Installation and Setup
+## 🛠️ Installation & Setup
 
 ### **Prerequisites**
-- Node.js 16+ 
-- CCXT library for exchange integration
-- API keys for MEXC and LBank exchanges
+- Node.js 18+ 
+- npm or yarn
+- API keys for exchanges (optional for price monitoring)
 
-### **Installation**
+### **Quick Start**
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd CCXT
+
+# Install dependencies
 npm install
+
+# Start the system
+npm start
 ```
 
 ### **Configuration**
 1. Copy `config.example.js` to `config.js`
 2. Set your API keys and trading parameters
-3. Choose trading mode (USD or TOKEN)
-4. Set profit thresholds and volume limits
+3. Configure currencies and exchanges in `src/Arbitrage Logic/config/multiCurrencyConfig.js`
+4. Adjust profit thresholds and volume limits
 
-### **Running the System**
-```bash
-npm start
+### **Environment Variables**
+Create `.env` file based on `env.example`:
+```env
+# Exchange API Keys (optional for price monitoring)
+MEXC_API_KEY=your_mexc_api_key
+MEXC_SECRET=your_mexc_secret
+LBANK_API_KEY=your_lbank_api_key
+LBANK_SECRET=your_lbank_secret
+
+# System Configuration
+NODE_ENV=production
+PORT=8080
 ```
 
-### **Puppeteer Tests**
+## 🏗️ Build & Deployment
+
+### **Development Build**
 ```bash
-npm run puppeteer:xt
-npm run puppeteer:kcex
+# Build for development
+npm run build
+
+# Start built version
+npm run start:dist
 ```
+
+### **Protected Build (Production)**
+```bash
+# Build with code obfuscation
+npm run build:protect
+
+# Start protected version
+npm run start:protected
+```
+
+### **Windows Batch Scripts**
+```bash
+# Build protected version (Windows)
+.\build_protected.bat
+
+# Start with web interface (Windows)
+.\start_with_web.bat
+```
+
+## 🌐 Web Interface
+
+### **Access**
+- **URL**: http://localhost:8080
+- **Auto-start**: Web interface starts automatically with the main system
+- **Real-time Updates**: Data refreshes every 2 seconds
+
+### **Dashboard Features**
+- **Price Matrix**: Real-time prices across all exchanges
+- **Arbitrage Opportunities**: Live profit calculations
+- **System Status**: Connection health and performance metrics
+- **Responsive Design**: Works on all device sizes
 
 ## 📁 Project Structure
 
 ```
-src/arbitrage/
-├── arbitrage/                # Arbitrage computations
-├── arbitrage_bot/            # Position lifecycle
-├── config/                   # Centralized configuration
-├── error/                    # Retry helpers
-├── exchanges/                # CCXT exchange manager
-├── logging/                  # Logger
-├── monitoring/               # Statistics
-├── services/                 # Ourbit/KCEX/XT services
-├── utils/                    # Calculations, formatting, spreads, perf
-└── prices.js                 # Price monitor and routing
+CCXT/
+├── src/
+│   ├── Arbitrage Logic/
+│   │   ├── arbitrage/          # Core arbitrage calculations
+│   │   ├── arbitrage_bot/      # Position management
+│   │   ├── config/             # Configuration management
+│   │   ├── core/               # Core system components
+│   │   ├── exchanges/          # Exchange integrations
+│   │   ├── services/           # External service integrations
+│   │   ├── utils/              # Utility functions
+│   │   └── monitoring/         # Performance monitoring
+│   └── puppeteer/              # Web scraping services
+├── public/                     # Web interface assets
+├── scripts/                    # Build and utility scripts
+├── dist/                       # Build output
+├── dist_protected/             # Obfuscated build output
+├── index.js                    # Main entry point
+├── web_interface.js            # Web server
+└── package.json                # Dependencies and scripts
 ```
 
-## 🔒 Risk Management
+## ⚙️ Configuration
 
-### **Position Limits**
-- **Single Position**: Only one arbitrage position open at a time
-- **Volume Limits**: Respects exchange liquidity and account balance
+### **Currency Configuration**
+Add new currencies in `src/Arbitrage Logic/config/multiCurrencyConfig.js`:
+```javascript
+const currencies = {
+    NEW_COIN: {
+        name: "NEW_COIN",
+        baseCurrency: "NEW_COIN",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: { symbol: "NEW_COIN/USDT:USDT", enabled: true },
+            lbank: { symbol: "NEW_COIN/USDT:USDT", enabled: true }
+        },
+        trading: {
+            profitThresholdPercent: 2.0,
+            closeThresholdPercent: 1.5,
+            tradeVolumeUSD: 200
+        }
+    }
+};
+```
 
-### **Validation Checks**
-- **Profit Thresholds**: Minimum profit requirements before trading
-- **Liquidity Validation**: Order book depth verification
-- **Balance Checks**: Account balance validation before trades
-- **Fee Calculation**: Accurate profit calculation including all fees
-
-## 📊 Performance Monitoring
-
-### **Real-Time Statistics**
-- **Session Tracking**: Profit/loss across trading sessions
-- **Trade History**: Detailed log of all completed trades
-- **Performance Metrics**: Win rate, average profit, drawdown analysis
-- **Request Monitoring**: Network performance and error tracking
-
-### **Console Output**
-- **Status Updates**: Real-time trading status and position information
-- **Trade Details**: Comprehensive trade execution information
-- **Performance Summary**: Session statistics and profit/loss summary
-- **Error Reporting**: Detailed error messages and recovery information
-
-## 🚨 Error Handling
-
-### **Network Resilience**
-- **Automatic Retries**: Configurable retry attempts for failed operations
-- **Connection Recovery**: Automatic reconnection to exchanges
-- **Graceful Degradation**: Continue operation with reduced functionality
-
-### **Data Validation**
-- **Price Validation**: Verify price data integrity
-- **Volume Validation**: Ensure sufficient liquidity exists
-- **Balance Validation**: Confirm sufficient funds before trading
+### **Exchange Configuration**
+Configure exchanges in the same file:
+```javascript
+const baseExchangeConfigs = {
+    newExchange: {
+        id: "newExchange",
+        enabled: true,
+        options: { defaultType: "spot" },
+        retryAttempts: 5,
+        retryDelay: 1000,
+        feesPercent: 0.1
+    }
+};
+```
 
 ## 🔧 Customization
 
 ### **Adding New Exchanges**
-1. Add exchange configuration to `config.js`
-2. Implement exchange-specific logic in `exchangeManager.js`
-3. Update arbitrage logic for new exchange pairs
+1. Add exchange configuration to `multiCurrencyConfig.js`
+2. Implement exchange-specific logic in `src/Arbitrage Logic/exchanges/`
+3. Update arbitrage calculations for new exchange pairs
 
 ### **Modifying Trading Strategy**
-1. Adjust profit thresholds in `config.js`
-2. Modify position opening/closing logic in `arbitrage.js`
+1. Adjust profit thresholds in configuration
+2. Modify position opening/closing logic in `arbitrage_bot/`
 3. Update risk management parameters
 
-### **Extending Logging**
-1. Add new log actions to `config.js`
-2. Implement logging logic in `logger.js`
-3. Update monitoring and statistics tracking
+### **Extending Web Interface**
+1. Modify `public/index.html` for UI changes
+2. Update `web_interface.js` for backend logic
+3. Add new data endpoints as needed
+
+## 📈 Performance & Monitoring
+
+### **System Monitoring**
+- **Real-time Statistics**: Profit/loss tracking
+- **Performance Metrics**: Response times and throughput
+- **Error Tracking**: Comprehensive error logging
+- **Resource Usage**: Memory and CPU monitoring
+
+### **Logging**
+- **Trade Logs**: Complete transaction history
+- **Error Logs**: Detailed error information
+- **Performance Logs**: System performance metrics
+- **Request Logs**: API call tracking
+
+## 🔒 Security & Protection
+
+### **Code Protection**
+- **Obfuscation**: JavaScript code obfuscation for production
+- **Build Pipeline**: Clean separation of development and production code
+- **Environment Variables**: Secure configuration management
+
+### **Risk Management**
+- **Single Position**: Only one arbitrage position at a time
+- **Volume Limits**: Respects exchange liquidity and account balance
+- **Profit Thresholds**: Minimum profit requirements before trading
+- **Error Handling**: Graceful degradation and recovery
+
+## 🚨 Troubleshooting
+
+### **Common Issues**
+1. **Exchange Connection Errors**: Check API keys and network connectivity
+2. **Price Data Issues**: Verify exchange symbols and configurations
+3. **Web Interface Not Loading**: Check port 8080 availability
+4. **Build Errors**: Ensure all dependencies are installed
+
+### **Debug Mode**
+Enable detailed logging by setting environment variables:
+```bash
+NODE_ENV=development DEBUG=* npm start
+```
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## ⚠️ Disclaimer
+
+This software is for educational and research purposes. Cryptocurrency trading involves significant risk. Use at your own risk and never invest more than you can afford to lose.
 
 ## 🤝 Contributing
 
@@ -296,10 +266,10 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 4. Add comprehensive tests
 5. Submit a pull request
 
-## ⚠️ Disclaimer
-
-This software is for educational and research purposes. Cryptocurrency trading involves significant risk. Use at your own risk and never invest more than you can afford to lose.
-
 ## 📞 Support
 
 For questions and support, please open an issue in the GitHub repository.
+
+---
+
+**Built with ❤️ for the crypto trading community**

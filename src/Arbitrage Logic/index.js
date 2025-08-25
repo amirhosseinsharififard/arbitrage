@@ -1,52 +1,38 @@
-// Main index file for the src directory
-// Provides easy access to all modules
+/**
+ * Main export file for the Arbitrage Logic module
+ * 
+ * This file provides centralized access to all arbitrage system components
+ * including configuration, core logic, utilities, and services.
+ */
 
-// Core modules
-export { default as config }
-from './config/config.js';
-
-// Exchange management
-export { default as exchangeManager, ExchangeManager }
-from './exchanges/exchangeManager.js';
-
-// Logging
-export { default as logger, Logger }
-from './logging/logger.js';
-
-// Monitoring and statistics
-export { default as statistics, Statistics }
-from './monitoring/statistics.js';
-
-// Arbitrage logic
-export { default as arbitrageLogic, ArbitrageLogic }
-from './arbitrage/arbitrageLogic.js';
-
-// System management
-export { default as exitHandler, ExitHandler }
-from './system/exitHandler.js';
-
-// Arbitrage bot
-export {
-    tryOpenPosition,
-    tryClosePosition,
-    openPositions,
-    tradingState,
-    getTradingStatus
-}
+// Core system components
+export { processAllCurrencies, setWebInterface }
+from './core/multiCurrencyManager.js';
+export { getTradingStatus, restoreOpenPositionsFromLog }
 from './arbitrage_bot/arbitrage.js';
 
-// New utility classes
-export { CalculationUtils, FormattingUtils, ValidationUtils }
+// Configuration
+export { getCurrencyConfig, getAvailableCurrencies, getEnabledExchanges }
+from './config/multiCurrencyConfig.js';
+
+// Utilities
+export { calculationManager, FormattingUtils }
 from './utils/index.js';
 
-// New services
-export { ourbitPriceService, OurbitPriceService }
+// Services
+export { lbankPriceService, kcexPuppeteerService, dexscreenerApiService }
 from './services/index.js';
 
 // Error handling
 export { retryWrapper }
 from './error/errorBoundary.js';
 
-// Prices and market data
-export { printBidAskPairs, getPrice }
-from './prices.js';
+// System components
+export { default as exitHandler }
+from './system/exitHandler.js';
+export { default as exchangeManager }
+from './exchanges/exchangeManager.js';
+export { default as logger }
+from './logging/logger.js';
+export { default as statistics }
+from './monitoring/statistics.js';
