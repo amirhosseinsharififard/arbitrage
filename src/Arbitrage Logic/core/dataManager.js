@@ -24,7 +24,7 @@ class DataManager {
 
         // Data update listeners
         this.listeners = new Map();
-        
+
         // Data validation rules
         this.validationRules = {
             price: (value) => typeof value === 'number' && value > 0,
@@ -153,7 +153,7 @@ class DataManager {
      * @returns {Array} Arbitrage opportunities
      */
     getOpportunities(currencyCode) {
-        return this.data.opportunities[currencyCode]?.opportunities || [];
+        return this.data.opportunities[currencyCode]?.profitableOpportunities || [];
     }
 
     /**

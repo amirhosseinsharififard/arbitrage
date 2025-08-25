@@ -133,160 +133,40 @@ function calculateArbitrageOpportunities(currencyCode, prices, config) {
     const allCalculations = []; // Store all calculations for web interface
     const exchanges = Object.keys(prices).filter(id => prices[id] !== null);
 
-    // Separate DEX and CEX exchanges
+    // Separate DEX and CEX exchanges dynamically
     const dexExchanges = exchanges.filter(ex => prices[ex].isDEX);
     const cexExchanges = exchanges.filter(ex => !(prices[ex].isDEX));
 
-    // Calculate CEX vs CEX opportunities in requested order
+    // Log exchange discovery for debugging
+    if (cexExchanges.length > 0) {
+        console.log(`🔍 ${currencyCode}: Found ${cexExchanges.length} CEX exchanges: ${cexExchanges.join(', ')}`);
+    }
+    if (dexExchanges.length > 0) {
+        console.log(`🔍 ${currencyCode}: Found ${dexExchanges.length} DEX exchanges: ${dexExchanges.join(', ')}`);
+    }
+
+    // Calculate CEX vs CEX opportunities - Fully dynamic for any number of exchanges
     if (cexExchanges.length >= 2) {
-        const [ex1, ex2, ex3] = cexExchanges;
-        const p1 = prices[ex1];
-        const p2 = prices[ex2];
-        const p3 = ex3 ? prices[ex3] : null;
+        console.log(`🔄 ${currencyCode}: Calculating ${cexExchanges.length * (cexExchanges.length - 1)} CEX arbitrage combinations...`);
 
-        // 1) ex1(BID) -> ex2(ASK)
-        if (p1.bid && p2.ask) {
-            const profit = calculationManager.calculateProfitPercentage(p2.ask, p1.bid);
-            const calc = {
-                currency: currencyCode,
-                direction: `${ex1}(BID)->${ex2}(ASK)`,
-                buyExchange: ex2,
-                sellExchange: ex1,
-                buyPrice: p2.ask,
-                sellPrice: p1.bid,
-                profitPercent: profit,
-                isDEXInvolved: false,
-                isProfitable: profit >= config.profitThresholdPercent,
-                buyExchangeType: 'CEX',
-                sellExchangeType: 'CEX',
-                buyType: 'ASK',
-                sellType: 'BID'
-            };
-            allCalculations.push(calc);
-            if (calc.isProfitable) opportunities.push(calc);
-        }
-
-        // 2) ex2(BID) -> ex1(ASK)
-        if (p2.bid && p1.ask) {
-            const profit = calculationManager.calculateProfitPercentage(p1.ask, p2.bid);
-            const calc = {
-                currency: currencyCode,
-                direction: `${ex2}(BID)->${ex1}(ASK)`,
-                buyExchange: ex1,
-                sellExchange: ex2,
-                buyPrice: p1.ask,
-                sellPrice: p2.bid,
-                profitPercent: profit,
-                isDEXInvolved: false,
-                isProfitable: profit >= config.profitThresholdPercent,
-                buyExchangeType: 'CEX',
-                sellExchangeType: 'CEX',
-                buyType: 'ASK',
-                sellType: 'BID'
-            };
-            allCalculations.push(calc);
-            if (calc.isProfitable) opportunities.push(calc);
-        }
-
-        if (ex3 && p3) {
-            // 3) ex3(BID) -> ex1(ASK)
-            if (p3.bid && p1.ask) {
-                const profit = calculationManager.calculateProfitPercentage(p1.ask, p3.bid);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${ex3}(BID)->${ex1}(ASK)`,
-                    buyExchange: ex1,
-                    sellExchange: ex3,
-                    buyPrice: p1.ask,
-                    sellPrice: p3.bid,
-                    profitPercent: profit,
-                    isDEXInvolved: false,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'CEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'ASK',
-                    sellType: 'BID'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
-            }
-
-            // 4) ex1(BID) -> ex3(ASK)
-            if (p1.bid && p3.ask) {
-                const profit = calculationManager.calculateProfitPercentage(p3.ask, p1.bid);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${ex1}(BID)->${ex3}(ASK)`,
-                    buyExchange: ex3,
-                    sellExchange: ex1,
-                    buyPrice: p3.ask,
-                    sellPrice: p1.bid,
-                    profitPercent: profit,
-                    isDEXInvolved: false,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'CEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'ASK',
-                    sellType: 'BID'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
-            }
-
-            // 5) ex2(BID) -> ex3(ASK)
-            if (p2.bid && p3.ask) {
-                const profit = calculationManager.calculateProfitPercentage(p3.ask, p2.bid);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${ex2}(BID)->${ex3}(ASK)`,
-                    buyExchange: ex3,
-                    sellExchange: ex2,
-                    buyPrice: p3.ask,
-                    sellPrice: p2.bid,
-                    profitPercent: profit,
-                    isDEXInvolved: false,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'CEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'ASK',
-                    sellType: 'BID'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
-            }
-
-            // 6) ex3(BID) -> ex2(ASK)
-            if (p3.bid && p2.ask) {
-                const profit = calculationManager.calculateProfitPercentage(p2.ask, p3.bid);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${ex3}(BID)->${ex2}(ASK)`,
-                    buyExchange: ex2,
-                    sellExchange: ex3,
-                    buyPrice: p2.ask,
-                    sellPrice: p3.bid,
-                    profitPercent: profit,
-                    isDEXInvolved: false,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'CEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'ASK',
-                    sellType: 'BID'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
-            }
-        }
-    } else {
-        // Fallback: generate all i->j as i(BID) -> j(ASK)
+        // Generate all possible CEX exchange pairs dynamically
         for (let i = 0; i < cexExchanges.length; i++) {
             for (let j = 0; j < cexExchanges.length; j++) {
-                if (i === j) continue;
+                if (i === j) continue; // Skip self-comparison
+
                 const exI = cexExchanges[i];
                 const exJ = cexExchanges[j];
                 const pI = prices[exI];
                 const pJ = prices[exJ];
-                if (pI.bid && pJ.ask) {
+
+                // Validate price data before calculation
+                if (!pI || !pJ) {
+                    console.log(`⚠️ ${currencyCode}: Missing price data for ${exI} or ${exJ}`);
+                    continue;
+                }
+
+                // I(BID) -> J(ASK) - Buy at J ask, sell at I bid
+                if (pI.bid && pJ.ask && pI.bid > 0 && pJ.ask > 0) {
                     const profit = calculationManager.calculateProfitPercentage(pJ.ask, pI.bid);
                     const calc = {
                         currency: currencyCode,
@@ -301,70 +181,117 @@ function calculateArbitrageOpportunities(currencyCode, prices, config) {
                         buyExchangeType: 'CEX',
                         sellExchangeType: 'CEX',
                         buyType: 'ASK',
-                        sellType: 'BID'
+                        sellType: 'BID',
+                        exchangeCount: cexExchanges.length,
+                        totalCombinations: cexExchanges.length * (cexExchanges.length - 1)
                     };
                     allCalculations.push(calc);
                     if (calc.isProfitable) opportunities.push(calc);
                 }
             }
         }
+
+        console.log(`✅ ${currencyCode}: Completed CEX arbitrage calculations`);
+    } else if (cexExchanges.length === 1) {
+        console.log(`⚠️ ${currencyCode}: Only 1 CEX exchange found (${cexExchanges[0]}), skipping CEX arbitrage`);
+    } else {
+        console.log(`⚠️ ${currencyCode}: No CEX exchanges found, skipping CEX arbitrage`);
     }
 
-    // Calculate CEX <-> DEX opportunities in requested order
-    for (const dexExchange of dexExchanges) {
-        for (const cexExchange of cexExchanges) {
-            const dexPrice = prices[dexExchange];
-            const cexPrice = prices[cexExchange];
-            if (!dexPrice || !cexPrice) continue;
+    // Calculate CEX <-> DEX opportunities - Fully dynamic for any number of exchanges
+    if (dexExchanges.length > 0 && cexExchanges.length > 0) {
+        const totalDexCombinations = dexExchanges.length * cexExchanges.length * 2; // 2 types per pair
+        console.log(`🔄 ${currencyCode}: Calculating ${totalDexCombinations} DEX arbitrage combinations...`);
 
-            // Exchange(BID) vs DEX(BID): sell = CEX BID, buy = DEX BID → (CEX - DEX) / CEX
-            if (dexPrice.bid && cexPrice.bid) {
-                const profit = calculationManager.calculateProfitPercentage(dexPrice.bid, cexPrice.bid);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${cexExchange}(BID)->${dexExchange}(BID)`,
-                    buyExchange: dexExchange,
-                    sellExchange: cexExchange,
-                    buyPrice: dexPrice.bid,
-                    sellPrice: cexPrice.bid,
-                    profitPercent: profit,
-                    isDEXInvolved: true,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'DEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'BID',
-                    sellType: 'BID'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
-            }
+        for (const dexExchange of dexExchanges) {
+            for (const cexExchange of cexExchanges) {
+                const dexPrice = prices[dexExchange];
+                const cexPrice = prices[cexExchange];
 
-            // Exchange(ASK) vs DEX(BID): sell = CEX ASK, buy = DEX BID → (CEX - DEX) / CEX
-            if (cexPrice.ask && dexPrice.bid) {
-                const profit = calculationManager.calculateProfitPercentage(dexPrice.bid, cexPrice.ask);
-                const calc = {
-                    currency: currencyCode,
-                    direction: `${cexExchange}(ASK)->${dexExchange}(BID)`,
-                    buyExchange: dexExchange,
-                    sellExchange: cexExchange,
-                    buyPrice: dexPrice.bid,
-                    sellPrice: cexPrice.ask,
-                    profitPercent: profit,
-                    isDEXInvolved: true,
-                    isProfitable: profit >= config.profitThresholdPercent,
-                    buyExchangeType: 'DEX',
-                    sellExchangeType: 'CEX',
-                    buyType: 'BID',
-                    sellType: 'ASK'
-                };
-                allCalculations.push(calc);
-                if (calc.isProfitable) opportunities.push(calc);
+                // Validate price data
+                if (!dexPrice || !cexPrice) {
+                    console.log(`⚠️ ${currencyCode}: Missing price data for DEX ${dexExchange} or CEX ${cexExchange}`);
+                    continue;
+                }
+
+                // Exchange(BID) vs DEX(BID): sell = CEX BID, buy = DEX BID → (CEX - DEX) / CEX
+                if (dexPrice.bid && cexPrice.bid && dexPrice.bid > 0 && cexPrice.bid > 0) {
+                    const profit = calculationManager.calculateProfitPercentage(dexPrice.bid, cexPrice.bid);
+                    const calc = {
+                        currency: currencyCode,
+                        direction: `${cexExchange}(BID)->${dexExchange}(BID)`,
+                        buyExchange: dexExchange,
+                        sellExchange: cexExchange,
+                        buyPrice: dexPrice.bid,
+                        sellPrice: cexPrice.bid,
+                        profitPercent: profit,
+                        isDEXInvolved: true,
+                        isProfitable: profit >= config.profitThresholdPercent,
+                        buyExchangeType: 'DEX',
+                        sellExchangeType: 'CEX',
+                        buyType: 'BID',
+                        sellType: 'BID',
+                        dexExchangeCount: dexExchanges.length,
+                        cexExchangeCount: cexExchanges.length
+                    };
+                    allCalculations.push(calc);
+                    if (calc.isProfitable) opportunities.push(calc);
+                }
+
+                // Exchange(ASK) vs DEX(BID): sell = CEX ASK, buy = DEX BID → (CEX - DEX) / CEX
+                if (cexPrice.ask && dexPrice.bid && cexPrice.ask > 0 && dexPrice.bid > 0) {
+                    const profit = calculationManager.calculateProfitPercentage(dexPrice.bid, cexPrice.ask);
+                    const calc = {
+                        currency: currencyCode,
+                        direction: `${cexExchange}(ASK)->${dexExchange}(BID)`,
+                        buyExchange: dexExchange,
+                        sellExchange: cexExchange,
+                        buyPrice: dexPrice.bid,
+                        sellPrice: cexPrice.ask,
+                        profitPercent: profit,
+                        isDEXInvolved: true,
+                        isProfitable: profit >= config.profitThresholdPercent,
+                        buyExchangeType: 'DEX',
+                        sellExchangeType: 'CEX',
+                        buyType: 'BID',
+                        sellType: 'ASK',
+                        dexExchangeCount: dexExchanges.length,
+                        cexExchangeCount: cexExchanges.length
+                    };
+                    allCalculations.push(calc);
+                    if (calc.isProfitable) opportunities.push(calc);
+                }
             }
+        }
+
+        console.log(`✅ ${currencyCode}: Completed DEX arbitrage calculations`);
+    } else {
+        if (dexExchanges.length === 0) {
+            console.log(`⚠️ ${currencyCode}: No DEX exchanges found, skipping DEX arbitrage`);
+        }
+        if (cexExchanges.length === 0) {
+            console.log(`⚠️ ${currencyCode}: No CEX exchanges found, skipping DEX arbitrage`);
         }
     }
 
     // Store all calculations in data manager for web interface
     dataManager.storeArbitrageCalculations(currencyCode, allCalculations);
+
+    // Log summary of calculations
+    const totalCalculations = allCalculations.length;
+    const profitableOpportunities = opportunities.length;
+    const cexCalculations = allCalculations.filter(calc => !calc.isDEXInvolved).length;
+    const dexCalculations = allCalculations.filter(calc => calc.isDEXInvolved).length;
+
+    console.log(`📊 ${currencyCode}: Summary - Total: ${totalCalculations} (CEX: ${cexCalculations}, DEX: ${dexCalculations}), Profitable: ${profitableOpportunities}`);
+
+    if (profitableOpportunities > 0) {
+        console.log(`🎯 ${currencyCode}: Profitable opportunities found:`);
+        opportunities.forEach(opp => {
+            const profitColor = opp.profitPercent >= config.profitThresholdPercent ? '🟢' : '🟡';
+            console.log(`   ${profitColor} ${opp.direction}: ${opp.profitPercent.toFixed(3)}%`);
+        });
+    }
 
     return opportunities;
 }

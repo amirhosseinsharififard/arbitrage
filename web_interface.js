@@ -6,8 +6,10 @@ import { fileURLToPath } from 'url';
 import { getTradingStatus } from './src/Arbitrage Logic/arbitrage_bot/arbitrage.js';
 import statistics from './src/Arbitrage Logic/monitoring/statistics.js';
 import { getAvailableCurrencies } from './src/Arbitrage Logic/config/multiCurrencyConfig.js';
+import dataManager from './src/Arbitrage Logic/core/dataManager.js';
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = fileURLToPath(
+    import.meta.url);
 const __dirname = path.dirname(__filename);
 
 class WebInterface {
@@ -18,7 +20,7 @@ class WebInterface {
         this.port = 8080;
         this.isRunning = false;
         this.updateInterval = null;
-        
+
         this.setupRoutes();
         this.setupWebSocket();
     }
@@ -26,7 +28,7 @@ class WebInterface {
     setupRoutes() {
         // Serve static files
         this.app.use(express.static(path.join(__dirname, 'public')));
-        
+
         // Main route
         this.app.get('/', (req, res) => {
             res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -36,10 +38,10 @@ class WebInterface {
     setupWebSocket() {
         this.io.on('connection', (socket) => {
             console.log('🌐 Client connected to web interface');
-            
+
             // Send initial data
             this.sendDataToClient(socket);
-            
+
             socket.on('disconnect', () => {
                 console.log('🌐 Client disconnected from web interface');
             });
@@ -57,7 +59,7 @@ class WebInterface {
                     intervalMs: 50
                 }
             };
-            
+
             socket.emit('data-update', data);
         } catch (error) {
             console.error('❌ Error sending data to client:', error.message);
@@ -84,15 +86,28 @@ class WebInterface {
         if (this.isRunning) {
             try {
                 const availableCurrencies = getAvailableCurrencies();
+
+                // Get arbitrage opportunities from data manager
+                const arbitrageOpportunities = {};
+                availableCurrencies.forEach(currency => {
+                    const opportunities = dataManager.getOpportunities(currency);
+                    if (opportunities && opportunities.length > 0) {
+                        arbitrageOpportunities[currency] = opportunities;
+                    }
+                });
+
                 const data = {
                     timestamp: new Date().toISOString(),
-                    exchangeData: this.latestExchangeData,
+                    exchangeData: {
+                        ...this.latestExchangeData,
+                        arbitrageOpportunities: arbitrageOpportunities
+                    },
                     config: {
                         currencies: availableCurrencies,
                         intervalMs: 50
                     }
                 };
-                
+
                 console.log('🌐 Broadcasting multi-currency data update to web interface');
                 this.io.emit('data-update', data);
             } catch (error) {
@@ -107,13 +122,13 @@ class WebInterface {
                 this.server.listen(this.port, () => {
                     console.log(`🌐 Web interface started on http://localhost:${this.port}`);
                     this.isRunning = true;
-                    
+
                     // Start automatic updates every 2 seconds
                     this.startAutoUpdates();
-                    
+
                     resolve();
                 });
-                
+
                 this.server.on('error', (error) => {
                     reject(error);
                 });
@@ -128,14 +143,14 @@ class WebInterface {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }
-        
+
         // Update every 2 seconds
         this.updateInterval = setInterval(() => {
             if (this.isRunning) {
                 this.broadcastDataUpdate();
             }
         }, 2000);
-        
+
         console.log('🔄 Auto-updates enabled (every 2 seconds)');
     }
 
@@ -146,7 +161,7 @@ class WebInterface {
                 clearInterval(this.updateInterval);
                 this.updateInterval = null;
             }
-            
+
             this.server.close();
             this.isRunning = false;
             console.log('🌐 Web interface stopped');

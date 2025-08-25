@@ -617,11 +617,70 @@
                 console.log('========');
 
                 updateMultiCurrencyMatrix(data.exchangeData);
+                updateArbitrageOpportunities(data.exchangeData.arbitrageOpportunities);
                 updateRealTimeTimer(data.timestamp);
             } else {
                 console.error('❌ Invalid data format received:', data);
             }
         });
+
+        /**
+         * Update Arbitrage Opportunities Display
+         */
+        function updateArbitrageOpportunities(arbitrageData) {
+            const container = document.getElementById('arbitrageOpportunities');
+
+            if (!arbitrageData || Object.keys(arbitrageData).length === 0) {
+                container.innerHTML = '<div class="no-opportunities">No profitable arbitrage opportunities found at the moment.</div>';
+                return;
+            }
+
+            let html = '';
+            let totalOpportunities = 0;
+
+            // Process each currency
+            Object.entries(arbitrageData).forEach(([currency, opportunities]) => {
+                if (opportunities && opportunities.length > 0) {
+                    totalOpportunities += opportunities.length;
+
+                    html += `<div class="currency-section" style="margin-bottom: 20px;">
+                        <h4 style="color: #63b3ed; margin-bottom: 10px;">${currency.toUpperCase()}</h4>`;
+
+                    opportunities.forEach(opp => {
+                        const profitClass = opp.profitPercent >= 3.1 ? 'profit-positive' : 'profit-negative';
+                        const typeClass = opp.isDEXInvolved ? 'type-dex' : 'type-cex';
+                        const typeText = opp.isDEXInvolved ? 'DEX' : 'CEX';
+
+                        html += `
+                            <div class="arbitrage-opportunity">
+                                <div class="opportunity-header">
+                                    <div class="opportunity-direction">
+                                        ${opp.direction}
+                                        <span class="opportunity-type ${typeClass}">${typeText}</span>
+                                    </div>
+                                    <div class="opportunity-profit ${profitClass}">
+                                        ${opp.profitPercent >= 0 ? '+' : ''}${opp.profitPercent.toFixed(3)}%
+                                    </div>
+                                </div>
+                                <div class="opportunity-details">
+                                    <div>Buy: ${opp.buyExchange.toUpperCase()} @ $${opp.buyPrice}</div>
+                                    <div>Sell: ${opp.sellExchange.toUpperCase()} @ $${opp.sellPrice}</div>
+                                    <div>Type: ${opp.buyType} → ${opp.sellType}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                }
+            });
+
+            if (totalOpportunities === 0) {
+                container.innerHTML = '<div class="no-opportunities">No profitable arbitrage opportunities found at the moment.</div>';
+            } else {
+                container.innerHTML = html;
+            }
+        }
 
         /**
          * Enhanced Multi-Currency Matrix with DEX support
