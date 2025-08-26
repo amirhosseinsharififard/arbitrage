@@ -54,6 +54,10 @@ async function initializeSystem() {
         if (!authResult) {
             console.error("❌ GitHub authentication failed! Application cannot start.");
             console.error("Please check your GitHub token in config.env file.");
+            console.error("📞 Contact developer for technical support:");
+            console.error("👤 Amir Sharifi");
+            console.error("📱 +98 917 238 4087");
+            console.error("💬 Contact developer for technical support");
             process.exit(1);
         }
 

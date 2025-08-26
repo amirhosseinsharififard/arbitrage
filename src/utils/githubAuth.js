@@ -83,6 +83,12 @@ class GitHubAuth {
             } else {
                 console.error(chalk.red(`   Network error: ${error.message}`));
             }
+
+            // Display developer contact information
+            console.error(chalk.yellow('\n📞 Contact developer for technical support:'));
+            console.error(chalk.cyan('👤 Amir Sharifi'));
+            console.error(chalk.cyan('📱 +98 917 238 4087'));
+            console.error(chalk.cyan('💬 Contact developer for technical support\n'));
             
             return false;
         }
@@ -180,6 +186,10 @@ class GitHubAuth {
         if (!tokenValid) {
             console.log(chalk.red('\n❌ Authentication failed! Application cannot start.'));
             console.log(chalk.yellow('Please fix the GitHub token and try again.'));
+            console.log(chalk.yellow('📞 Contact developer for technical support:'));
+            console.log(chalk.cyan('👤 Amir Sharifi'));
+            console.log(chalk.cyan('📱 +98 917 238 4087'));
+            console.log(chalk.cyan('💬 Contact developer for technical support\n'));
             return false;
         }
 

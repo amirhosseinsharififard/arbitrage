@@ -42,7 +42,7 @@ class WebInterface {
         });
 
         // Error reporting endpoint
-        this.app.post('/api/report-error', express.json(), async (req, res) => {
+        this.app.post('/api/report-error', express.json(), async(req, res) => {
             try {
                 const { errorType, message, details } = req.body;
                 await logger.logErrorWithContact(errorType, message, details, 'ERROR');
@@ -130,12 +130,11 @@ class WebInterface {
                 this.io.emit('data-update', data);
             } catch (error) {
                 console.error('❌ Error broadcasting data update:', error.message);
-                
+
                 // Log error with developer contact
                 await logger.logErrorWithContact(
                     'WEB_INTERFACE_ERROR',
-                    `Error broadcasting data update: ${error.message}`,
-                    { context: 'broadcastDataUpdate' },
+                    `Error broadcasting data update: ${error.message}`, { context: 'broadcastDataUpdate' },
                     'ERROR'
                 );
             }
@@ -171,7 +170,7 @@ class WebInterface {
         }
 
         // Update every 2 seconds
-        this.updateInterval = setInterval(async () => {
+        this.updateInterval = setInterval(async() => {
             if (this.isRunning) {
                 await this.broadcastDataUpdate();
             }
