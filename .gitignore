@@ -1,0 +1,29 @@
+# Environment variables
+config.env
+.env
+
+# Logs
+logs/
+*.log
+requests.log
+trades.log
+session_summary.txt
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+dist_protected/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
