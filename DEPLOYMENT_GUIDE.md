@@ -57,7 +57,7 @@ git push origin v1.0.0
 1. **فایل config.env** را ویرایش کنید:
    ```env
    # GitHub Token (ضروری)
-   GITHUB_TOKEN=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
+   GITHUB_TOKEN=your_github_token_here
    
    # Exchange API Keys
    MEXC_API_KEY=your_actual_api_key
