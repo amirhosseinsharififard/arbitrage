@@ -38,7 +38,14 @@ npm install
 ```
 
 ### 3. **تنظیم فایل config.env:**
-فایل `config.env` را ویرایش کرده و توکن‌های API و GitHub خود را وارد کنید:
+فایل `env.example` را کپی کرده و به `config.env` تغییر نام دهید، سپس توکن‌های API و GitHub خود را وارد کنید:
+
+```bash
+# کپی کردن فایل نمونه
+cp env.example config.env
+
+# ویرایش فایل config.env
+```
 
 ```env
 # توکن‌های API برای صرافی‌ها
