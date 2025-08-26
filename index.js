@@ -25,6 +25,8 @@ import "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 import { lbankPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
 import WebInterface from "./web_interface.js";
 import dataUpdateManager from "./src/Arbitrage Logic/utils/dataUpdateManager.js";
+import githubAuth from "./src/utils/githubAuth.js";
+import chalk from "chalk";
 
 // Global web interface instance
 let webInterface = null;
@@ -44,6 +46,19 @@ let performanceMonitor = null;
 async function initializeSystem() {
     try {
         console.log("🚀 Initializing arbitrage system...");
+
+        // Step 1: GitHub Authentication Check
+        console.log("🔐 Checking GitHub authentication...");
+        const authResult = await githubAuth.authenticate();
+        
+        if (!authResult) {
+            console.error("❌ GitHub authentication failed! Application cannot start.");
+            console.error("Please check your GitHub token in config.env file.");
+            process.exit(1);
+        }
+
+        // Step 2: Continue with system initialization
+        console.log("✅ GitHub authentication passed, continuing system initialization...");
 
         // Clear log files on startup
         await logger.clearLogFiles();
