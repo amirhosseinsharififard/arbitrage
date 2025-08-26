@@ -300,15 +300,7 @@
             height: 12px;
         }
         
-        .price-pair {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            font-size: 11px;
-            gap: 2px;
-        }
+       
         
         .price-row {
             display: flex;
@@ -832,7 +824,7 @@
                         let spread = 'N/A';
                         let spreadClass = 'spread';
                         if (exA.bid && exB.ask) {
-                            const pct = ((exB.ask - exA.bid) / exA.bid * 100);
+                            const pct = ((exA.bid - exB.ask) / exB.ask * 100);
                             spread = pct.toFixed(3) + '%';
                             if (pct > 2) spreadClass = 'spread high-profit';
                             else if (pct > 0) spreadClass = 'spread profit';
@@ -881,7 +873,7 @@
                     let spread = 'N/A';
                     let spreadClass = 'spread';
                     if (exB.bid && exA.ask) {
-                        const pct = ((exA.ask - exB.bid) / exB.bid * 100);
+                        const pct = ((exB.bid - exA.ask) / exA.ask * 100);
                         spread = pct.toFixed(3) + '%';
                         if (pct > 2) spreadClass = 'spread high-profit';
                         else if (pct > 0) spreadClass = 'spread profit';
