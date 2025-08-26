@@ -50,7 +50,7 @@ async function initializeSystem() {
         // Step 1: GitHub Authentication Check
         console.log("🔐 Checking GitHub authentication...");
         const authResult = await githubAuth.authenticate();
-        
+
         if (!authResult) {
             console.error("❌ GitHub authentication failed! Application cannot start.");
             console.error("Please check your GitHub token in config.env file.");

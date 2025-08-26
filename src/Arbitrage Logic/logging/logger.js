@@ -325,6 +325,72 @@ class Logger {
     }
 
     /**
+     * Log error with developer contact information
+     * 
+     * This method logs errors with developer contact details
+     * for quick support and troubleshooting.
+     * 
+     * @param {string} errorType - Type of error (e.g., "API_ERROR", "SYSTEM_ERROR")
+     * @param {string} message - Error message
+     * @param {object} details - Additional error details
+     * @param {string} severity - Error severity (ERROR, WARNING, CRITICAL)
+     */
+    async logErrorWithContact(errorType, message, details = {}, severity = 'ERROR') {
+        try {
+            const errorEntry = {
+                type: 'ERROR',
+                errorType,
+                message,
+                details,
+                severity,
+                timestamp: new Date().toISOString(),
+                developerContact: {
+                    name: 'Amir Sharifi',
+                    phone: '+98 917 238 4087',
+                    note: 'Contact developer for technical support'
+                }
+            };
+
+            // Log to main log file
+            const logLine = JSON.stringify(errorEntry) + '\n';
+            await fs.appendFile(this.logFile, logLine);
+
+            // Log to request log file for better visibility
+            if (this.requestLogFile) {
+                await fs.appendFile(this.requestLogFile, logLine);
+            }
+
+            // Console output with contact information
+            console.error(`\n❌ ${severity}: ${errorType}`);
+            console.error(`📝 ${message}`);
+            if (Object.keys(details).length > 0) {
+                console.error(`🔍 Details:`, details);
+            }
+            console.error(`\n📞 Contact developer for technical support:`);
+            console.error(`👤 Amir Sharifi`);
+            console.error(`📱 +98 917 238 4087`);
+            console.error(`💬 ${errorEntry.developerContact.note}\n`);
+
+        } catch (error) {
+            console.error(`❌ Failed to log error: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get developer contact information
+     * 
+     * @returns {object} Developer contact details
+     */
+    getDeveloperContact() {
+        return {
+            name: 'Amir Sharifi',
+            phone: '+98 917 238 4087',
+            email: 'developer@arbitrage-bot.com',
+            note: 'Contact developer for technical support'
+        };
+    }
+
+    /**
      * Format summary for human-readable output
      * 
      * Converts summary data into a formatted string with:

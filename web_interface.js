@@ -8,6 +8,7 @@ import statistics from './src/Arbitrage Logic/monitoring/statistics.js';
 import { getAvailableCurrencies } from './src/Arbitrage Logic/config/multiCurrencyConfig.js';
 import dataManager from './src/Arbitrage Logic/core/dataManager.js';
 import { getLatestArbitrageData } from './src/Arbitrage Logic/core/multiCurrencyManager.js';
+import logger from './src/Arbitrage Logic/logging/logger.js';
 
 const __filename = fileURLToPath(
     import.meta.url);
@@ -33,6 +34,22 @@ class WebInterface {
         // Main route
         this.app.get('/', (req, res) => {
             res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+
+        // Developer contact API endpoint
+        this.app.get('/api/developer-contact', (req, res) => {
+            res.json(logger.getDeveloperContact());
+        });
+
+        // Error reporting endpoint
+        this.app.post('/api/report-error', express.json(), async (req, res) => {
+            try {
+                const { errorType, message, details } = req.body;
+                await logger.logErrorWithContact(errorType, message, details, 'ERROR');
+                res.json({ success: true, message: 'Error logged successfully' });
+            } catch (error) {
+                res.status(500).json({ success: false, message: error.message });
+            }
         });
     }
 
@@ -83,7 +100,7 @@ class WebInterface {
         };
     }
 
-    broadcastDataUpdate() {
+    async broadcastDataUpdate() {
         if (this.isRunning) {
             try {
                 const availableCurrencies = getAvailableCurrencies();
@@ -113,6 +130,14 @@ class WebInterface {
                 this.io.emit('data-update', data);
             } catch (error) {
                 console.error('❌ Error broadcasting data update:', error.message);
+                
+                // Log error with developer contact
+                await logger.logErrorWithContact(
+                    'WEB_INTERFACE_ERROR',
+                    `Error broadcasting data update: ${error.message}`,
+                    { context: 'broadcastDataUpdate' },
+                    'ERROR'
+                );
             }
         }
     }
@@ -146,9 +171,9 @@ class WebInterface {
         }
 
         // Update every 2 seconds
-        this.updateInterval = setInterval(() => {
+        this.updateInterval = setInterval(async () => {
             if (this.isRunning) {
-                this.broadcastDataUpdate();
+                await this.broadcastDataUpdate();
             }
         }, 2000);
 
