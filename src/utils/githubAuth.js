@@ -52,18 +52,18 @@ class GitHubAuth {
             if (response.status === 200) {
                 this.userInfo = response.data;
                 this.isAuthenticated = true;
-                
+
                 console.log(chalk.green('✅ GitHub authentication successful!'));
                 console.log(chalk.cyan(`👤 User: ${this.userInfo.login}`));
                 console.log(chalk.cyan(`📧 Email: ${this.userInfo.email || 'Not public'}`));
                 console.log(chalk.cyan(`🏢 Company: ${this.userInfo.company || 'Not specified'}`));
-                
+
                 return true;
             }
 
         } catch (error) {
             console.error(chalk.red('❌ GitHub authentication failed!'));
-            
+
             if (error.response) {
                 switch (error.response.status) {
                     case 401:
@@ -89,7 +89,7 @@ class GitHubAuth {
             console.error(chalk.cyan('👤 Amir Sharifi'));
             console.error(chalk.cyan('📱 +98 917 238 4087'));
             console.error(chalk.cyan('💬 Contact developer for technical support\n'));
-            
+
             return false;
         }
     }
@@ -122,7 +122,7 @@ class GitHubAuth {
             });
 
             const scopes = userResponse.headers['x-oauth-scopes'];
-            
+
             console.log(chalk.green('✅ Token permissions verified!'));
             console.log(chalk.cyan(`📋 Scopes: ${scopes || 'No specific scopes'}`));
             console.log(chalk.cyan(`📊 Repositories accessible: ${repoResponse.data.length > 0 ? 'Yes' : 'No'}`));
