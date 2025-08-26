@@ -98,12 +98,15 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                         // Try multiple times to get prices (OurBit needs more time)
                         let priceData = null;
                         for (let attempt = 1; attempt <= 5; attempt++) {
-                            priceData = await ourbitPuppeteerService.extractPrices();
-                            if (priceData && (priceData.bid || priceData.ask)) {
-                                break; // Success, exit loop
-                            }
-                            if (attempt < 5) {
-                                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                            try {
+                                priceData = await ourbitPuppeteerService.extractPrices();
+                                if (priceData && priceData.bid && priceData.ask) {
+                                    break;
+                                }
+                            } catch (error) {
+                                if (attempt === 5) {
+                                    throw error;
+                                }
                             }
                         }
                         return priceData;
@@ -111,26 +114,39 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'dexscreener':
-                if (config.dex && config.dex.dexscreener && config.dex.dexscreener.enabled !== false) {
+                if (config.exchanges.dexscreener && config.exchanges.dexscreener.enabled !== false) {
                     return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
-                        return await dexscreenerApiService.getBidPriceByToken(
-                            config.dex.dexscreener.contractAddress,
-                            config.dex.dexscreener.network
-                        );
+                        return await dexscreenerApiService.getPrice(config.symbols.dexscreener);
                     });
                 }
                 break;
         }
         return null;
     } catch (error) {
-        const hasEntry = errorMessagesShown[currencyCode] && errorMessagesShown[currencyCode][exchangeId];
-        if (!hasEntry) {
-            console.log(`⚠️ ${currencyCode} ${exchangeId}: ${error.message}`);
-            if (!errorMessagesShown[currencyCode]) errorMessagesShown[currencyCode] = {};
-            errorMessagesShown[currencyCode][exchangeId] = true;
-        }
+        console.error(`❌ Error fetching ${exchangeId} price for ${currencyCode}: ${error.message}`);
         return null;
     }
+}
+
+// OPTIMIZED: Fetch all exchange prices in parallel for much faster data updates
+async function getAllExchangePrices(currencyCode, config) {
+    const enabledExchanges = getEnabledExchanges(config);
+    const pricePromises = enabledExchanges.map(exchangeId =>
+        getExchangePrice(currencyCode, exchangeId, config)
+    );
+
+    // Execute all price fetches in parallel
+    const results = await Promise.allSettled(pricePromises);
+
+    const prices = {};
+    enabledExchanges.forEach((exchangeId, index) => {
+        const result = results[index];
+        if (result.status === 'fulfilled' && result.value) {
+            prices[exchangeId] = result.value;
+        }
+    });
+
+    return prices;
 }
 
 function calculateArbitrageOpportunities(currencyCode, prices, config) {
@@ -338,13 +354,7 @@ async function processCurrency(currencyCode, exchanges) {
         const enabledExchanges = getEnabledExchanges(currencyCode);
         
         // Fetch prices
-        const prices = {};
-        const pricePromises = enabledExchanges.map(async (exchangeId) => {
-            const price = await getExchangePrice(currencyCode, exchangeId, config);
-            if (price) prices[exchangeId] = price;
-        });
-        
-        await Promise.all(pricePromises);
+        const prices = await getAllExchangePrices(currencyCode, config);
         
         // Calculate opportunities
         const opportunities = calculateArbitrageOpportunities(currencyCode, prices, config);

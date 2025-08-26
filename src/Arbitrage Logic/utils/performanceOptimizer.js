@@ -189,18 +189,24 @@ class PerformanceMonitor {
         this.metrics = {
             operationCounts: new Map(),
             operationTimes: new Map(),
-            memoryUsage: [],
-            cacheStats: []
+            dataUpdateTimes: new Map(),
+            lastUpdateTime: Date.now(),
+            totalUpdates: 0,
+            averageUpdateTime: 0
         };
 
-        this.startTime = Date.now();
         this.monitoringInterval = null;
+        this.startMonitoring();
     }
 
-    startMonitoring(intervalMs = 30000) {
+    startMonitoring() {
+        if (this.monitoringInterval) {
+            clearInterval(this.monitoringInterval);
+        }
+
         this.monitoringInterval = setInterval(() => {
             this.recordMetrics();
-        }, intervalMs);
+        }, 5000); // Record metrics every 5 seconds
     }
 
     stopMonitoring() {
@@ -229,79 +235,63 @@ class PerformanceMonitor {
         }
     }
 
+    // NEW: Track data update performance
+    recordDataUpdate(exchangeId, updateTime) {
+        if (!this.metrics.dataUpdateTimes.has(exchangeId)) {
+            this.metrics.dataUpdateTimes.set(exchangeId, []);
+        }
+
+        this.metrics.dataUpdateTimes.get(exchangeId).push(updateTime);
+        this.metrics.totalUpdates++;
+
+        // Calculate running average
+        const allTimes = Array.from(this.metrics.dataUpdateTimes.values()).flat();
+        this.metrics.averageUpdateTime = allTimes.reduce((a, b) => a + b, 0) / allTimes.length;
+
+        // Keep only last 100 measurements per exchange
+        if (this.metrics.dataUpdateTimes.get(exchangeId).length > 100) {
+            this.metrics.dataUpdateTimes.get(exchangeId).shift();
+        }
+
+        // Log performance warnings if update time exceeds 50ms
+        if (updateTime > 50) {
+            console.warn(`⚠️ Slow data update detected: ${exchangeId} took ${updateTime}ms (target: <50ms)`);
+        }
+    }
+
     recordMetrics() {
         const memUsage = process.memoryUsage();
-        this.metrics.memoryUsage.push({
-            timestamp: Date.now(),
-            heapUsed: memUsage.heapUsed,
-            heapTotal: memUsage.heapTotal,
-            external: memUsage.external,
-            rss: memUsage.rss
-        });
 
-        // Keep only last 100 measurements
-        if (this.metrics.memoryUsage.length > 100) {
-            this.metrics.memoryUsage.shift();
+        console.log('\n📊 Performance Metrics:');
+        console.log(`Memory Usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
+        console.log(`Average Data Update Time: ${this.metrics.averageUpdateTime.toFixed(2)}ms`);
+        console.log(`Total Updates: ${this.metrics.totalUpdates}`);
+
+        // Display exchange-specific performance
+        for (const [exchangeId, times] of this.metrics.dataUpdateTimes) {
+            if (times.length > 0) {
+                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+                const maxTime = Math.max(...times);
+                const minTime = Math.min(...times);
+                const performance = avgTime <= 50 ? '🟢' : avgTime <= 100 ? '🟡' : '🔴';
+                console.log(`${performance} ${exchangeId}: avg=${avgTime.toFixed(1)}ms, min=${minTime}ms, max=${maxTime}ms`);
+            }
         }
 
-        // Record cache stats
-        this.metrics.cacheStats.push({
-            timestamp: Date.now(),
-            stats: calculationCache.getStats()
-        });
-
-        if (this.metrics.cacheStats.length > 100) {
-            this.metrics.cacheStats.shift();
-        }
+        console.log('='.repeat(60));
     }
 
-    getStats() {
-        const stats = {};
-
-        for (const [operation, count] of this.metrics.operationCounts) {
-            const times = this.metrics.operationTimes.get(operation);
-            const avgTime = times.length > 0 ?
-                times.reduce((a, b) => a + b, 0) / times.length : 0;
-            const minTime = times.length > 0 ? Math.min(...times) : 0;
-            const maxTime = times.length > 0 ? Math.max(...times) : 0;
-
-            stats[operation] = {
-                count,
-                avgTime,
-                minTime,
-                maxTime,
-                totalTime: times.reduce((a, b) => a + b, 0)
-            };
-        }
-
+    getPerformanceStats() {
         return {
-            operations: stats,
-            memoryUsage: this.metrics.memoryUsage[this.metrics.memoryUsage.length - 1],
-            cacheStats: this.metrics.cacheStats[this.metrics.cacheStats.length - 1],
-            uptime: Date.now() - this.startTime
+            averageUpdateTime: this.metrics.averageUpdateTime,
+            totalUpdates: this.metrics.totalUpdates,
+            exchangePerformance: Object.fromEntries(
+                Array.from(this.metrics.dataUpdateTimes.entries()).map(([exchange, times]) => [
+                    exchange,
+                    times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0
+                ])
+            )
         };
-    }
-
-    printStats() {
-        const stats = this.getStats();
-        console.log("\n📊 Performance Statistics:");
-        console.log("=".repeat(50));
-
-        for (const [operation, data] of Object.entries(stats.operations)) {
-            console.log(`${operation}:`);
-            console.log(`  Count: ${data.count}`);
-            console.log(`  Avg Time: ${data.avgTime.toFixed(3)}ms`);
-            console.log(`  Min Time: ${data.minTime.toFixed(3)}ms`);
-            console.log(`  Max Time: ${data.maxTime.toFixed(3)}ms`);
-        }
-
-        if (stats.memoryUsage) {
-            console.log(`\nMemory Usage:`);
-            console.log(`  Heap Used: ${(stats.memoryUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`);
-            console.log(`  Heap Total: ${(stats.memoryUsage.heapTotal / 1024 / 1024).toFixed(2)}MB`);
-        }
-
-        console.log(`\nUptime: ${(stats.uptime / 1000 / 60).toFixed(1)} minutes`);
     }
 }
 

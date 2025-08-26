@@ -24,9 +24,11 @@ import { FormattingUtils } from "./src/Arbitrage Logic/utils/index.js";
 import "./src/Arbitrage Logic/utils/performanceOptimizer.js";
 import { lbankPriceService, kcexPuppeteerService } from "./src/Arbitrage Logic/services/index.js";
 import WebInterface from "./web_interface.js";
+import dataUpdateManager from "./src/Arbitrage Logic/utils/dataUpdateManager.js";
 
 // Global web interface instance
 let webInterface = null;
+let performanceMonitor = null;
 
 /**
  * Initialize the system on startup
@@ -52,7 +54,13 @@ async function initializeSystem() {
         // Restore open positions from trades.log file
         restoreOpenPositionsFromLog();
 
-        // Performance monitoring is initialized by side-effect import
+        // Initialize performance monitoring
+        const performanceModule = await
+        import ("./src/Arbitrage Logic/utils/performanceOptimizer.js");
+        performanceMonitor = new performanceModule.PerformanceMonitor();
+
+        // Set performance monitor in data update manager
+        dataUpdateManager.setPerformanceMonitor(performanceMonitor);
 
         // Initialize and start web interface
         webInterface = new WebInterface();
@@ -65,6 +73,9 @@ async function initializeSystem() {
         exitHandler.addExitHandler(async() => {
             if (webInterface) {
                 webInterface.stop();
+            }
+            if (performanceMonitor) {
+                performanceMonitor.stopMonitoring();
             }
         });
 
@@ -138,7 +149,7 @@ async function startLoop(intervalMs = 50) {
 
         // Display system startup information
         const availableCurrencies = getAvailableCurrencies();
-        
+
         console.log("🚀 Multi-Currency Arbitrage System Started!");
         console.log(`⏱️  Check interval: ${intervalMs}ms`);
         console.log(`💰 Currencies: ${availableCurrencies.join(', ')}`);

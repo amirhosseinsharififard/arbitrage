@@ -351,6 +351,21 @@ const systemConfig = {
  * @returns {object} Complete configuration for the currency
  */
 export function getCurrencyConfig(currencyCode) {
+    // Handle case where entire config object is passed instead of currency code
+    if (typeof currencyCode === 'object' && currencyCode !== null) {
+        // Extract currency code from the object if it has a currency property
+        if (currencyCode.currency && currencyCode.currency.name) {
+            currencyCode = currencyCode.currency.name;
+        } else {
+            throw new Error(`Invalid currency code: expected string, got object`);
+        }
+    }
+
+    // Ensure currencyCode is a string
+    if (typeof currencyCode !== 'string') {
+        throw new Error(`Invalid currency code: expected string, got ${typeof currencyCode}`);
+    }
+
     const currency = currencies[currencyCode];
     if (!currency) {
         throw new Error(`Currency ${currencyCode} not found in configuration`);

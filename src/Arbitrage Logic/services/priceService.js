@@ -34,11 +34,11 @@ class PriceService {
     constructor() {
         // Cache for storing recent price data to avoid excessive API calls
         this.priceCache = new Map();
-        this.cacheTimeout = config.cache.priceCacheTimeout;
+        this.cacheTimeout = 50; // Reduced from config.cache.priceCacheTimeout to 50ms
 
         // Track last fetch times to implement rate limiting
         this.lastFetchTimes = new Map();
-        this.minFetchInterval = 100; // Minimum 100ms between fetches
+        this.minFetchInterval = 25; // Reduced from 100ms to 25ms for faster updates
     }
 
     /**

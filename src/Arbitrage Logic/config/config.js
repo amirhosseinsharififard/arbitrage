@@ -15,10 +15,10 @@ const config = {
         dexscreener: "DEBT/USDT", // DexScreener+ exchange symbol
     },
 
-    // System timing and performance settings
-    intervalMs: 50, // Main loop interval in milliseconds (20 checks per second) - Increased speed
-    statusUpdateInterval: 2000, // How often to display status updates (every 40 iterations) - Reduced console spam
-    retryDelayMs: 2000, // Delay before retrying after errors (2 seconds) - Faster recovery
+    // System timing and performance settings - OPTIMIZED for sub-50ms performance
+    intervalMs: 25, // Main loop interval in milliseconds (40 checks per second) - Increased speed from 50ms
+    statusUpdateInterval: 1000, // How often to display status updates (every 40 iterations) - Reduced from 2000ms
+    retryDelayMs: 500, // Delay before retrying after errors (0.5 seconds) - Faster recovery from 2000ms
 
     // Trading thresholds and risk management
     profitThresholdPercent: 3.1, // Minimum profit percentage to open a new position

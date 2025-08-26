@@ -4,11 +4,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-dist/
-dist_protected/
-build/
-
 # Environment variables
 .env
 .env.local
@@ -36,14 +31,35 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
 # Dependency directories
 jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -55,34 +71,32 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
+.env.test
 
-# parcel-bundler cache (https://parceljs.org/)
+# parcel-bundler cache
 .cache
 .parcel-cache
 
-# next.js build output
+# Next.js build output
 .next
 
-# nuxt.js build output
+# Nuxt.js build / generate output
 .nuxt
+dist
 
-# vuepress build output
-.vuepress/dist
+# Gatsby files
+.cache/
+public
 
-# Serverless directories
-.serverless
+# Storybook build outputs
+.out
+.storybook-out
 
-# FuseBox cache
-.fusebox/
+# Temporary folders
+tmp/
+temp/
 
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# IDE files
+# Editor directories and files
 .vscode/
 .idea/
 *.swp
@@ -98,6 +112,31 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 
-# Temporary files
-tmp/
-temp/
+# Build outputs
+dist/
+dist_protected/
+
+# Config files with sensitive data
+config.env
+*.key
+*.pem
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+
+# Test files
+test-results/
+coverage/
+
+# Puppeteer
+.puppeteer/
+
+# Cache directories
+.cache/
+.temp/

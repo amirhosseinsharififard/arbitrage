@@ -26,9 +26,9 @@ class LbankPriceService {
     constructor() {
         this.isInitialized = false;
         this.lastFetchTime = 0;
-        this.minFetchInterval = 100; // Minimum 100ms between fetches
+        this.minFetchInterval = 25; // Reduced from 100ms to 25ms for faster updates
         this.cachedPrice = null;
-        this.cacheTimeout = 1000; // Cache price for 1 second
+        this.cacheTimeout = 50; // Reduced from 1000ms to 50ms for faster updates
     }
 
     /**

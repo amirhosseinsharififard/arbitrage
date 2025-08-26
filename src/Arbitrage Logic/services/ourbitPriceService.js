@@ -30,8 +30,8 @@ class OurbitPriceService {
     constructor() {
         this.isInitialized = false;
         this.priceCache = new Map();
-        this.cacheTimeout = 1000; // 1 second cache timeout
-        this.updateInterval = 100; // 100ms as requested
+        this.cacheTimeout = 50; // Reduced from 1000ms to 50ms for faster updates
+        this.updateInterval = 25; // Reduced from 100ms to 25ms for faster updates
         this.monitoringInterval = null;
 
         // Track previous prices to detect changes
