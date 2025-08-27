@@ -114,11 +114,25 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
                 }
                 break;
             case 'dexscreener':
-                if (config.exchanges.dexscreener && config.exchanges.dexscreener.enabled !== false) {
-                    return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
-                        return await dexscreenerApiService.getPrice(config.symbols.dexscreener);
-                    });
-                }
+                return await dataUpdateManager.getData(exchangeId, currencyCode, async() => {
+                    // Get currency-specific DexScreener config
+                    const currencyConfig = getCurrencyConfig(currencyCode);
+                    if (currencyConfig && currencyConfig.dex && currencyConfig.dex.dexscreener) {
+                        const dexConfig = currencyConfig.dex.dexscreener;
+                        if (dexConfig.enabled) {
+                            const options = {};
+                            if (dexConfig.usePairAddress && dexConfig.pairAddress) {
+                                options.pairAddress = dexConfig.pairAddress;
+                            }
+                            return await dexscreenerApiService.getBidPriceByToken(
+                                dexConfig.contractAddress,
+                                dexConfig.network,
+                                options
+                            );
+                        }
+                    }
+                    return null;
+                });
                 break;
         }
         return null;
@@ -130,7 +144,7 @@ async function getExchangePrice(currencyCode, exchangeId, config) {
 
 // OPTIMIZED: Fetch all exchange prices in parallel for much faster data updates
 async function getAllExchangePrices(currencyCode, config) {
-    const enabledExchanges = getEnabledExchanges(config);
+    const enabledExchanges = getEnabledExchanges(currencyCode);
     const pricePromises = enabledExchanges.map(exchangeId =>
         getExchangePrice(currencyCode, exchangeId, config)
     );

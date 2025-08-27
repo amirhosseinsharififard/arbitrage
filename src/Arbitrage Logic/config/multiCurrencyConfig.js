@@ -173,82 +173,135 @@ const currencies = {
         }
     },
 
-    DEBT: {
-        name: "DEBT",
-        baseCurrency: "DEBT",
-        quoteCurrency: "USDT",
-        exchanges: {
-            mexc: {
-                symbol: "DEBT/USDT:USDT",
-                enabled: true
-            },
-            lbank: {
-                symbol: "DEBT/USDT:USDT",
-                enabled: true
-            },
-            ourbit: {
-                symbol: "DEBT_USDT",
-                enabled: false,
-                url: "https://futures.ourbit.com/fa-IR/exchange/DEBT_USDT?type=linear_swap"
-            },
-            xt: {
-                symbol: "DEBT",
-                enabled: false,
-                url: "https://www.xt.com/en/futures/trade/DEBT_usdt"
-            },
-            kcex: {
-                symbol: "DEBT",
-                enabled: true,
-                url: "https://www.kcex.com/futures/exchange/DEBT_USDT"
-            }
-        },
-        dex: {
-            dexscreener: {
-                enabled: true,
-                contractAddress: "9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
-                network: "solana",
-                symbol: "DEBT/USDT",
-                url: "https://dexscreener.com/solana/9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
-                selectors: {
-                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
-                    askPrice: null
-                }
-            }
-        },
-        trading: {
-            profitThresholdPercent: 3.1,
-            closeThresholdPercent: 2.5,
-            tradeVolumeUSD: 200,
-            targetTokenQuantity: 5000,
-            maxTokenQuantity: 35000
-        }
-    },
+    // DEBT: {
+    //     name: "DEBT",
+    //     baseCurrency: "DEBT",
+    //     quoteCurrency: "USDT",
+    //     exchanges: {
+    //         mexc: {
+    //             symbol: "DEBT/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         lbank: {
+    //             symbol: "DEBT/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         ourbit: {
+    //             symbol: "DEBT_USDT",
+    //             enabled: false,
+    //             url: "https://futures.ourbit.com/fa-IR/exchange/DEBT_USDT?type=linear_swap"
+    //         },
+    //         xt: {
+    //             symbol: "DEBT",
+    //             enabled: false,
+    //             url: "https://www.xt.com/en/futures/trade/DEBT_usdt"
+    //         },
+    //         kcex: {
+    //             symbol: "DEBT",
+    //             enabled: true,
+    //             url: "https://www.kcex.com/futures/exchange/DEBT_USDT"
+    //         }
+    //     },
+    //     dex: {
+    //         dexscreener: {
+    //             enabled: true,
+    //             contractAddress: "9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
+    //             network: "solana",
+    //             symbol: "DEBT/USDT",
+    //             url: "https://dexscreener.com/solana/9qppy1kxrtfeewkfaysyhd7eu9glg5pgxdlkdl51p7ex",
+    //             selectors: {
+    //                 bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+    //                 askPrice: null
+    //             }
+    //         }
+    //     },
+    //     trading: {
+    //         profitThresholdPercent: 3.1,
+    //         closeThresholdPercent: 2.5,
+    //         tradeVolumeUSD: 200,
+    //         targetTokenQuantity: 5000,
+    //         maxTokenQuantity: 35000
+    //     }
+    // },
 
-    ALT: {
-        name: "ALT",
-        baseCurrency: "ALT",
+    // ALT: {
+    //     name: "ALT",
+    //     baseCurrency: "ALT",
+    //     quoteCurrency: "USDT",
+    //     exchanges: {
+    //         mexc: {
+    //             symbol: "ALTCOIN/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         lbank: {
+    //             symbol: "ALTSOL/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         ourbit: {
+    //             symbol: "ALT_USDT",
+    //             enabled: false // Disabled for now as it was set to BSU in original config
+    //         },
+    //         xt: {
+    //             symbol: "ALT",
+    //             enabled: false // Disabled for now as it was set to BSU in original config
+    //         },
+    //         kcex: {
+    //             symbol: "ALT",
+    //             enabled: true,
+    //             url: "https://www.kcex.com/futures/exchange/ALTCOIN_USDT",
+    //             updateInterval: 100,
+    //             selectors: {
+    //                 bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+    //                 askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+    //             }
+    //         }
+    //     },
+    //     dex: {
+    //         dexscreener: {
+    //             enabled: true,
+    //             contractAddress: "bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+    //             network: "solana",
+    //             symbol: "ALT/SOL",
+    //             url: "https://dexscreener.com/solana/bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+    //             selectors: {
+    //                 bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+    //                 askPrice: null
+    //             }
+    //         }
+    //     },
+    //     trading: {
+    //         profitThresholdPercent: 3.1,
+    //         closeThresholdPercent: 2.5,
+    //         tradeVolumeUSD: 200,
+    //         targetTokenQuantity: 5000,
+    //         maxTokenQuantity: 35000
+    //     }
+    // },
+    UNITE: {
+        name: "UNITE",
+        baseCurrency: "UNITE",
         quoteCurrency: "USDT",
         exchanges: {
             mexc: {
-                symbol: "ALTCOIN/USDT:USDT",
-                enabled: true
+                symbol: "UNITE/USDT:USDT",
+                enabled: true // MEXC doesn't have UNITE yet
             },
             lbank: {
-                symbol: "ALTSOL/USDT:USDT",
-                enabled: true
+                symbol: "UNITE/USDT:USDT",
+                enabled: false // LBank doesn't have UNITE yet
             },
             ourbit: {
-                symbol: "ALT_USDT",
-                enabled: false // Disabled for now as it was set to BSU in original config
+                symbol: "UNITE_USDT",
+                enabled: false // OurBit doesn't have UNITE yet
             },
             xt: {
-                symbol: "ALT",
-                enabled: false // Disabled for now as it was set to BSU in original config
+                symbol: "UNITE",
+                enabled: false // XT doesn't have UNITE yet
             },
             kcex: {
-                symbol: "ALT",
+                symbol: "UNITE",
                 enabled: true,
-                url: "https://www.kcex.com/futures/exchange/ALTCOIN_USDT",
+                url: "https://www.kcex.com/futures/exchange/UNITE_USDT?type=linear_swap",
                 updateInterval: 100,
                 selectors: {
                     bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
@@ -259,10 +312,12 @@ const currencies = {
         dex: {
             dexscreener: {
                 enabled: true,
-                contractAddress: "bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
-                network: "solana",
-                symbol: "ALT/SOL",
-                url: "https://dexscreener.com/solana/bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+                contractAddress: "0xA6C6ea2e0140849bE02A3a34780CF61b766916c5",
+                pairAddress: "0xf0dc7859d28a57a71d485856378fbb07fe12b4681bc275bb2ddb88d821afd777",
+                network: "base",
+                symbol: "UNITE/USDT",
+                url: "https://dexscreener.com/base/0xf0dc7859d28a57a71d485856378fbb07fe12b4681bc275bb2ddb88d821afd777",
+                usePairAddress: true,
                 selectors: {
                     bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
                     askPrice: null

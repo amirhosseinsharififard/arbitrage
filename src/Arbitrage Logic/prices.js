@@ -43,17 +43,17 @@ let currentLogContent = '';
 function isNewData(exchangeId, newData) {
     const prev = previousData[exchangeId];
     if (!prev) return true;
-    
+
     // For DEX exchanges, only compare bid prices
     if (newData.isDEX) {
         if (newData.bid !== prev.bid) {
-            previousData[exchangeId] = { ...newData };
+            previousData[exchangeId] = {...newData };
             return true;
         }
     } else {
         // For regular exchanges, compare both bid and ask prices
         if (newData.bid !== prev.bid || newData.ask !== prev.ask) {
-            previousData[exchangeId] = { ...newData };
+            previousData[exchangeId] = {...newData };
             return true;
         }
     }
@@ -64,7 +64,7 @@ function isNewData(exchangeId, newData) {
 function isNewComparison(exchangeA, exchangeB, result) {
     const key = `${exchangeA}-${exchangeB}`;
     const prev = previousComparisons.get(key);
-    
+
     if (!prev || Math.abs(prev - result) > 0.001) {
         previousComparisons.set(key, result);
         return true;
@@ -85,7 +85,7 @@ export async function printBidAskPairs(symbols, exchanges) {
         try {
             const lbankSymbol = (symbols && symbols.lbank) || (config.symbols && config.symbols.lbank) || 'DAM/USDT:USDT';
             lbankPrice = await lbankPriceService.getPrice('lbank', lbankSymbol);
-            
+
             // Log LBank data if new
             if (isNewData('lbank', lbankPrice)) {
                 logExchangeData('lbank', lbankPrice, true);
@@ -121,7 +121,7 @@ export async function printBidAskPairs(symbols, exchanges) {
         try {
             const mexcSymbol = (symbols && symbols.mexc) || (config.symbols && config.symbols.mexc) || 'ETH/USDT:USDT';
             mexcPrice = await exchangeManager.getMexcPrice(mexcSymbol);
-            
+
             // Log MEXC data if new
             if (isNewData('mexc', mexcPrice)) {
                 logExchangeData('mexc', mexcPrice, true);
@@ -160,7 +160,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 await kcexPuppeteerService.initialize();
             }
             kcexPrice = await kcexPuppeteerService.extractPrices();
-            
+
             // Log KCEX data if enabled and new
             if (isNewData('kcex', kcexPrice)) {
                 logExchangeData('kcex', kcexPrice, config.kcex.enabled);
@@ -189,7 +189,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                 await xtPuppeteerService.initialize();
             }
             xtPrice = await xtPuppeteerService.extractPrices();
-            
+
             // Log XT data if enabled and new
             if (isNewData('xt', xtPrice)) {
                 logExchangeData('xt', xtPrice, config.xt.enabled);
@@ -207,14 +207,18 @@ export async function printBidAskPairs(symbols, exchanges) {
     try {
         if (config.dexscreener.enabled) {
             if (config.dexscreener.useApi) {
-                dexscreenerPrice = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress, config.dexscreener.network);
+                const options = {};
+                if (config.dexscreener.usePairAddress && config.dexscreener.pairAddress) {
+                    options.pairAddress = config.dexscreener.pairAddress;
+                }
+                dexscreenerPrice = await dexscreenerApiService.getBidPriceByToken(config.dexscreener.contractAddress, config.dexscreener.network, options);
             } else {
                 if (!dexscreenerPuppeteerService.browser || !dexscreenerPuppeteerService.page) {
                     await dexscreenerPuppeteerService.initialize();
                 }
                 dexscreenerPrice = await dexscreenerPuppeteerService.extractPrices();
             }
-            
+
             // Log DexScreener+ data if enabled and new
             if (isNewData('dexscreener', dexscreenerPrice)) {
                 logExchangeData('dexscreener', dexscreenerPrice, config.dexscreener.enabled);
@@ -257,7 +261,7 @@ export async function printBidAskPairs(symbols, exchanges) {
 
     // Build log content for real-time updates
     let logLines = [];
-    
+
     // Add timestamp
     logLines.push(`🕐 ${new Date().toLocaleTimeString()}`);
     logLines.push('');
@@ -267,51 +271,51 @@ export async function printBidAskPairs(symbols, exchanges) {
         for (let j = i + 1; j < enabledExchanges.length; j++) {
             const a = enabledExchanges[i];
             const b = enabledExchanges[j];
-            
+
             let hasComparisonChanged = false;
-            
+
             // Handle DEX exchanges (bid-only)
             if (a.isDEX && b.isDEX) {
                 // Both are DEX - skip comparison as they only have bid prices
                 continue;
-                         } else if (a.isDEX) {
-                 // A is DEX (bid-only), B is regular exchange
-                 // Compare A bid with B ask (sell on A, buy on B)
-                 if (a.bid != null && b.ask != null) {
-                     const aBidToBAsk = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
-                     if (isNewComparison(`${a.id}-bid-${b.id}-ask`, aBidToBAsk)) {
-                         logLines.push(`🟢 DEX ${a.id.toUpperCase()}(Bid:$${a.bid}) -> ${b.id.toUpperCase()}(Ask:$${b.ask}) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
-                         hasComparisonChanged = true;
-                     }
-                 }
-             } else if (b.isDEX) {
-                 // B is DEX (bid-only), A is regular exchange
-                 let dexComparisons = 0;
-                 
-                 // Compare A bid with B bid (buy on A, sell on B)
-                 if (a.bid != null && b.bid != null) {
-                     const aBidToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.bid);
-                     if (isNewComparison(`${a.id}-bid-${b.id}-bid`, aBidToBBid)) {
-                         logLines.push(`🟢 ${a.id.toUpperCase()}(Bid:$${a.bid}) -> DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
-                         hasComparisonChanged = true;
-                         dexComparisons++;
-                     }
-                 }
-                 
-                 // Compare A ask with B bid (sell on A, buy on B)
-                 if (a.ask != null && b.bid != null) {
-                     const aAskToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.ask);
-                     if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
-                         logLines.push(`🟢 ${a.id.toUpperCase()}(Ask:$${a.ask}) -> DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
-                         hasComparisonChanged = true;
-                         dexComparisons++;
-                     }
-                 }
-                 
-                 // Add divider between DEX comparisons if both were shown
-                 if (dexComparisons >= 2) {
-                     logLines.push("=".repeat(60));
-                 }
+            } else if (a.isDEX) {
+                // A is DEX (bid-only), B is regular exchange
+                // Compare A bid with B ask (sell on A, buy on B)
+                if (a.bid != null && b.ask != null) {
+                    const aBidToBAsk = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
+                    if (isNewComparison(`${a.id}-bid-${b.id}-ask`, aBidToBAsk)) {
+                        logLines.push(`🟢 DEX ${a.id.toUpperCase()}(Bid:$${a.bid}) -> ${b.id.toUpperCase()}(Ask:$${b.ask}) => ${FormattingUtils.formatPercentageColored(aBidToBAsk)}`);
+                        hasComparisonChanged = true;
+                    }
+                }
+            } else if (b.isDEX) {
+                // B is DEX (bid-only), A is regular exchange
+                let dexComparisons = 0;
+
+                // Compare A bid with B bid (buy on A, sell on B)
+                if (a.bid != null && b.bid != null) {
+                    const aBidToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.bid);
+                    if (isNewComparison(`${a.id}-bid-${b.id}-bid`, aBidToBBid)) {
+                        logLines.push(`🟢 ${a.id.toUpperCase()}(Bid:$${a.bid}) -> DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aBidToBBid)}`);
+                        hasComparisonChanged = true;
+                        dexComparisons++;
+                    }
+                }
+
+                // Compare A ask with B bid (sell on A, buy on B)
+                if (a.ask != null && b.bid != null) {
+                    const aAskToBBid = CalculationUtils.calculatePriceDifference(b.bid, a.ask);
+                    if (isNewComparison(`${a.id}-ask-${b.id}-bid`, aAskToBBid)) {
+                        logLines.push(`🟢 ${a.id.toUpperCase()}(Ask:$${a.ask}) -> DEX ${b.id.toUpperCase()}(Bid:$${b.bid}) => ${FormattingUtils.formatPercentageColored(aAskToBBid)}`);
+                        hasComparisonChanged = true;
+                        dexComparisons++;
+                    }
+                }
+
+                // Add divider between DEX comparisons if both were shown
+                if (dexComparisons >= 2) {
+                    logLines.push("=".repeat(60));
+                }
             } else {
                 // Both are regular exchanges - normal arbitrage comparison
                 // A ask -> B bid
@@ -322,7 +326,7 @@ export async function printBidAskPairs(symbols, exchanges) {
                         hasComparisonChanged = true;
                     }
                 }
-                
+
                 // B ask -> A bid
                 if (b.ask != null && a.bid != null) {
                     const bToA = CalculationUtils.calculatePriceDifference(b.ask, a.bid);
@@ -334,7 +338,7 @@ export async function printBidAskPairs(symbols, exchanges) {
             }
         }
     }
-    
+
     // Update the log content and display it
     currentLogContent = logLines.join('\n');
     logUpdate(currentLogContent);
