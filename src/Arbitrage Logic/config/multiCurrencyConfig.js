@@ -392,6 +392,65 @@ const currencies = {
             targetTokenQuantity: 5000,
             maxTokenQuantity: 35000
         }
+    },
+    TOKABU: {
+        name: "TOKABU",
+        baseCurrency: "TOKABU",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "TOKABU/USDT:USDT",
+                enabled: false // MEXC doesn't have TOKABU yet
+            },
+            lbank: {
+                symbol: "TOKABU/USDT:USDT",
+                enabled: true,
+                url: "https://www.lbank.com/futures/tokabuusdt",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            ourbit: {
+                symbol: "TOKABU_USDT",
+                enabled: false // OurBit doesn't have TOKABU yet
+            },
+            xt: {
+                symbol: "TOKABU",
+                enabled: false // XT doesn't have TOKABU yet
+            },
+            kcex: {
+                symbol: "TOKABU",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/TOKABU_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "4rdcniyqgutdmckddrdzk4uqakfxeju8hmjfrt9yfb8y",
+                network: "solana",
+                symbol: "TOKABU/USDT",
+                url: "https://dexscreener.com/solana/4rdcniyqgutdmckddrdzk4uqakfxeju8hmjfrt9yfb8y",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
     }
 };
 
