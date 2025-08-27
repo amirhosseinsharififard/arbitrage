@@ -133,13 +133,13 @@ const config = {
     // DexScreener+ Puppeteer configuration (DEX - bid only)
     dexscreener: {
         enabled: true, // Toggle to enable/disable DexScreener+ data collection
-        url: "https://dexscreener.com/base/0xf0dc7859d28a57a71d485856378fbb07fe12b4681bc275bb2ddb88d821afd777", // DexScreener URL for UNITE/USDT
+        url: "https://dexscreener.com/bsc/0xbee2c57e3a11220e2b948e26965daaa9dfd87a4a", // DexScreener URL for BSU/USDT
         updateInterval: 100, // Price update interval in milliseconds
         // Prefer official public API to avoid Cloudflare blocks
         useApi: true, // If true, use DexScreener public API instead of Puppeteer
-        contractAddress: "0xA6C6ea2e0140849bE02A3a34780CF61b766916c5", // UNITE token contract on Base
-        network: "base", // Network: base
-        pairAddress: "0xf0dc7859d28a57a71d485856378fbb07fe12b4681bc275bb2ddb88d821afd777", // UNITE/USDT pair address
+        contractAddress: "0x1AeCab957bAD4C6e36DD29C3d3BB470c4C29768A", // BSU token contract on BSC
+        network: "bsc", // Network: bsc
+        pairAddress: "0xBee2C57e3a11220e2B948E26965DAAA9dFD87A4A", // BSU/USDT pair address
         usePairAddress: true, // Use pair address instead of token address
         selectors: {
             bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div", // Bid price selector (DEX only has bid)

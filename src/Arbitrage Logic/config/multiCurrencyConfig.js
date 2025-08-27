@@ -331,6 +331,67 @@ const currencies = {
             targetTokenQuantity: 5000,
             maxTokenQuantity: 35000
         }
+    },
+    BSU: {
+        name: "BSU",
+        baseCurrency: "BSU",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "BSU/USDT:USDT",
+                enabled: false // MEXC doesn't have BSU yet
+            },
+            lbank: {
+                symbol: "BSU/USDT:USDT",
+                enabled: true,
+                url: "https://www.lbank.com/futures/bsuusdt",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            ourbit: {
+                symbol: "BSU_USDT",
+                enabled: false // OurBit doesn't have BSU yet
+            },
+            xt: {
+                symbol: "BSU",
+                enabled: false // XT doesn't have BSU yet
+            },
+            kcex: {
+                symbol: "BSU",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/BSU_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "0x1AeCab957bAD4C6e36DD29C3d3BB470c4C29768A",
+                pairAddress: "0xBee2C57e3a11220e2B948E26965DAAA9dFD87A4A",
+                network: "bsc",
+                symbol: "BSU/USDT",
+                url: "https://dexscreener.com/bsc/0xbee2c57e3a11220e2b948e26965daaa9dfd87a4a",
+                usePairAddress: true,
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
     }
 };
 
