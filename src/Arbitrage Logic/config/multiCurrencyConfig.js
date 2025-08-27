@@ -122,56 +122,56 @@ const dexConfigs = {
 
 // Currency definitions with exchange-specific symbols and configurations
 const currencies = {
-    AIOT: {
-        name: "AIOT",
-        baseCurrency: "AIOT",
-        quoteCurrency: "USDT",
-        exchanges: {
-            mexc: {
-                symbol: "AIOT/USDT:USDT",
-                enabled: true
-            },
-            lbank: {
-                symbol: "AIOT/USDT:USDT",
-                enabled: true
-            },
-            ourbit: {
-                symbol: "AIOT_USDT",
-                enabled: true,
-                url: "https://futures.ourbit.com/exchange/AIOT_USDT?type=linear_swap"
-            },
-            xt: {
-                symbol: "AIOT",
-                enabled: false,
-                url: "https://www.xt.com/en/futures/trade/AIOT_usdt"
-            },
-            kcex: {
-                symbol: "AIOT",
-                enabled: false,
-                url: "https://www.kcex.com/futures/exchange/AIOT_USDT"
-            }
-        },
-        dex: {
-            dexscreener: {
-                enabled: true,
-                contractAddress: "0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
-                network: "bsc",
-                symbol: "AIOT/USDT",
-                url: "https://dexscreener.com/bsc/0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
-                selectors: {
-                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
-                    askPrice: null
-                }
-            }
-        },
-        trading: {
-            profitThresholdPercent: 3.1,
-            closeThresholdPercent: 2.5,
-            tradeVolumeUSD: 200,
-            targetTokenQuantity: 5000,
-            maxTokenQuantity: 35000
-        }
-    },
+    // AIOT: {
+    //     name: "AIOT",
+    //     baseCurrency: "AIOT",
+    //     quoteCurrency: "USDT",
+    //     exchanges: {
+    //         mexc: {
+    //             symbol: "AIOT/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         lbank: {
+    //             symbol: "AIOT/USDT:USDT",
+    //             enabled: true
+    //         },
+    //         ourbit: {
+    //             symbol: "AIOT_USDT",
+    //             enabled: true,
+    //             url: "https://futures.ourbit.com/exchange/AIOT_USDT?type=linear_swap"
+    //         },
+    //         xt: {
+    //             symbol: "AIOT",
+    //             enabled: false,
+    //             url: "https://www.xt.com/en/futures/trade/AIOT_usdt"
+    //         },
+    //         kcex: {
+    //             symbol: "AIOT",
+    //             enabled: false,
+    //             url: "https://www.kcex.com/futures/exchange/AIOT_USDT"
+    //         }
+    //     },
+    //     dex: {
+    //         dexscreener: {
+    //             enabled: true,
+    //             contractAddress: "0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+    //             network: "bsc",
+    //             symbol: "AIOT/USDT",
+    //             url: "https://dexscreener.com/bsc/0xb433ae7e7011a2fb9a4bbb86140e0f653dcfcfba",
+    //             selectors: {
+    //                 bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+    //                 askPrice: null
+    //             }
+    //         }
+    //     },
+    //     trading: {
+    //         profitThresholdPercent: 3.1,
+    //         closeThresholdPercent: 2.5,
+    //         tradeVolumeUSD: 200,
+    //         targetTokenQuantity: 5000,
+    //         maxTokenQuantity: 35000
+    //     }
+    // },
 
     // DEBT: {
     //     name: "DEBT",
@@ -393,6 +393,77 @@ const currencies = {
             maxTokenQuantity: 35000
         }
     },
+    ALT: {
+        name: "ALT",
+        baseCurrency: "ALT",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "ALTCOIN/USDT:USDT",
+                enabled: true,
+                url: "https://www.mexc.com/futures/ALTCOIN_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            lbank: {
+                symbol: "ALTSOL/USDT:USDT",
+                enabled: true,
+                url: "https://www.lbank.com/futures/altsolusdt",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            ourbit: {
+                symbol: "ALT_USDT",
+                enabled: false,
+                url: "https://futures.ourbit.com/fa-IR/exchange/ALT_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span",
+                    askPrice: "/html/body/div[3]/section/div[4]/div[6]/div[2]/div[2]/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span"
+                }
+            },
+            xt: {
+                symbol: "ALT",
+                enabled: false // XT doesn't have ALT yet
+            },
+            kcex: {
+                symbol: "ALTCOIN",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/ALTCOIN_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+                network: "solana",
+                symbol: "ALT/SOL",
+                url: "https://dexscreener.com/solana/bjgbpydarmcgj7crwm623nrjf2gplkpsswwnsjxubtpg",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
+    },
     TOKABU: {
         name: "TOKABU",
         baseCurrency: "TOKABU",
@@ -438,6 +509,136 @@ const currencies = {
                 network: "solana",
                 symbol: "TOKABU/USDT",
                 url: "https://dexscreener.com/solana/4rdcniyqgutdmckddrdzk4uqakfxeju8hmjfrt9yfb8y",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
+    },
+    STARTUP: {
+        name: "STARTUP",
+        baseCurrency: "STARTUP",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "STARTUP/USDT:USDT",
+                enabled: true,
+                url: "https://www.mexc.com/futures/STARTUP_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            lbank: {
+                symbol: "STARTUP/USDT:USDT",
+                enabled: true,
+                url: "https://www.lbank.com/futures/startupusdt",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            ourbit: {
+                symbol: "STARTUP_USDT",
+                enabled: false // OurBit doesn't have STARTUP yet
+            },
+            xt: {
+                symbol: "STARTUP",
+                enabled: false // XT doesn't have STARTUP yet
+            },
+            kcex: {
+                symbol: "STARTUP",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/STARTUP_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "6zvxszzax2ffb5mxeunbgdxscdzpnmyw42zxaakvngmj",
+                network: "solana",
+                symbol: "STARTUP/USDT",
+                url: "https://dexscreener.com/solana/6zvxszzax2ffb5mxeunbgdxscdzpnmyw42zxaakvngmj",
+                selectors: {
+                    bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
+                    askPrice: null
+                }
+            }
+        },
+        trading: {
+            profitThresholdPercent: 3.1,
+            closeThresholdPercent: 2.5,
+            tradeVolumeUSD: 200,
+            targetTokenQuantity: 5000,
+            maxTokenQuantity: 35000
+        }
+    },
+    CLIPPY: {
+        name: "CLIPPY",
+        baseCurrency: "CLIPPY",
+        quoteCurrency: "USDT",
+        exchanges: {
+            mexc: {
+                symbol: "CLIPPY/USDT:USDT",
+                enabled: true,
+                url: "https://www.mexc.com/futures/CLIPPY_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            lbank: {
+                symbol: "CLIPPY/USDT:USDT",
+                enabled: true,
+                url: "https://www.lbank.com/futures/clippyusdt",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[3]/div/div[1]/div/div[1]",
+                    askPrice: "/html/body/div[1]/div/div[3]/div/div[1]/div[4]/div[1]/div[3]/div[1]/div/div[10]/div/div[1]"
+                }
+            },
+            ourbit: {
+                symbol: "CLIPPY_USDT",
+                enabled: false // OurBit doesn't have CLIPPY yet
+            },
+            xt: {
+                symbol: "CLIPPY",
+                enabled: false // XT doesn't have CLIPPY yet
+            },
+            kcex: {
+                symbol: "CLIPPY",
+                enabled: true,
+                url: "https://www.kcex.com/futures/exchange/CLIPPY_USDT?type=linear_swap",
+                updateInterval: 100,
+                selectors: {
+                    bidPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[3]/div[1]/div[1]/div[1]/span",
+                    askPrice: "/html/body/div[2]/section/div[1]/div[6]/div[2]/div/div/div[2]/div[2]/div[1]/div[1]/div[14]/div[1]/span"
+                }
+            }
+        },
+        dex: {
+            dexscreener: {
+                enabled: true,
+                contractAddress: "37gaodabzcev8mu3wyij46y8tba5wsbkbpv5zcyxmxsx",
+                network: "solana",
+                symbol: "CLIPPY/USDT",
+                url: "https://dexscreener.com/solana/37gaodabzcev8mu3wyij46y8tba5wsbkbpv5zcyxmxsx",
                 selectors: {
                     bidPrice: "//*[@id=\"root\"]/div/main/div/div/div[1]/div/div/div[2]/div/div[1]/div[1]/div[1]/span[2]/div",
                     askPrice: null
