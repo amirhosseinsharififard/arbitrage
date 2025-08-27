@@ -1,9 +1,0 @@
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:10:13.927Z","info":{"lastExitAt":"2025-08-26T04:10:13.926Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:13:59.439Z","info":{"lastExitAt":"2025-08-26T04:13:59.439Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:19:44.182Z","info":{"lastExitAt":"2025-08-26T04:19:44.182Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:20:37.843Z","info":{"lastExitAt":"2025-08-26T04:20:37.843Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:39:58.117Z","info":{"lastExitAt":"2025-08-26T04:39:58.117Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-26T04:40:26.462Z","info":{"lastExitAt":"2025-08-26T04:40:26.462Z"}}
-{"type":"ERROR","errorType":"RETRY_FAILED","message":"Function failed after 10 attempts","details":{"functionName":"bound loadMarkets","arguments":[],"attempts":10,"finalError":"mexc GET https://contract.mexc.com/api/v1/contract/detail request timed out (10000 ms)"},"severity":"ERROR","timestamp":"2025-08-27T20:03:26.665Z","developerContact":{"name":"Amir Sharifi","phone":"+98 917 238 4087","note":"Contact developer for technical support"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-27T20:03:26.762Z","info":{"lastExitAt":"2025-08-27T20:03:26.762Z"}}
-{"type":"SESSION_EXIT","timestamp":"2025-08-27T20:12:28.567Z","info":{"lastExitAt":"2025-08-27T20:12:28.566Z"}}
