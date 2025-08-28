@@ -199,7 +199,7 @@ const currencies = {
             kcex: {
                 symbol: "DEBT",
                 enabled: true,
-                url: "https://www.kcex.com/futures/exchange/DEBT_USDT"
+                url: "https://www.kcex.com/futures/exchange/DEBT_USDT?type=linear_swap"
             }
         },
         dex: {
