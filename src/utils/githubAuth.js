@@ -21,27 +21,27 @@ class GitHubAuth {
     /**
      * بررسی وجود توکن
      */
-    hasToken() {
-        // Temporarily disable GitHub authentication for testing
-        console.log(chalk.yellow('⚠️ GitHub authentication temporarily disabled for testing'));
-        return true;
+    // hasToken() {
+    //     // Temporarily disable GitHub authentication for testing
+    //     console.log(chalk.yellow('⚠️ GitHub authentication temporarily disabled for testing'));
+    //     return true;
 
-        if (!this.token || this.token === 'your_github_token_here') {
-            console.error(chalk.red('❌ GitHub Token not found or not configured!'));
-            console.error(chalk.yellow('Please set GITHUB_TOKEN in config.env file'));
-            return false;
-        }
-        return true;
-    }
+    //     if (!this.token || this.token === 'your_github_token_here') {
+    //         console.error(chalk.red('❌ GitHub Token not found or not configured!'));
+    //         console.error(chalk.yellow('Please set GITHUB_TOKEN in config.env file'));
+    //         return false;
+    //     }
+    //     return true;
+    // }
 
     /**
      * تایید توکن با GitHub API
      */
     async validateToken() {
         try {
-            if (!this.hasToken()) {
-                return false;
-            }
+            // if (!this.hasToken()) {
+            //     return false;
+            // }
 
             console.log(chalk.blue('🔐 Validating GitHub token...'));
 
